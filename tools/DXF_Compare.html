@@ -1,0 +1,3131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Luis Torrecilla">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>liteAECO - DXF Compare</title>
+
+    <meta name="description" content="Compare two DXF or DWG drawings in the browser and highlight added, deleted and modified entities. No upload, no server.">
+    <meta property="og:title" content="liteAECO - DXF Compare">
+    <meta property="og:description" content="Free tools for AEC project teams. Built with a focus on speed and utility.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://liteAECO.com/">
+
+    <meta name="robots" content="index, follow">
+
+    <link rel="icon" type="image/x-icon" href="../img/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../img/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="../img/android-chrome-512x512.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>window.SITE_ROOT = '../';</script>
+    <script src="../lang/en/global.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/dxf/dxf-parser.js"></script>
+    <script src="../js/dxf/dxf_sanitize.js"></script>
+    <script src="../js/dxf/dxf_dim.js"></script>
+    <script src="../js/dxf/dxf_hatch.js"></script>
+    <script src="../js/dxf/dxf_layout.js"></script>
+    <script src="../js/dxf/dxf_compare_engine.js"></script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        accent: { DEFAULT: '#4f46e5', hover: '#4338ca', light: '#e0e7ff', lighthov: '#c7d2fe', lighter: '#eef2ff', }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" type="text/css" href="../css/global.css">
+    <style>
+        html, body { height: 100%; }
+        body { font-family: Inter, sans-serif; }
+        .scroller::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* Sidebar Tab Styles (same as DXF Viewer/Editor) */
+        .tab-btn {
+            display: flex; align-items: center; width: 100%; padding: 0 1rem;
+            height: 2.5rem; min-height: 2.5rem; color: #475569;
+            border-radius: 0rem; transition: all 0.2s; margin-bottom: 0.25rem;
+            font-size: 0.875rem; font-weight: 500; border: none;
+            background: transparent; cursor: pointer;
+        }
+        .tab-btn:hover:not(:disabled) { background-color: #f1f5f9; color: #0f172a; }
+        .tab-btn.active {
+            background-color: #e2e8f0; color: #4f46e5; font-weight: 600;
+            box-shadow: inset 3px 0 0 #4f46e5;
+        }
+        .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tab-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; }
+
+        .dragover, .drop-zone.dragover { border-color: #4f46e5 !important; background-color: rgba(238, 242, 255, 0.5) !important; }
+
+        /* ---- Editor top toolbar ---- */
+        .draw-toolbar {
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; flex-direction: column; gap: 2px;
+            background: #ffffff; border-bottom: 1px solid #e2e8f0;
+            padding: 3px 6px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06); z-index: 21;
+        }
+        .draw-toolbar-row {
+            display: flex; gap: 2px; align-items: center; justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .draw-toolbar-spacer { flex: 1 1 auto; }
+        #papers-panel, #right-panel { top: var(--draw-toolbar-h, 0px); }
+        .settings-popup { top: max(64px, calc(var(--draw-toolbar-h, 0px) + 16px)); }
+        .settings-popup { max-height: calc(100% - max(80px, var(--draw-toolbar-h, 0px) + 32px)); }
+
+        .viewer-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 32px; height: 32px; padding: 0 8px; background: #ffffff;
+            border: 1px solid transparent; border-radius: 4px; color: #64748b;
+            font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+        }
+        .viewer-btn:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; border-color: transparent; }
+        .viewer-btn.active { background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; font-weight: 600; }
+        .viewer-btn:disabled { opacity: 0.42; cursor: not-allowed; background: #ffffff; color: #94a3b8; }
+        .viewer-toolbar-sep { width: 1px; height: 18px; background: #e2e8f0; margin: 0 2px; align-self: center; }
+
+        /* ---- Measure tool (editor styles) ---- */
+        .measure-panel {
+            position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%);
+            z-index: 24; display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); font-size: 11px; color: #1e293b;
+        }
+        .measure-panel.hidden { display: none !important; }
+        .measure-panel-title { font-weight: 800; color: #111827; padding-right: 2px; }
+        .measure-snap-option { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: #475569; white-space: nowrap; }
+        .measure-snap-option input[type="checkbox"] { accent-color: #4f46e5; width: 13px; height: 13px; }
+        .measure-clear-btn {
+            border: 1px solid #e2e8f0; background: #ffffff; color: #334155; border-radius: 4px;
+            padding: 3px 8px; font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+        .measure-clear-btn:hover { background: #f1f5f9; color: #111827; }
+        .measure-hint { color: #64748b; font-weight: 600; border-left: 1px solid #e2e8f0; padding-left: 10px; }
+        .measure-label {
+            position: absolute; transform: translate(-50%, -140%); pointer-events: none; z-index: 25;
+            background: rgba(15, 23, 42, 0.85); color: #fff; font-size: 10.5px; font-weight: 800;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+        }
+        .cmp-canvas-host.measure-active canvas { cursor: crosshair; }
+
+        /* ---- Sliding side panels ---- */
+        .cmp-canvas-host { position: relative; overflow: hidden; background: #2a2e37; }
+        .cmp-canvas-host canvas { display: block; }
+        .canvas-tag {
+            position: absolute; top: 8px; left: 8px; z-index: 5;
+            font-size: 10px; font-weight: 700; letter-spacing: .04em;
+            padding: 2px 8px; border-radius: 6px; color: #fff;
+            background: rgba(15, 23, 42, .65); pointer-events: none;
+        }
+
+        .cat-chip { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+            padding: 5px 9px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; width: 100%; }
+        .cat-chip .chip-count { margin-left: auto; }
+        .cat-chip.off { opacity: .38; }
+        .cat-dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+
+        /* Editor CAD layer rows */
+        .layer-checkbox {
+            appearance: none; -webkit-appearance: none;
+            width: 14px; height: 14px; min-width: 14px; min-height: 14px;
+            margin: 0; border: 1.5px solid #111827; border-radius: 3px;
+            background: #ffffff; cursor: pointer; display: inline-block;
+            vertical-align: middle; position: relative;
+        }
+        .layer-checkbox:checked {
+            background-color: #111827; border-color: #111827;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:indeterminate {
+            background-color: #111827; border-color: #111827;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'><line x1='4' y1='8' x2='12' y2='8'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        .dxf-layer-row {
+            display: grid; grid-template-columns: 14px 14px minmax(0, 1fr) auto;
+            align-items: center; column-gap: 8px; min-height: 30px; padding: 4px 2px;
+            border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #1e293b;
+        }
+        .dxf-layer-row-all { margin-bottom: 6px; border-bottom-color: #e2e8f0; font-weight: 800; }
+        .dxf-layer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+        .dxf-layer-color {
+            width: 14px; height: 14px; border-radius: 9999px; display: inline-block;
+            border: 1px solid #cbd5e1; box-shadow: inset 0 0 2px rgba(0,0,0,0.15);
+        }
+
+        .result-row { cursor: pointer; }
+        .result-row:hover { background: #eef2ff; }
+        .layer-row:hover { background: #f8fafc; }
+
+        /* ---- Right panel tabs (editor inspector pattern) ---- */
+        .panel-tab {
+            flex: 1; padding: 12px 0; font-size: 12px; font-weight: 700; text-align: center;
+            color: #64748b; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer;
+        }
+        .panel-tab:hover { color: #1e293b; }
+        .panel-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 800; }
+
+        /* ---- Settings popup (editor) ---- */
+        .prop-popup-close { color: #94a3b8; background: transparent; border: none; cursor: pointer; padding: 2px; }
+        .prop-popup-close:hover { color: #475569; }
+        .settings-popup {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 440px; min-width: 320px; max-width: 92%;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); display: flex;
+            flex-direction: column; overflow: hidden; z-index: 50;
+        }
+        .settings-popup.closed { display: none !important; }
+        .settings-content { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0; }
+        .settings-section-title {
+            font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+            color: #64748b; padding: 16px 16px 6px; margin-top: 6px; border-top: 1px solid #f1f5f9;
+        }
+        .settings-section-title--first { border-top: none; margin-top: 0; padding-top: 10px; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label { font-size: 13px; font-weight: 700; color: #1e293b; }
+        .settings-row-hint { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.4; }
+        .settings-row-control { flex-shrink: 0; }
+        .settings-select {
+            font-size: 12px; font-weight: 600; color: #1e293b; background: #ffffff;
+            border: 1px solid #e2e8f0; border-radius: 4px; padding: 5px 8px; outline: none; cursor: pointer;
+        }
+        .settings-select:focus { border-color: #4f46e5; }
+        .settings-check-input { accent-color: #4f46e5; width: 17px; height: 17px; cursor: pointer; }
+
+        .loader {
+            border: 4px solid #e2e8f0; border-top: 4px solid #4f46e5;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col overflow-hidden pt-12">
+
+    <!-- TOP NAVIGATION (injected by common.js) -->
+
+    <!-- Main content -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Sidebar (same rail as DXF Viewer) -->
+        <aside id="app-sidebar" class="z-[80] w-[72px] bg-white border-r border-white shadow-lg flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex flex-col h-full relative">
+            <div class="h-16 flex items-center px-6 border-b border-slate-200 shrink-0 w-64 cursor-pointer">
+                <i data-lucide="git-compare" class="text-indigo-600 w-6 h-6 shrink-0 -ml-0"></i>
+                <h1 class="text-lg font-bold text-slate-900 ml-4 whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text" data-i18n="appName">
+                    DXF Compare
+                </h1>
+            </div>
+            <nav id="sidebar-nav" class="p-3 space-y-2 w-64 shrink-0 overflow-x-hidden flex-grow">
+                <button id="tab-upload" data-target="view-upload" class="tab-btn active group">
+                    <i data-lucide="file-input" class="tab-icon w-5 h-5 shrink-0 group-hover:text-slate-800 transition-colors"></i>
+                    <span class="whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text tab-text" data-i18n="loadDrawings">Load Drawings</span>
+                </button>
+                <button id="tab-compare" data-target="view-compare" class="tab-btn group" disabled title="Load drawings first" data-i18n-title="loadFilesFirst">
+                    <i data-lucide="monitor" class="tab-icon w-5 h-5 shrink-0 group-hover:text-slate-800 transition-colors"></i>
+                    <span class="whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text tab-text" data-i18n="compareArea">Compare View</span>
+                </button>
+                <button id="btn-papers" class="tab-btn group" disabled title="Layouts" data-i18n-title="papersToggle">
+                    <span class="tab-icon w-5 h-5 shrink-0 inline-flex items-center justify-center group-hover:text-slate-800 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2z"/><path d="M16 3v5a1 1 0 0 0 1 1h5"/><rect x="6" y="10" width="10" height="8" rx="1"/></svg>
+                    </span>
+                    <span class="whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text tab-text" data-i18n="papersToggle">Layouts</span>
+                </button>
+            </nav>
+            <div class="mt-auto border-t border-slate-200 h-12 flex flex-col justify-end shrink-0 w-full">
+                <button id="sidebar-toggle" class="w-full h-12 text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none flex items-center justify-center">
+                    <span id="sidebar-toggle-icon-wrapper" class="shrink-0 transition-transform duration-300">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </span>
+                </button>
+            </div>
+        </aside>
+
+        <section class="flex-1 bg-slate-100 flex flex-col overflow-hidden relative">
+
+            <!-- View: Upload -->
+            <div id="view-upload" class="view-panel absolute inset-0 flex flex-col bg-slate-50 overflow-y-auto z-10 transition-opacity">
+                <div class="md:px-14 pt-12 flex flex-col w-full gap-6 max-w-7xl mx-auto pb-8">
+
+                    <div class="bg-white border border-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded p-6 md:p-8 shrink-0">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-slate-200/60 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center text-indigo-600 shrink-0">
+                                    <i data-lucide="git-compare" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight leading-tight" data-i18n="appName">CAD Compare</h1>
+                                    <p class="text-sm font-medium text-indigo-500 uppercase tracking-widest mt-0.5" data-i18n="compareSubtitle">DXF DWG - Drawing revision comparison</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details class="text-sm text-slate-600 leading-relaxed group">
+                            <summary class="cursor-pointer list-none flex items-center gap-2 font-semibold text-slate-900 select-none">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-500 transition-transform group-open:rotate-90"></i>
+                                <span id="ui-rule-title">What this tool does</span>
+                            </summary>
+
+                            <div class="mt-3 space-y-3">
+                                <p>
+                                    <span id="ui-rule-desc-1">Compare two revisions of a DXF or DWG drawing to see what has been changed, added, deleted or modified. Entities are highlighted in an overlay or side-by-side view. Files never leave your computer. You can also load only one file to use it as a plain viewer.</span>
+                                </p>
+                             </div>
+                        </details>
+                    </div>
+
+                    <div class="bg-white border border-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded p-6 md:p-8 flex flex-col gap-6 shrink-0">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center">
+                            <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-md inline-flex items-center justify-center text-xs mr-2 font-bold"><i data-lucide="file-code-2" class="w-3.5 h-3.5"></i></span>
+                            <span data-i18n="stepLoadDrawings">Step 1: Load Drawings</span>
+                        </h2>
+
+                        <div class="bg-white p-6 rounded border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <div class="flex flex-col h-full">
+                                <div id="drop-a" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
+                                    <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
+                                        <i data-lucide="file-minus" class="w-8 h-8 text-slate-400 mb-1 transition-colors"></i>
+                                        <div class="flex text-sm text-slate-600 justify-center font-medium">
+                                            <span class="text-indigo-600 font-semibold" data-i18n="dropAtitle">Version A</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 font-medium mt-1" data-i18n="dropHint">Drop a .dxf or .dwg, or click to browse</p>
+                                        <p class="text-xs text-slate-500 font-medium mt-1 truncate max-w-[300px]" id="file-a-name" data-i18n="noFileSelected">No file selected</p>
+                                    </div>
+                                    <input type="file" id="input-a" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700">
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col h-full">
+                                <div id="drop-b" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
+                                    <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
+                                        <i data-lucide="file-plus" class="w-8 h-8 text-slate-400 mb-1 transition-colors"></i>
+                                        <div class="flex text-sm text-slate-600 justify-center font-medium">
+                                            <span class="text-indigo-600 font-semibold" data-i18n="dropBtitle">Version B</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 font-medium mt-1" data-i18n="dropHint">Drop a .dxf or .dwg, or click to browse</p>
+                                        <p class="text-xs text-slate-500 font-medium mt-1 truncate max-w-[300px]" id="file-b-name" data-i18n="noFileSelected">No file selected</p>
+                                    </div>
+                                    <input type="file" id="input-b" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700">
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col h-full bg-white p-4 rounded border border-slate-200/60 shadow-sm">
+                                <p class="font-semibold text-sm text-slate-800 mb-3 border-b border-slate-200/60 pb-1" data-i18n="compareInformation">Comparison Information</p>
+                                <div class="grid grid-cols-4 gap-x-4 gap-y-2 text-[12px] flex-grow content-start">
+                                    <div class="text-slate-500 font-medium" data-i18n="fileAlabel">File A:</div>
+                                    <div id="info-file-a" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
+
+                                    <div class="text-slate-500 font-medium" data-i18n="dateAlabel">Date A:</div>
+                                    <div id="info-date-a" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
+
+                                    <div class="text-slate-500 font-medium" data-i18n="fileBlabel">File B:</div>
+                                    <div id="info-file-b" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
+
+                                    <div class="text-slate-500 font-medium" data-i18n="dateBlabel">Date B:</div>
+                                    <div id="info-date-b" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
+
+                                    <div class="hidden text-slate-500 font-medium" data-i18n="entitiesAlabel">Entities A:</div>
+                                    <div id="info-ents-a" class="hidden col-span-3 text-indigo-600 font-bold truncate">-</div>
+
+                                    <div class="hidden text-slate-500 font-medium" data-i18n="entitiesBlabel">Entities B:</div>
+                                    <div id="info-ents-b" class="hidden col-span-3 text-indigo-600 font-bold truncate">-</div>
+                                </div>
+
+                                <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-start gap-2">
+                                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                                    <span id="error-text" data-i18n="genericError">An error occurred.</span>
+                                </div>
+
+                                <button id="btn-open" class="mt-4 w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-[13px] font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 rounded" disabled>
+                                    <i data-lucide="git-compare" class="w-4 h-4"></i>
+                                    <span data-i18n="openCompareBtn">Compare</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- View: Compare -->
+            <div id="view-compare" class="view-panel absolute inset-0 flex-col bg-slate-50 hidden z-1">
+                <div id="compare-stage" class="flex-1 relative overflow-hidden flex flex-col min-h-0">
+
+                    <!-- Editor-style top toolbar (floats over the canvas) -->
+                    <div class="draw-toolbar" id="cmp-toolbar">
+                        <div class="draw-toolbar-row">
+                            <button id="btn-panel" class="viewer-btn" title="Comparison panel" data-i18n-title="togglePanel">
+                                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-display" class="viewer-btn active" title="Display: changes" data-i18n-title="displayChanges">
+                                <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-layers-tab" class="viewer-btn" title="CAD Layers" data-i18n-title="cadLayersTitle">
+                                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-fit" class="viewer-btn" title="Zoom to fit" data-i18n-title="zoomFit">
+                                <i data-lucide="focus" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-measure" class="viewer-btn" title="Measure distance" data-i18n-title="measureDistanceTitle">
+                                <i data-lucide="ruler" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-roomdim" class="hidden viewer-btn" title="Quick X/Y room dimensions" data-i18n-title="quickDimensionsTitle">
+                                <i data-lucide="hammer" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <span class="viewer-toolbar-sep"></span>
+                            <span id="compare-title" class="text-xs font-bold text-slate-700 truncate max-w-[26vw] self-center px-1"></span>
+                            <span id="mode-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 self-center"></span>
+                            <span class="draw-toolbar-spacer"></span>
+                            <button id="btn-view-overlay" class="viewer-btn active" title="Overlay view" data-i18n-title="overlayView">
+                                <i data-lucide="layers-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-view-sbs" class="viewer-btn" title="Side-by-side view" data-i18n-title="sbsView">
+                                <i data-lucide="columns-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-theme" class="viewer-btn" title="Toggle Dark Mode" data-i18n-title="toggleDarkMode">
+                                <i data-lucide="moon" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button id="btn-settings" class="viewer-btn" title="Settings" data-i18n-title="settingsTitle">
+                                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Measure bottom bar (editor pattern; measure tool only) -->
+                    <div id="measure-panel" class="measure-panel hidden">
+                        <span class="measure-panel-title" data-i18n="measureTitle">Measure</span>
+                        <label class="measure-snap-option"><input type="checkbox" id="snap-endpoint" checked> <span data-i18n="snapEnd">End</span></label>
+                        <label class="measure-snap-option"><input type="checkbox" id="snap-midpoint" checked> <span data-i18n="snapMid">Mid</span></label>
+                        <label class="measure-snap-option"><input type="checkbox" id="snap-edge" checked> <span data-i18n="snapEdge">Edge</span></label>
+                        <button type="button" id="btn-measure-clear" class="measure-clear-btn" data-i18n="clearButton">Clear</button>
+                        <span id="measure-hint" class="measure-hint" data-i18n="measureHintFirstPoint">Click first point</span>
+                    </div>
+
+                    <!-- canvas area -->
+                    <div id="canvas-wrap" class="flex-1 min-h-0 flex">
+                        <div id="host-main" class="cmp-canvas-host flex-1"></div>
+                        <div id="host-a" class="cmp-canvas-host flex-1 hidden border-r border-slate-700">
+                            <span class="canvas-tag" data-i18n="tagOld">Version A</span>
+                        </div>
+                        <div id="host-b" class="cmp-canvas-host flex-1 hidden">
+                            <span class="canvas-tag" data-i18n="tagNew">Version B</span>
+                        </div>
+                    </div>
+
+                    <!-- status line -->
+                    <div class="h-7 bg-slate-100 border-t border-slate-200 px-3 flex items-center shrink-0 relative z-10">
+                        <span id="status-msg" class="text-[11px] text-slate-600 truncate" data-i18n="statusReady">Ready</span>
+                    </div>
+
+                    <!-- Layout panel (left, slides in like the editor Block Library) -->
+                    <aside id="papers-panel" class="absolute bottom-7 left-0 w-72 bg-white border-r border-slate-200 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.08)] z-30 flex flex-col -translate-x-full transition-transform duration-300">
+                        <div class="flex border-b border-slate-200 bg-slate-50 shrink-0 relative">
+                            <span class="flex-1 py-3 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 text-center" data-i18n="papersTitle">Layout</span>
+                            <button id="papers-close" class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded" title="Close" data-i18n-title="closeBtn">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div id="papers-list" class="flex-1 overflow-y-auto scroller p-2 text-[11px]"></div>
+                    </aside>
+
+                    <!-- Right panel: Comparison | Layers (slides in like the editor Inspector) -->
+                    <aside id="right-panel" class="absolute bottom-7 right-0 w-80 bg-white border-l border-slate-200 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-30 flex flex-col translate-x-full transition-transform duration-300">
+                        <div class="flex border-b border-slate-200 bg-slate-50 shrink-0 relative">
+                            <button id="rp-tab-comparison" class="panel-tab active" data-i18n="resultsTitle">Comparison</button>
+                            <button id="rp-tab-layers" class="panel-tab" data-i18n="layersTitle">CAD Layers</button>
+                            <button id="right-panel-close" class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded" title="Close" data-i18n-title="closeBtn">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+
+                        <div id="rp-content-comparison" class="flex-1 min-h-0 flex flex-col">
+                            <div class="p-3 border-b border-slate-200">
+                                <div id="cat-chips" class="grid grid-cols-2 gap-1.5">
+                                    <span class="cat-chip" data-cat="added"><span class="cat-dot" style="background:#22c55e"></span><span data-i18n="catAdded">Added</span> <b class="chip-count" id="count-added">0</b></span>
+                                    <span class="cat-chip" data-cat="deleted"><span class="cat-dot" style="background:#ef4444"></span><span data-i18n="catDeleted">Deleted</span> <b class="chip-count" id="count-deleted">0</b></span>
+                                    <span class="cat-chip" data-cat="modified"><span class="cat-dot" style="background:#f97316"></span><span data-i18n="catModified">Modified</span> <b class="chip-count" id="count-modified">0</b></span>
+                                    <span class="cat-chip" data-cat="unchanged"><span class="cat-dot" style="background:#6b7280"></span><span data-i18n="catUnchanged">Unchanged</span> <b class="chip-count" id="count-unchanged">0</b></span>
+                                </div>
+                            </div>
+                            <div class="p-3 border-b border-slate-200">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-[11px] font-bold text-slate-600" data-i18n="toleranceLabel">Match tolerance</label>
+                                    <span id="tol-value" class="text-[11px] font-mono text-indigo-600">1e-4</span>
+                                </div>
+                                <input id="tol-slider" type="range" min="-6" max="0" step="1" value="-4" class="w-full accent-indigo-600">
+                                <p class="text-[10px] text-slate-400 mt-1" data-i18n="toleranceHint">Coordinates are rounded to this step (drawing units) before matching. Re-runs the comparison.</p>
+                            </div>
+                            <div class="p-3 flex-1 min-h-0 flex flex-col">
+                                <h4 class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500 mb-1.5" data-i18n="changesTitle">Changes</h4>
+                                <div id="result-list" class="flex-1 overflow-y-auto scroller text-[11px]"></div>
+                            </div>
+                        </div>
+
+                        <div id="rp-content-layers" class="flex-1 min-h-0 flex-col hidden">
+                            <div class="p-3 border-b border-slate-200">
+                                <input id="layer-filter" type="text" data-i18n-placeholder="layerFilterPh" placeholder="Filter…"
+                                    class="w-full text-[11px] px-2 py-1 border border-slate-200 rounded-md">
+                            </div>
+                            <div id="layer-list" class="flex-1 overflow-y-auto scroller text-[11px] p-2"></div>
+                        </div>
+                    </aside>
+
+                    <!-- Settings popup (editor pattern) -->
+                    <div id="settings-popup" class="settings-popup closed">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+                            <span class="text-xs font-extrabold uppercase tracking-wide text-slate-600" data-i18n="settingsTitle">Settings</span>
+                            <button id="settings-close" class="prop-popup-close" title="Close" data-i18n-title="closeBtn">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div id="settings-content" class="settings-content"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- loader (viewer-style processing overlay) -->
+            <div id="loader" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
+                <div class="loader mb-4"></div>
+                <h3 class="text-lg font-semibold text-slate-800" data-i18n="processingFiles">Processing files...</h3>
+                <p id="loader-msg" class="text-sm text-slate-500 mt-2" data-i18n="loaderParsing">Parsing…</p>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // ==========================================
+        // liteAECO - PAGE LOGIC
+        // ==========================================
+
+        window.pageScriptPrefix = 'dxf_compare';
+        window.BASE_PAGE = JSON.parse(JSON.stringify(window.PAGE_I18N || {}));
+
+        // --- DYNAMIC TRANSLATION HOOK ---
+        // common.js will call this automatically when the language changes
+        window.updateToolDynamicUI = function (d) {
+            if (typeof window.refreshCompareTranslations === 'function') window.refreshCompareTranslations(d);
+        };
+
+        // --- CONSOLIDATED BOOT SEQUENCE ---
+        function bootApp() {
+            // 1. Detect language FIRST
+            autoDetectLanguage();
+
+            // 2. Generate the Navigation Bar & Footer
+            window.injectUI({
+                showNav: true,
+                transparentNav: false,
+                showSignIn: false,
+                showCategories: true,
+                showNews: false,
+                showHelp: true,
+                showFooter: true,
+                showFooterLinks: false,
+            });
+
+            // Inject Cookie Banner
+            window.injectCookieBanner();
+
+            // ---> PLACE FOOTER IN LOAD DRAWINGS AREA <---
+            const injectedFooter = document.querySelector('footer') || document.getElementById('app-footer');
+            const uploadView = document.getElementById('view-upload');
+            if (injectedFooter && uploadView) {
+                injectedFooter.id = 'app-footer';
+                injectedFooter.classList.remove('sticky', 'bottom-0', 'fixed', 'absolute', 'z-[60]');
+                injectedFooter.classList.add('w-full', 'shrink-0', 'relative', 'mt-auto');
+                uploadView.appendChild(injectedFooter);
+            }
+
+            // 3. Load language files (lang/<lang>/dxf_compare.js supplies PAGE_I18N)
+            window.loadLanguage(currentLang, window.pageScriptPrefix);
+            if (window.lucide) lucide.createIcons();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootApp);
+        else bootApp();
+
+        // ==========================================
+        // END PAGE LOGIC
+        // ==========================================
+    </script>
+
+    <!-- ============ APP ============ -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==================================================================
+        //  Diff palette
+        // ==================================================================
+        const COLORS = {
+            added: 0x22c55e,
+            deleted: 0xef4444,
+            modified: 0xf97316,
+            unchanged: 0x6b7280,
+        };
+        const UNCHANGED_OPACITY = 0.35;
+
+        // ---- persisted settings (editor-style) ----
+        const SETTINGS_KEY = 'liteaeco_dxf_compare_settings';
+        const settings = Object.assign({
+            darkMode: true,
+            measurePrecision: 2,
+            unitLabel: '',
+            showText: true,
+            showFills: true,
+            showPortals: true,
+        }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; } })());
+        function saveSettings() {
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* private mode */ }
+        }
+        function isEffectiveDarkMode() {
+            // Paper space is always light, like the editor.
+            return settings.darkMode && currentSpace === 'model';
+        }
+
+        // ==================================================================
+        //  Drawing contexts (A = old, B = new)
+        //  Every parser/render helper below takes a ctx instead of touching
+        //  page-level globals, so both drawings live side by side.
+        // ==================================================================
+        function makeCtx(sideKey) {
+            return {
+                key: sideKey,          // 'A' | 'B'
+                dxf: null,
+                rawHatches: [],
+                fileName: '',
+                hatchLoopCache: new WeakMap(),
+                dimTextHeightCache: null,
+                modelEntities: [],     // parsed entities + raw hatches, model space
+                paperActive: [],       // ENTITIES-section paper entities (active layout)
+                layouts: [],           // [{ name, blockName, tabOrder, paperWidth, paperHeight }]
+                viewports: [],         // raw VIEWPORT scan (DxfLayout.viewports)
+                entityTags: {},        // raw ENTITIES scan: handle -> { owner, name410 }
+                __layoutRecordSet: null, // lazy Set of layout block-record handles
+            };
+        }
+        // Raw ENTITIES scan: dxf-parser drops group 410 (layout tab name),
+        // but our own emitter (dxf_emit.js) and several CAD writers tag
+        // paper entities with 67=1 + 410=<layout> and no 330 owner. Map
+        // entity handle -> { owner: first 330 outside 102-groups, name410 }.
+        function scanEntityLayoutTags(text) {
+            const map = {};
+            const lines = text.split(/\r\n|\r|\n/);
+            let inEntities = false, pendingSection = false, cur = null, in102 = false;
+            const flush = () => {
+                if (cur && cur.handle) map[cur.handle] = { owner: cur.owner, name410: cur.name410 };
+                cur = null;
+            };
+            for (let i = 0; i + 1 < lines.length; i += 2) {
+                const code = parseInt(lines[i], 10);
+                if (Number.isNaN(code)) break; // malformed pair stream: keep what we have
+                const value = (lines[i + 1] || '').trim();
+                if (code === 0) {
+                    flush();
+                    in102 = false;
+                    if (value === 'SECTION') { pendingSection = true; inEntities = false; continue; }
+                    if (value === 'ENDSEC' || value === 'EOF') { inEntities = false; continue; }
+                    if (inEntities) cur = { handle: '', owner: '', name410: '' };
+                    continue;
+                }
+                if (pendingSection) {
+                    if (code === 2) { inEntities = (value === 'ENTITIES'); pendingSection = false; }
+                    continue;
+                }
+                if (!cur) continue;
+                if (code === 102) {
+                    if (value.charAt(0) === '{') in102 = true;
+                    else if (value === '}') in102 = false;
+                    continue;
+                }
+                if (in102) continue; // 330s inside reactor groups are not the owner
+                if (code === 5 && !cur.handle) cur.handle = value.toUpperCase();
+                else if (code === 330 && !cur.owner) cur.owner = value.toUpperCase();
+                else if (code === 410 && !cur.name410) cur.name410 = value;
+            }
+            flush();
+            return map;
+        }
+        // Discriminators of one paper entity: raw-hatch __layoutName (410)
+        // or the raw ENTITIES tag looked up by handle. Note dxf-parser
+        // invents small numeric handles for entities without a 5 code -
+        // those never enter the map, so lookups just miss (untagged).
+        function entityLayoutTag(ctx, e) {
+            if (typeof e.__layoutName === 'string' && e.__layoutName) {
+                return { owner: '', name410: e.__layoutName };
+            }
+            const h = e.handle != null ? String(e.handle).toUpperCase() : '';
+            return (h && ctx.entityTags[h]) || { owner: '', name410: '' };
+        }
+        // Does an owner handle point at any layout's block record?
+        function ownerMatchesAnyLayout(ctx, oh) {
+            if (!ctx.__layoutRecordSet) {
+                ctx.__layoutRecordSet = new Set((ctx.layouts || [])
+                    .map(l => (l.blockRecordHandle || '').toUpperCase()).filter(Boolean));
+            }
+            return ctx.__layoutRecordSet.has(oh);
+        }
+        // Robust active-layout pick: a lone layout is active; otherwise the
+        // one owning the bare *Paper_Space block; otherwise lowest tab order.
+        function activeLayout(ctx) {
+            const lays = ctx.layouts || [];
+            if (lays.length === 1) return lays[0];
+            const bare = lays.find(l => l.blockName && /^\*?PAPER_SPACE$/i.test(l.blockName));
+            if (bare) return bare;
+            let best = null;
+            for (const l of lays) if (!best || l.tabOrder < best.tabOrder) best = l;
+            return best;
+        }
+        // ENTITIES-section paper entities partitioned per entity:
+        //   1. owner handle (330) matching the layout's block record, or
+        //   2. layout tab name (410) matching the layout's name.
+        // Entities discriminated for some OTHER layout are excluded here;
+        // entities with no usable discriminator go to the active layout.
+        function paperEntitiesForLayout(ctx, lay, isActive) {
+            const wanted = (lay.blockRecordHandle || '').toUpperCase();
+            const name = (lay.name || '').toLowerCase();
+            const out = [];
+            for (const e of ctx.paperActive) {
+                const tag = entityLayoutTag(ctx, e);
+                const oh = tag.owner || (typeof e.ownerHandle === 'string' ? e.ownerHandle.toUpperCase() : '');
+                const ln = tag.name410.toLowerCase();
+                if (wanted && oh === wanted) { out.push(e); continue; }
+                if (ln && ln === name) { out.push(e); continue; }
+                if (ln) continue; // tagged for another (possibly deleted) layout
+                if (oh && ownerMatchesAnyLayout(ctx, oh)) continue; // owned elsewhere
+                if (isActive) out.push(e); // untagged: legacy rule, active layout
+            }
+            return out;
+        }
+
+        // Entities of one space. key: 'model' or a layout name (lower-case).
+        function getSpaceEntities(ctx, key) {
+            if (key === 'model') return ctx.modelEntities;
+            const lay = ctx.layouts.find(l => l.name.toLowerCase() === key);
+            if (!lay) return null; // layout missing on this side
+            const block = lay.blockName ? getBlockByName(ctx, lay.blockName) : null;
+            const fromBlock = (block && Array.isArray(block.entities)) ? block.entities : [];
+            // The active layout's entities live in the ENTITIES section (67=1),
+            // its *Paper_Space block is typically empty. Writers that dump ALL
+            // layouts into ENTITIES are handled by the 330/410 partition; only
+            // UNTAGGED entities fall back to the active layout.
+            const isActive = activeLayout(ctx) === lay;
+            const fromEntities = paperEntitiesForLayout(ctx, lay, isActive && fromBlock.length === 0);
+            const base = [...fromBlock, ...fromEntities];
+            // dxf-parser drops VIEWPORT: add scanner viewports as entity-shaped
+            // objects (frame rectangles + diffable) unless already parsed.
+            if (!base.some(e => e?.type === 'VIEWPORT')) {
+                for (const vp of getSpaceViewports(ctx, lay.name.toLowerCase())) {
+                    base.push(vp.__entity || (vp.__entity = {
+                        type: 'VIEWPORT', handle: vp.handle || '', layer: vp.layer || '0',
+                        center: { x: vp.cx, y: vp.cy }, width: vp.width, height: vp.height,
+                        viewCenter: { x: vp.viewCenterX, y: vp.viewCenterY },
+                        viewHeight: vp.viewHeight, twist: vp.twistDeg,
+                    }));
+                }
+            }
+            return base;
+        }
+        const ctxA = makeCtx('A');
+        const ctxB = makeCtx('B');
+
+        // ==================================================================
+        //  Parse pipeline (from DXF_Viewer: dxf-parser + raw recovery)
+        // ==================================================================
+        function isPaperEntity(e) { return !!(e && (e.inPaperSpace === true || e.__paperSpace === true)); }
+
+        function loadDxfTextIntoCtx(ctx, rawText, fileName) {
+            // Silent sanitize: read-only tool, so structural fixes are free wins.
+            let text = rawText;
+            try {
+                if (window.DxfSanitize?.sanitizeDxf) text = window.DxfSanitize.sanitizeDxf(rawText).text;
+            } catch (e) { /* sanitize is best-effort */ }
+
+            const parser = new window.DxfParser();
+            const dxf = parser.parseSync(text);
+            ctx.dxf = dxf;
+            ctx.fileName = fileName;
+            ctx.hatchLoopCache = new WeakMap();
+            ctx.dimTextHeightCache = null;
+
+            // dxf-parser drops HATCH / LEADER / WIPEOUT / ACAD_TABLE — recover from raw text.
+            ctx.rawHatches = window.DxfHatch?.parseRawDxfHatches ? window.DxfHatch.parseRawDxfHatches(text) : [];
+            if (!Array.isArray(dxf.entities)) dxf.entities = [];
+            if (window.DxfDim?.parseRawDxfLeaders) {
+                for (const led of window.DxfDim.parseRawDxfLeaders(text)) dxf.entities.push(led);
+            }
+            if (window.DxfHatch?.parseRawDxfWipeouts) {
+                for (const w of window.DxfHatch.parseRawDxfWipeouts(text)) dxf.entities.push(w);
+            }
+            if (window.DxfHatch?.parseRawDxfAcadTables) {
+                for (const t of window.DxfHatch.parseRawDxfAcadTables(text)) {
+                    if (!t.__unsupported) dxf.entities.push(t);
+                }
+            }
+            ctx.modelEntities = [
+                ...dxf.entities.filter(e => !isPaperEntity(e)),
+                ...ctx.rawHatches.filter(h => !isPaperEntity(h)),
+            ];
+            ctx.paperActive = [
+                ...dxf.entities.filter(e => isPaperEntity(e)),
+                ...ctx.rawHatches.filter(h => isPaperEntity(h)),
+            ];
+            ctx.layouts = window.DxfLayout?.scan ? window.DxfLayout.scan(text) : [];
+            ctx.viewports = window.DxfLayout?.viewports ? window.DxfLayout.viewports(text) : [];
+            ctx.entityTags = scanEntityLayoutTags(text);
+            ctx.__layoutRecordSet = null;
+        }
+
+        // ==================================================================
+        //  DWG import (LibreDWG wasm) — lifted from DXF_Viewer, incl. the
+        //  locateFile: (f) => f fix, which is REQUIRED alongside wasmBinary.
+        // ==================================================================
+        let libreDwgInstance = null;
+        let libreDwgLoading = null;
+
+        function ensureLibreDwg() {
+            if (libreDwgInstance) return Promise.resolve(libreDwgInstance);
+            if (libreDwgLoading) return libreDwgLoading;
+            const base = new URL('../js/libredwg/', document.baseURI).href;
+            const fetchOk = async (name) => {
+                const url = base + name;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`GET ${url} -> HTTP ${resp.status}`);
+                return resp;
+            };
+            libreDwgLoading = (async () => {
+                const [glueSrc, distSrc, wasmResp] = await Promise.all([
+                    fetchOk('libredwg-web.glue.js').then(r => r.text()),
+                    fetchOk('libredwg-web.js').then(r => r.text()),
+                    fetchOk('libredwg-web.wasm'),
+                ]);
+                const wasmBytes = new Uint8Array(await wasmResp.arrayBuffer());
+                if (!(wasmBytes[0] === 0 && wasmBytes[1] === 0x61 && wasmBytes[2] === 0x73 && wasmBytes[3] === 0x6d)) {
+                    throw new Error('libredwg-web.wasm is not a WebAssembly file — the server returned other content (SPA rewrite?)');
+                }
+                const glueUrl = URL.createObjectURL(new Blob([glueSrc], { type: 'text/javascript' }));
+                const spec = '"../wasm/libredwg-web.js"';
+                const rewritten = distSrc.split(spec).join(JSON.stringify(glueUrl));
+                if (rewritten === distSrc) throw new Error('libredwg-web.js has an unexpected build layout (glue import not found)');
+                const distUrl = URL.createObjectURL(new Blob([rewritten], { type: 'text/javascript' }));
+                try {
+                    const mod = await import(distUrl);
+                    // locateFile keeps the wasm name a plain string so the glue
+                    // returns wasmBinary directly instead of resolving a blob: URL.
+                    const wasmInstance = await mod.createModule({ wasmBinary: wasmBytes, locateFile: (f) => f });
+                    libreDwgInstance = mod.LibreDwg.createByWasmInstance(wasmInstance);
+                    libreDwgLoading = null;
+                    return libreDwgInstance;
+                } finally {
+                    URL.revokeObjectURL(distUrl);
+                    URL.revokeObjectURL(glueUrl);
+                }
+            })().catch(err => { libreDwgLoading = null; throw err; });
+            return libreDwgLoading;
+        }
+
+        async function fileToDxfText(file) {
+            const name = String(file.name || 'drawing');
+            if (/\.dwg$/i.test(name)) {
+                setStatus(tr('dwgLoading', 'Reading DWG — first time loads the converter (~10 MB)…'));
+                const bytes = await file.arrayBuffer();
+                const lib = await ensureLibreDwg();
+                const dxfBytes = lib.dwg_write_dxf(bytes);
+                if (!dxfBytes || !dxfBytes.length) throw new Error(tr('dwgConvertFailed', 'Could not convert this DWG file. It may use an unsupported version or be damaged.'));
+                return { text: new TextDecoder().decode(dxfBytes), name: name.replace(/\.dwg$/i, '.dxf') };
+            }
+            return { text: await file.text(), name };
+        }
+
+        // ==================================================================
+        //  Geometry helpers (lifted from DXF_Viewer, ctx-parameterized)
+        // ==================================================================
+        function makeMatrix(a = 1, b = 0, c = 0, d = 1, e = 0, f = 0) { return { a, b, c, d, e, f }; }
+        function multiplyMatrix(m1, m2) {
+            return makeMatrix(
+                m1.a * m2.a + m1.c * m2.b, m1.b * m2.a + m1.d * m2.b,
+                m1.a * m2.c + m1.c * m2.d, m1.b * m2.c + m1.d * m2.d,
+                m1.a * m2.e + m1.c * m2.f + m1.e, m1.b * m2.e + m1.d * m2.f + m1.f,
+            );
+        }
+        function translationMatrix(x = 0, y = 0) { return makeMatrix(1, 0, 0, 1, x, y); }
+        function scaleMatrix(x = 1, y = 1) { return makeMatrix(x, 0, 0, y, 0, 0); }
+        function rotationMatrix(deg = 0) {
+            const rad = Number(deg || 0) * Math.PI / 180;
+            const cos = Math.cos(rad), sin = Math.sin(rad);
+            return makeMatrix(cos, sin, -sin, cos, 0, 0);
+        }
+        function getPointCandidate(...points) {
+            for (const pt of points) {
+                if (!pt) continue;
+                const x = Number(pt.x), y = Number(pt.y);
+                if (Number.isFinite(x) && Number.isFinite(y)) return { x, y, z: Number(pt.z || 0) };
+            }
+            return null;
+        }
+        function transformPoint2D(pt, matrix = makeMatrix()) {
+            const s = getPointCandidate(pt);
+            if (!s) return null;
+            return { x: matrix.a * s.x + matrix.c * s.y + matrix.e, y: matrix.b * s.x + matrix.d * s.y + matrix.f, z: s.z || 0 };
+        }
+        function transformVector2D(vec, matrix = makeMatrix()) {
+            const s = getPointCandidate(vec);
+            if (!s) return null;
+            return { x: matrix.a * s.x + matrix.c * s.y, y: matrix.b * s.x + matrix.d * s.y, z: s.z || 0 };
+        }
+        function getMatrixRotation(m = makeMatrix()) { return Math.atan2(m.b, m.a) * 180 / Math.PI; }
+        function getMatrixScale(m = makeMatrix()) {
+            const sx = Math.hypot(m.a, m.b) || 1, sy = Math.hypot(m.c, m.d) || 1;
+            return (sx + sy) / 2;
+        }
+        function getEntityRotationDegrees(entity) {
+            const raw = entity?.rotation ?? entity?.rotationAngle ?? entity?.angle ?? 0;
+            const n = Number(raw);
+            return Number.isFinite(n) ? n : 0;
+        }
+        function degToRad(deg) { return Number(deg || 0) * Math.PI / 180; }
+        function angleToRadians(value, fallback = 0) {
+            const n = Number(value);
+            if (!Number.isFinite(n)) return fallback;
+            return Math.abs(n) > Math.PI * 2 + 0.0001 ? n * Math.PI / 180 : n;
+        }
+        function normalizeArcEnd(start, end) { while (end < start) end += Math.PI * 2; return end; }
+
+        function getTextInsertionPoint(entity) {
+            return getPointCandidate(
+                entity?.startPoint, entity?.position, entity?.insertPoint, entity?.insertionPoint,
+                entity?.location, entity?.alignmentPoint, entity?.endPoint, entity?.vertices?.[0],
+                entity?.x !== undefined && entity?.y !== undefined ? { x: entity.x, y: entity.y, z: entity.z || 0 } : null,
+            );
+        }
+        function cleanDxfText(rawText) {
+            let text = String(rawText ?? '');
+            if (!text) return '';
+            return text
+                .replace(/%%d/gi, '°').replace(/%%p/gi, '±').replace(/%%c/gi, 'Ø')
+                .replace(/\\P/gi, '\n').replace(/\\~/g, ' ')
+                .replace(/\\[LOKlo]/g, '')
+                .replace(/\\A\d+;/gi, '').replace(/\\C\d+;/gi, '')
+                .replace(/\\H[^;]+;/gi, '').replace(/\\W[^;]+;/gi, '')
+                .replace(/\\Q[^;]+;/gi, '').replace(/\\f[^;]+;/gi, '').replace(/\\F[^;]+;/gi, '')
+                .replace(/\\S([^;^\\]+)[\^#/]([^;]+);/g, '$1/$2')
+                .replace(/[{}]/g, '').trim();
+        }
+        function getEntityText(entity) {
+            const v = entity?.text ?? entity?.string ?? entity?.value ?? entity?.content ?? entity?.contents ?? entity?.rawText ?? entity?.plainText ?? '';
+            return cleanDxfText(v);
+        }
+
+        function getBlockByName(ctx, name) {
+            if (!name || !ctx.dxf?.blocks) return null;
+            const blocks = ctx.dxf.blocks;
+            return blocks[name] || Object.values(blocks).find(b => b?.name === name || b?.xrefPath === name) || null;
+        }
+
+        // ---- curve tessellation (fixed quality — no interactive smoothness UI) ----
+        const TESS = { maxAngleRad: Math.PI / 72, minSegments: 32, maxSegments: 512, radiusFactor: 8 };
+        function getCurveSegmentCount(radius = 1, sweep = Math.PI * 2) {
+            const absSweep = Math.max(Math.abs(Number(sweep) || 0), 0);
+            if (absSweep <= 1e-9) return 0;
+            const sweepRatio = Math.min(1, Math.max(absSweep / (Math.PI * 2), 0.001));
+            const safeRadius = Math.max(Math.abs(Number(radius) || 1), 1);
+            const byAngle = Math.ceil(absSweep / TESS.maxAngleRad);
+            const byRadius = Math.ceil(Math.sqrt(safeRadius) * TESS.radiusFactor * sweepRatio);
+            const minForSweep = Math.max(4, Math.ceil(TESS.minSegments * sweepRatio));
+            return Math.max(minForSweep, Math.min(TESS.maxSegments, Math.max(byAngle, byRadius)));
+        }
+        function addPointIfDistinct(points, pt) {
+            if (!pt || !Number.isFinite(Number(pt.x)) || !Number.isFinite(Number(pt.y))) return;
+            const next = { x: Number(pt.x), y: Number(pt.y), z: Number(pt.z || 0) };
+            const last = points[points.length - 1];
+            if (!last || Math.hypot(last.x - next.x, last.y - next.y) > 1e-9) points.push(next);
+        }
+        function getCircleCenter(entity) {
+            return entity.__center || getPointCandidate(entity.center, entity.centerPoint, entity.position, entity.startPoint);
+        }
+        function getCircleRadius(entity) {
+            const raw = entity.__radius ?? entity.radius ?? entity.r ?? (Number(entity.diameter) / 2);
+            const radius = Math.abs(Number(raw));
+            return Number.isFinite(radius) ? radius : 0;
+        }
+        function getArcPoints(center, radius, startRad, endRad, closed = false) {
+            const points = [];
+            if (!center || !(radius > 0)) return points;
+            let sweep = closed ? Math.PI * 2 : normalizeArcEnd(startRad, endRad) - startRad;
+            if (!closed && sweep <= 0) sweep += Math.PI * 2;
+            const n = getCurveSegmentCount(radius, sweep);
+            for (let i = 0; i <= n; i++) {
+                const t = startRad + sweep * (i / n);
+                addPointIfDistinct(points, { x: center.x + Math.cos(t) * radius, y: center.y + Math.sin(t) * radius, z: center.z || 0 });
+            }
+            return points;
+        }
+        function getBulgeArcPoints(start, end, bulge) {
+            const p1 = getPointCandidate(start), p2 = getPointCandidate(end);
+            const b = Number(bulge || 0);
+            if (!p1 || !p2 || !Number.isFinite(b) || Math.abs(b) < 1e-9) return [p1, p2].filter(Boolean);
+            const dx = p2.x - p1.x, dy = p2.y - p1.y;
+            const chord = Math.hypot(dx, dy);
+            if (!(chord > 0)) return [p1];
+            const theta = 4 * Math.atan(b);
+            const radius = Math.abs(chord / (2 * Math.sin(theta / 2)));
+            const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+            const ux = dx / chord, uy = dy / chord;
+            const h = radius * Math.cos(Math.abs(theta) / 2) * (b >= 0 ? 1 : -1);
+            const center = { x: mid.x - uy * h, y: mid.y + ux * h, z: p1.z || 0 };
+            const startAng = Math.atan2(p1.y - center.y, p1.x - center.x);
+            const n = getCurveSegmentCount(radius, Math.abs(theta));
+            const points = [];
+            for (let i = 0; i <= n; i++) {
+                const t = startAng + theta * (i / n);
+                addPointIfDistinct(points, { x: center.x + Math.cos(t) * radius, y: center.y + Math.sin(t) * radius, z: p1.z || 0 });
+            }
+            addPointIfDistinct(points, p2);
+            return points;
+        }
+        function getEllipsePoints(entity) {
+            const center = entity.__center || getPointCandidate(entity.center, entity.centerPoint, entity.position);
+            const major = entity.__majorAxisEndPoint || getPointCandidate(entity.majorAxisEndPoint, entity.majorAxis, entity.axis, entity.endPoint);
+            if (!center || !major) return [];
+            const majorLen = Math.hypot(Number(major.x), Number(major.y));
+            if (!(majorLen > 0)) return [];
+            const ratio = Math.abs(Number(entity.__axisRatio ?? entity.axisRatio ?? entity.ratio ?? entity.minorToMajorRatio ?? 1)) || 1;
+            const minorLen = majorLen * ratio;
+            const ux = major.x / majorLen, uy = major.y / majorLen;
+            const vx = -uy, vy = ux;
+            const start = angleToRadians(entity.startAngle ?? entity.startangle ?? entity.parameterStart ?? 0, 0);
+            let end = angleToRadians(entity.endAngle ?? entity.endangle ?? entity.parameterEnd ?? Math.PI * 2, Math.PI * 2);
+            const full = Math.abs(end - start) < 1e-9 || Math.abs(Math.abs(end - start) - Math.PI * 2) < 1e-6;
+            if (!full) end = normalizeArcEnd(start, end);
+            const sweep = full ? Math.PI * 2 : end - start;
+            const n = getCurveSegmentCount(majorLen, sweep);
+            const points = [];
+            for (let i = 0; i <= n; i++) {
+                const t = start + sweep * (i / n);
+                addPointIfDistinct(points, {
+                    x: center.x + ux * Math.cos(t) * majorLen + vx * Math.sin(t) * minorLen,
+                    y: center.y + uy * Math.cos(t) * majorLen + vy * Math.sin(t) * minorLen,
+                    z: center.z || 0,
+                });
+            }
+            return points;
+        }
+        function getInterpolatedSplinePoints(points) {
+            if (!points || points.length < 3) return points || [];
+            const samplesPerSpan = 16;
+            const result = [];
+            const getPt = i => points[Math.max(0, Math.min(points.length - 1, i))];
+            for (let i = 0; i < points.length - 1; i++) {
+                const p0 = getPt(i - 1), p1 = getPt(i), p2 = getPt(i + 1), p3 = getPt(i + 2);
+                for (let j = 0; j < samplesPerSpan; j++) {
+                    const t = j / samplesPerSpan, t2 = t * t, t3 = t2 * t;
+                    addPointIfDistinct(result, {
+                        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+                        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+                        z: 0,
+                    });
+                }
+            }
+            addPointIfDistinct(result, points[points.length - 1]);
+            return result;
+        }
+
+        function entityToPolylinePoints(entity) {
+            if (!entity) return [];
+            const type = entity.type;
+            if (type === 'LINE') return (entity.vertices || []).slice(0, 2).map(getPointCandidate).filter(Boolean);
+            if (type === 'POLYLINE' || type === 'LWPOLYLINE') {
+                const vertices = (entity.vertices || []).map(getPointCandidate).filter(Boolean);
+                if (vertices.length < 2) return vertices;
+                const src = entity.vertices || [];
+                const points = [];
+                addPointIfDistinct(points, vertices[0]);
+                for (let i = 0; i < vertices.length - 1; i++) {
+                    const arcPts = getBulgeArcPoints(vertices[i], vertices[i + 1], Number(src[i]?.bulge || 0));
+                    arcPts.slice(1).forEach(pt => addPointIfDistinct(points, pt));
+                }
+                if (entity.shape && vertices.length > 2) {
+                    const arcPts = getBulgeArcPoints(vertices[vertices.length - 1], vertices[0], Number(src[vertices.length - 1]?.bulge || 0));
+                    arcPts.slice(1).forEach(pt => addPointIfDistinct(points, pt));
+                }
+                return points;
+            }
+            if (type === 'CIRCLE') return getArcPoints(getCircleCenter(entity), getCircleRadius(entity), 0, Math.PI * 2, true);
+            if (type === 'ARC') {
+                const offset = degToRad(entity.__angleOffsetDeg || 0);
+                const start = angleToRadians(entity.startAngle ?? entity.startangle ?? 0) + offset;
+                const end = angleToRadians(entity.endAngle ?? entity.endangle ?? 0) + offset;
+                return getArcPoints(getCircleCenter(entity), getCircleRadius(entity), start, end, false);
+            }
+            if (type === 'ELLIPSE') return getEllipsePoints(entity);
+            if (type === 'SPLINE') {
+                const pts = (entity.__splinePoints || entity.fitPoints || entity.controlPoints || []).map(getPointCandidate).filter(Boolean);
+                return getInterpolatedSplinePoints(pts);
+            }
+            if (type === 'VIEWPORT') {
+                const c = getPointCandidate(entity.center, entity.position);
+                const w = Math.abs(Number(entity.width)) || 0, h = Math.abs(Number(entity.height)) || 0;
+                if (!c || !(w > 0) || !(h > 0)) return [];
+                return [
+                    { x: c.x - w / 2, y: c.y - h / 2 }, { x: c.x + w / 2, y: c.y - h / 2 },
+                    { x: c.x + w / 2, y: c.y + h / 2 }, { x: c.x - w / 2, y: c.y + h / 2 },
+                    { x: c.x - w / 2, y: c.y - h / 2 },
+                ];
+            }
+            if (type === 'POINT') {
+                const p = getPointCandidate(entity.position);
+                if (!p) return [];
+                const s = 0.5;
+                return [{ x: p.x - s, y: p.y }, { x: p.x + s, y: p.y }, { x: p.x, y: p.y }, { x: p.x, y: p.y - s }, { x: p.x, y: p.y + s }];
+            }
+            return [];
+        }
+
+        function getHatchLoops(ctx, hatchIn) {
+            if (!window.DxfHatch) return [];
+            const hatch = hatchIn.__sourceEntity || hatchIn;
+            let loops = ctx.hatchLoopCache.get(hatch);
+            if (!loops) {
+                loops = window.DxfHatch.buildHatchLoops(hatch, {
+                    bulgePoints: (a, b, bulge) => getBulgeArcPoints(a, b, bulge),
+                    curveSegments: (radius, sweep) => getCurveSegmentCount(radius, sweep),
+                });
+                ctx.hatchLoopCache.set(hatch, loops);
+            }
+            return loops;
+        }
+        function hatchShapes(loops) {
+            const out = [];
+            for (const outer of window.DxfHatch.classifyLoops(loops)) {
+                const shape = new THREE.Shape(outer.ring.map(p => new THREE.Vector2(p.x, p.y)));
+                for (const hole of outer.holes) shape.holes.push(new THREE.Path(hole.map(p => new THREE.Vector2(p.x, p.y))));
+                out.push(shape);
+            }
+            return out;
+        }
+
+        function getDimTextHeight(ctx) {
+            if (ctx.dimTextHeightCache !== null) return ctx.dimTextHeightCache;
+            const hdr = ctx.dxf?.header || {};
+            const t = Number(hdr.$DIMTXT), s = Number(hdr.$DIMSCALE);
+            if (t > 0) { ctx.dimTextHeightCache = t * (s > 0 ? s : 1); return ctx.dimTextHeightCache; }
+            ctx.dimTextHeightCache = 2.5;
+            return 2.5;
+        }
+
+        // entityToSegments: flat line segments for bounds and zoom targets.
+        function entityToSegments(ctx, entity) {
+            if (entity?.type === 'ACAD_TABLE') {
+                return window.DxfHatch?.acadTableGeometry ? window.DxfHatch.acadTableGeometry(entity).segments : [];
+            }
+            if (entity?.type === 'INSERT') {
+                const segs = [];
+                const block = getBlockByName(ctx, entity.name || entity.block || entity.blockName);
+                if (block?.entities?.length) {
+                    const matrix = getInsertMatrix(ctx, entity, makeMatrix());
+                    const walk = (ents, mtx, depth) => {
+                        if (!Array.isArray(ents) || depth > 12) return;
+                        for (const child of ents) {
+                            if (!child) continue;
+                            if (child.type === 'INSERT') {
+                                const b2 = getBlockByName(ctx, child.name || child.block || child.blockName);
+                                if (b2?.entities?.length) walk(b2.entities, getInsertMatrix(ctx, child, mtx), depth + 1);
+                                continue;
+                            }
+                            const baked = transformRenderableEntity(child, mtx, entity.layer);
+                            if (baked) for (const s of entityToSegments(ctx, baked)) segs.push(s);
+                        }
+                    };
+                    walk(block.entities, matrix, 0);
+                }
+                return segs;
+            }
+            if (entity?.type === 'HATCH') {
+                const segs = [];
+                for (const ring of getHatchLoops(ctx, entity)) {
+                    for (let i = 0; i < ring.length - 1; i++) {
+                        segs.push({ x1: ring[i].x, y1: ring[i].y, x2: ring[i + 1].x, y2: ring[i + 1].y });
+                    }
+                }
+                return segs;
+            }
+            if (entity?.type === 'DIMENSION') {
+                // Tier 1: the dimension's anonymous block already holds world-space graphics.
+                const block = getBlockByName(ctx, entity.block);
+                if (block?.entities?.length) {
+                    const segs = [];
+                    for (const child of block.entities) {
+                        if (!child || child.type === 'INSERT' || child.type === 'DIMENSION') continue;
+                        for (const s of entityToSegments(ctx, child)) segs.push(s);
+                    }
+                    if (segs.length) return segs;
+                }
+                const D = window.DxfDim;
+                const synth = D ? D.synthesizeFromEntity(entity, getDimTextHeight(ctx), 2) : null;
+                if (!synth) return [];
+                const segs = [...synth.segments];
+                for (const pl of synth.polylines || []) {
+                    const vs = pl.vertices;
+                    for (let i = 0; i < vs.length; i++) {
+                        const a = vs[i], b = vs[(i + 1) % vs.length];
+                        if (i === vs.length - 1 && !pl.closed) break;
+                        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+                    }
+                }
+                return segs;
+            }
+            if (entity?.type === 'WIPEOUT') {
+                const vs = entity.vertices || [];
+                const segs = [];
+                for (let i = 0; i < vs.length; i++) {
+                    const a = vs[i], b = vs[(i + 1) % vs.length];
+                    segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+                }
+                return segs;
+            }
+            if (entity?.type === 'LEADER') {
+                const D = window.DxfDim;
+                const g = D ? D.leaderGeometry(entity.vertices, entity.textHeight || getDimTextHeight(ctx)) : null;
+                if (!g) return [];
+                const segs = [...g.segments];
+                for (const pl of g.polylines) {
+                    const vs = pl.vertices;
+                    for (let i = 0; i < vs.length; i++) {
+                        const a = vs[i], b = vs[(i + 1) % vs.length];
+                        if (i === vs.length - 1 && !pl.closed) break;
+                        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+                    }
+                }
+                return segs;
+            }
+            if (entity?.type === 'TEXT' || entity?.type === 'MTEXT' || entity?.type === 'ATTRIB' || entity?.type === 'ATTDEF') {
+                // Approximate glyph box → good enough for bounds and zoom.
+                const p = entity.__textPoint || getTextInsertionPoint(entity);
+                if (!p) return [];
+                const h = Math.abs(Number(entity.__textHeight ?? entity.textHeight ?? entity.height ?? 1)) || 1;
+                const w = h * Math.max(String(getEntityText(entity)).length * 0.6, 1);
+                return [
+                    { x1: p.x, y1: p.y, x2: p.x + w, y2: p.y },
+                    { x1: p.x + w, y1: p.y, x2: p.x + w, y2: p.y + h },
+                    { x1: p.x + w, y1: p.y + h, x2: p.x, y2: p.y + h },
+                    { x1: p.x, y1: p.y + h, x2: p.x, y2: p.y },
+                ];
+            }
+            const points = entityToPolylinePoints(entity);
+            const segments = [];
+            for (let i = 0; i < points.length - 1; i++) {
+                const a = points[i], b = points[i + 1];
+                if (!a || !b) continue;
+                if (Math.hypot(b.x - a.x, b.y - a.y) <= 1e-9) continue;
+                segments.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+            }
+            return segments;
+        }
+
+        function getInsertMatrix(ctx, entity, parentMatrix = makeMatrix()) {
+            const insertPoint = getPointCandidate(entity?.position, entity?.startPoint, entity?.insertPoint, entity?.insertionPoint, entity?.point) || { x: 0, y: 0, z: 0 };
+            const block = getBlockByName(ctx, entity?.name || entity?.block || entity?.blockName);
+            const basePoint = getPointCandidate(block?.position, block?.basePoint) || { x: 0, y: 0, z: 0 };
+            const sx = Number(entity?.xScale ?? entity?.scaleX ?? entity?.scale?.x ?? entity?.scale ?? 1) || 1;
+            const sy = Number(entity?.yScale ?? entity?.scaleY ?? entity?.scale?.y ?? entity?.scale ?? 1) || 1;
+            const rotation = getEntityRotationDegrees(entity);
+            let matrix = parentMatrix;
+            matrix = multiplyMatrix(matrix, translationMatrix(insertPoint.x, insertPoint.y));
+            matrix = multiplyMatrix(matrix, rotationMatrix(rotation));
+            matrix = multiplyMatrix(matrix, scaleMatrix(sx, sy));
+            matrix = multiplyMatrix(matrix, translationMatrix(-basePoint.x, -basePoint.y));
+            return matrix;
+        }
+
+        function resolveEntityLayer(entity, inheritedLayer) {
+            const layer = entity?.layer || '';
+            if ((!layer || layer === '0') && inheritedLayer) return inheritedLayer;
+            return layer || inheritedLayer || '0';
+        }
+
+        function transformRenderableEntity(entity, matrix = makeMatrix(), inheritedLayer = null) {
+            const layerName = resolveEntityLayer(entity, inheritedLayer);
+            const transformed = { ...entity, layer: layerName };
+            transformed.__sourceEntity = entity.__sourceEntity || entity;
+            const matrixScale = getMatrixScale(matrix);
+            const matrixRotation = getMatrixRotation(matrix);
+            if (entity?.vertices?.length) {
+                const det = matrix.a * matrix.d - matrix.b * matrix.c;
+                const bulgeSign = det < 0 ? -1 : 1;
+                transformed.vertices = entity.vertices.map(v => {
+                    const p = transformPoint2D(v, matrix);
+                    if (!p) return null;
+                    const bulge = Number(v?.bulge) || 0;
+                    if (bulge) p.bulge = bulge * bulgeSign;
+                    return p;
+                }).filter(Boolean);
+            }
+            if (entity?.type === 'CIRCLE' || entity?.type === 'ARC') {
+                transformed.__center = transformPoint2D(getPointCandidate(entity.center, entity.centerPoint, entity.position, entity.startPoint), matrix);
+                transformed.__radius = Math.abs(Number(entity.radius ?? entity.r ?? 0)) * matrixScale;
+                transformed.__angleOffsetDeg = matrixRotation;
+            }
+            if (entity?.type === 'ELLIPSE') {
+                transformed.__center = transformPoint2D(getPointCandidate(entity.center, entity.centerPoint, entity.position), matrix);
+                transformed.__majorAxisEndPoint = transformVector2D(entity.majorAxisEndPoint || entity.majorAxis || entity.axis || entity.endPoint, matrix);
+                transformed.__axisRatio = Number(entity.axisRatio ?? entity.ratio ?? entity.minorToMajorRatio ?? 1) || 1;
+                transformed.__angleOffsetDeg = 0;
+            }
+            if (entity?.type === 'SPLINE') {
+                const pts = entity.fitPoints?.length ? entity.fitPoints : entity.controlPoints;
+                if (pts?.length) transformed.__splinePoints = pts.map(pt => transformPoint2D(pt, matrix)).filter(Boolean);
+            }
+            if (entity?.type === 'TEXT' || entity?.type === 'MTEXT' || entity?.type === 'ATTRIB' || entity?.type === 'ATTDEF') {
+                transformed.__textPoint = transformPoint2D(getTextInsertionPoint(entity), matrix);
+                if ((entity.halign || entity.valign) && entity.endPoint) {
+                    transformed.__textAlignPoint = transformPoint2D(entity.endPoint, matrix);
+                }
+                transformed.__text = getEntityText(entity);
+                transformed.__textRotation = getEntityRotationDegrees(entity) + matrixRotation;
+                transformed.__textHeight = Number(entity?.textHeight ?? entity?.height ?? entity?.nominalTextHeight ?? entity?.textSize ?? 0) * matrixScale;
+                transformed.__textWidth = Number(entity?.width ?? entity?.rectWidth ?? entity?.maxLineWidth ?? entity?.columnWidth ?? 0) * matrixScale;
+                transformed.__isMText = entity?.type === 'MTEXT';
+            }
+            return transformed;
+        }
+
+        // Walk root entities, exploding INSERTs / DIMENSION anonymous blocks,
+        // and hand each renderable (world-space) copy to the callback.
+        function forEachRenderableEntity(ctx, callback, rootEntities) {
+            const visit = (entities, matrix = makeMatrix(), inheritedLayer = null, depth = 0, sourceOverride = null) => {
+                if (!Array.isArray(entities) || depth > 12) return;
+                entities.forEach(entity => {
+                    if (!entity) return;
+                    if (entity.type === 'INSERT') {
+                        const insertLayer = resolveEntityLayer(entity, inheritedLayer);
+                        const block = getBlockByName(ctx, entity.name || entity.block || entity.blockName);
+                        const insertMatrix = getInsertMatrix(ctx, entity, matrix);
+                        const insSource = sourceOverride || entity;
+                        if (block?.entities?.length) visit(block.entities, insertMatrix, insertLayer, depth + 1, insSource);
+                        if (Array.isArray(entity.attributes)) visit(entity.attributes, matrix, insertLayer, depth + 1, insSource);
+                        return;
+                    }
+                    if (entity.type === 'DIMENSION') {
+                        const dimLayer = resolveEntityLayer(entity, inheritedLayer);
+                        const block = getBlockByName(ctx, entity.block);
+                        if (block?.entities?.length) {
+                            visit(block.entities, matrix, dimLayer, depth + 1, sourceOverride || entity);
+                            return;
+                        }
+                        // fall through — synthesized by DxfDim in addEntityToBucket
+                    }
+                    const transformed = transformRenderableEntity(entity, matrix, inheritedLayer);
+                    if (sourceOverride && transformed) transformed.__sourceEntity = sourceOverride;
+                    callback(transformed, sourceOverride || entity);
+                });
+            };
+            visit(rootEntities);
+        }
+
+        // ==================================================================
+        //  Paper-space viewport portals (ported from DXF_Viewer)
+        //  Model content is projected into each viewport frame and clipped to
+        //  its rectangle, so a layout renders like the printed sheet.
+        // ==================================================================
+        function isReservedViewport(vp, layout) {
+            if (vp.viewId === 1 || vp.status < 0) return true;
+            // Full-sheet non-plotting viewport some writers add.
+            const pw = layout?.paperWidth || 0, ph = layout?.paperHeight || 0;
+            if (pw > 0 && ph > 0) {
+                const same = vp.width >= pw * 0.96 && vp.height >= ph * 0.96;
+                const swapped = vp.width >= ph * 0.96 && vp.height >= pw * 0.96;
+                if ((same || swapped) && (vp.viewId <= 1 || vp.status === 1)) return true;
+            }
+            return false;
+        }
+        // Viewports belonging to one layout of one drawing.
+        function getSpaceViewports(ctx, key) {
+            if (key === 'model') return [];
+            const lay = ctx.layouts.find(l => l.name.toLowerCase() === key);
+            if (!lay) return [];
+            const isActive = activeLayout(ctx) === lay;
+            const wanted = (lay.blockRecordHandle || '').toUpperCase();
+            const name = (lay.name || '').toLowerCase();
+            return ctx.viewports.filter(vp => {
+                if (vp.viewHeight <= 0) return false;
+                if (isReservedViewport(vp, lay)) return false;
+                if (vp.blockName) return lay.blockName && vp.blockName.toUpperCase() === lay.blockName.toUpperCase();
+                // ENTITIES-section frame: owner handle, then 410 tag, then
+                // (untagged only) the active-layout fallback.
+                if (wanted && vp.ownerHandles?.includes(wanted)) return true;
+                const tag = ctx.entityTags[String(vp.handle || '').toUpperCase()];
+                const ln = (tag?.name410 || '').toLowerCase();
+                if (ln) return ln === name;
+                if (vp.ownerHandles?.some(h => ownerMatchesAnyLayout(ctx, h))) return false;
+                return isActive;
+            });
+        }
+        // Model point -> paper coordinates through a viewport (viewer math).
+        function projectIntoViewport(p, vp) {
+            const scale = vp.height / vp.viewHeight;
+            const twist = -(vp.twistDeg || 0) * Math.PI / 180;
+            const dx = p.x - vp.viewCenterX, dy = p.y - vp.viewCenterY;
+            const cos = Math.cos(twist), sin = Math.sin(twist);
+            return {
+                x: vp.cx + (dx * cos - dy * sin) * scale,
+                y: vp.cy + (dx * sin + dy * cos) * scale,
+                scale,
+            };
+        }
+        // Liang-Barsky segment clip to the viewport rectangle (viewer port).
+        function clipSegToViewportRect(x1, y1, x2, y2, vp) {
+            const minX = vp.cx - vp.width / 2, maxX = vp.cx + vp.width / 2;
+            const minY = vp.cy - vp.height / 2, maxY = vp.cy + vp.height / 2;
+            const dx = x2 - x1, dy = y2 - y1;
+            const p = [-dx, dx, -dy, dy];
+            const q = [x1 - minX, maxX - x1, y1 - minY, maxY - y1];
+            let u1 = 0, u2 = 1;
+            for (let i = 0; i < 4; i++) {
+                if (Math.abs(p[i]) < 1e-12) { if (q[i] < 0) return null; continue; }
+                const t = q[i] / p[i];
+                if (p[i] < 0) { if (t > u2) return null; if (t > u1) u1 = t; }
+                else { if (t < u1) return null; if (t < u2) u2 = t; }
+            }
+            return { x1: x1 + u1 * dx, y1: y1 + u1 * dy, x2: x1 + u2 * dx, y2: y1 + u2 * dy };
+        }
+        function pointInViewportRect(p, vp) {
+            return p.x >= vp.cx - vp.width / 2 && p.x <= vp.cx + vp.width / 2 &&
+                p.y >= vp.cy - vp.height / 2 && p.y <= vp.cy + vp.height / 2;
+        }
+
+        // Project model-space top-level entities through every viewport of a
+        // layout and append the result as per-layer groups inside `bucket`,
+        // so category chips and layer toggles keep working unchanged.
+        function addPortalContentToBucket(bucket, ctx, viewports, items, colorOverride, opacity) {
+            if (!settings.showPortals) return;
+            if (!viewports.length || !items.length) return;
+            const layerDict = {};
+            for (const { entity } of items) {
+                forEachRenderableEntity(ctx, (e) => {
+                    for (const vp of viewports) {
+                        if (vp.frozenLayers?.includes(e.layer || '0')) continue;
+                        const layerName = e.layer || '0';
+                        if (!layerDict[layerName]) layerDict[layerName] = { pts: [], colors: [], textNodes: [], fills: [] };
+                        const ld = layerDict[layerName];
+                        const colorHex = colorOverride != null ? colorOverride : getDrawingHexColor(ctx, e);
+                        if (e.type === 'TEXT' || e.type === 'MTEXT' || e.type === 'ATTRIB' || e.type === 'ATTDEF') {
+                            const pt = e.__textPoint || getTextInsertionPoint(e);
+                            const text = e.__text ?? getEntityText(e);
+                            if (!pt || !text) continue;
+                            const pr = projectIntoViewport(pt, vp);
+                            if (!pointInViewportRect(pr, vp)) continue;
+                            ld.textNodes.push({
+                                text, x: pr.x, y: pr.y, color: colorHex,
+                                rotation: (e.__textRotation || 0) - (vp.twistDeg || 0),
+                                height: Math.max((e.__textHeight || 0) * pr.scale, 0.001),
+                                halign: e.halign || 0, valign: e.valign || 0,
+                            });
+                            continue;
+                        }
+                        for (const s of entityToSegments(ctx, e)) {
+                            const pa = projectIntoViewport({ x: s.x1, y: s.y1 }, vp);
+                            const pb = projectIntoViewport({ x: s.x2, y: s.y2 }, vp);
+                            const c = clipSegToViewportRect(pa.x, pa.y, pb.x, pb.y, vp);
+                            if (!c) continue;
+                            const r = ((colorHex >> 16) & 255) / 255, g = ((colorHex >> 8) & 255) / 255, b = (colorHex & 255) / 255;
+                            ld.pts.push(c.x1, c.y1, 0, c.x2, c.y2, 0);
+                            ld.colors.push(r, g, b, r, g, b);
+                        }
+                    }
+                }, [entity]);
+            }
+            appendLayerDictToGroup(bucket, layerDict, opacity);
+        }
+
+        // Shared tail of buildBucketGroup: layerDict -> per-layer THREE groups.
+        function appendLayerDictToGroup(bucket, layerDict, opacity) {
+            const bounds = layerDictBounds(layerDict);
+            const maxDim = bounds ? Math.max(bounds.width, bounds.height, 1) : 1;
+            const fallbackTextHeight = Math.max(maxDim / 120, 0.001);
+            for (const [layerName, ldata] of Object.entries(layerDict)) {
+                const group = new THREE.Group();
+                group.name = layerName;
+                if (ldata.pts.length > 0) {
+                    const geom = new THREE.BufferGeometry();
+                    geom.setAttribute('position', new THREE.Float32BufferAttribute(ldata.pts, 3));
+                    geom.setAttribute('color', new THREE.Float32BufferAttribute(ldata.colors, 3));
+                    const mat = new THREE.LineBasicMaterial({
+                        vertexColors: true,
+                        transparent: opacity != null,
+                        opacity: opacity != null ? opacity : 1,
+                    });
+                    group.add(new THREE.LineSegments(geom, mat));
+                }
+                for (const fill of (settings.showFills ? ldata.fills : [])) {
+                    if (!fill.shapes.length) continue;
+                    const geom = new THREE.ShapeGeometry(fill.shapes);
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: new THREE.Color(fill.colorHex), side: THREE.DoubleSide,
+                        transparent: true, opacity: (opacity != null ? opacity : 1) * 0.55,
+                    });
+                    const mesh = new THREE.Mesh(geom, mat);
+                    mesh.position.z = -0.05;
+                    mesh.renderOrder = -1;
+                    group.add(mesh);
+                }
+                if (settings.showText) ldata.textNodes.forEach(t => {
+                    const sprite = makeTextSprite(t, fallbackTextHeight, opacity);
+                    if (sprite) group.add(sprite);
+                });
+                bucket.add(group);
+            }
+        }
+
+        // White sheet backdrop with a gray edge (viewer's __paper_sheet__).
+        function buildSheetGroup(ctxs, key) {
+            const group = new THREE.Group();
+            group.name = '__paper_sheet__';
+            let w = 0, h = 0;
+            for (const ctx of ctxs) {
+                const lay = ctx.layouts.find(l => l.name.toLowerCase() === key);
+                if (lay?.paperWidth > 0 && lay?.paperHeight > 0) { w = lay.paperWidth; h = lay.paperHeight; break; }
+            }
+            let bounds;
+            if (w > 0 && h > 0) {
+                bounds = { minX: 0, minY: 0, maxX: w, maxY: h };
+                // Content wildly outside the positive sheet: center on it instead.
+                const cb = spaceContentBounds(ctxs, key);
+                if (cb && !(cb.minX >= -0.01 && cb.minY >= -0.01 && cb.maxX <= w + 0.01 && cb.maxY <= h + 0.01)) {
+                    const cx = (cb.minX + cb.maxX) / 2, cy = (cb.minY + cb.maxY) / 2;
+                    bounds = { minX: cx - w / 2, minY: cy - h / 2, maxX: cx + w / 2, maxY: cy + h / 2 };
+                }
+            } else {
+                const cb = spaceContentBounds(ctxs, key);
+                if (!cb) return group;
+                const pad = Math.max(cb.maxX - cb.minX, cb.maxY - cb.minY) * 0.025;
+                bounds = { minX: cb.minX - pad, minY: cb.minY - pad, maxX: cb.maxX + pad, maxY: cb.maxY + pad };
+            }
+            const bw = bounds.maxX - bounds.minX, bh = bounds.maxY - bounds.minY;
+            const plane = new THREE.Mesh(
+                new THREE.PlaneGeometry(bw, bh),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, depthWrite: false })
+            );
+            plane.position.set(bounds.minX + bw / 2, bounds.minY + bh / 2, -0.08);
+            plane.renderOrder = -2;
+            group.add(plane);
+            const edgeGeom = new THREE.BufferGeometry();
+            edgeGeom.setAttribute('position', new THREE.Float32BufferAttribute([
+                bounds.minX, bounds.minY, -0.05, bounds.maxX, bounds.minY, -0.05,
+                bounds.maxX, bounds.minY, -0.05, bounds.maxX, bounds.maxY, -0.05,
+                bounds.maxX, bounds.maxY, -0.05, bounds.minX, bounds.maxY, -0.05,
+                bounds.minX, bounds.maxY, -0.05, bounds.minX, bounds.minY, -0.05,
+            ], 3));
+            group.add(new THREE.LineSegments(edgeGeom, new THREE.LineBasicMaterial({ color: 0x94a3b8, depthTest: false })));
+            group.userData.__sheetBounds = bounds;
+            return group;
+        }
+
+        function spaceContentBounds(ctxs, key) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
+            for (const ctx of ctxs) {
+                for (const e of (getSpaceEntities(ctx, key) || [])) {
+                    for (const s of entityToSegments(ctx, e)) {
+                        if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
+                        minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
+                        minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
+                        found = true;
+                    }
+                }
+                for (const vp of getSpaceViewports(ctx, key)) {
+                    minX = Math.min(minX, vp.cx - vp.width / 2); maxX = Math.max(maxX, vp.cx + vp.width / 2);
+                    minY = Math.min(minY, vp.cy - vp.height / 2); maxY = Math.max(maxY, vp.cy + vp.height / 2);
+                    found = true;
+                }
+            }
+            return found ? { minX, minY, maxX, maxY } : null;
+        }
+
+        // ==================================================================
+        //  Colors (single-file viewer mode uses drawing colors)
+        // ==================================================================
+        const ACI_BASE_COLORS = {
+            0: 0x000000, 1: 0xff0000, 2: 0xffff00, 3: 0x00ff00, 4: 0x00ffff,
+            5: 0x0000ff, 6: 0xff00ff, 7: 0xffffff, 8: 0x414141, 9: 0x808080,
+            250: 0x333333, 251: 0x505050, 252: 0x696969, 253: 0x828282,
+            254: 0xbebebe, 255: 0xffffff
+        };
+        function getDrawingHexColor(ctx, entity) {
+            const colorNum = entity?.colorNumber ?? entity?.colorIndex;
+            const isByLayer = colorNum === undefined || colorNum === null || Math.abs(Number(colorNum)) === 256 || Number(colorNum) === 0;
+            if (!isByLayer) {
+                const lightBg0 = !isEffectiveDarkMode();
+                if (typeof entity.color === 'number' && entity.color > 0) {
+                    return (lightBg0 && entity.color === 0xffffff) ? 0x000000 : entity.color;
+                }
+                const aci = ACI_BASE_COLORS[Math.abs(Number(colorNum))];
+                if (aci !== undefined) {
+                    if (aci === 0 || aci === 0xffffff) return lightBg0 ? 0x000000 : 0xffffff;
+                    return aci;
+                }
+            }
+            const layers = ctx.dxf?.tables?.layer?.layers;
+            const lay = layers?.[entity?.layer];
+            const lightBg = !isEffectiveDarkMode();
+            if (lay && typeof lay.color === 'number' && lay.color > 0) {
+                return (lightBg && lay.color === 0xffffff) ? 0x000000 : lay.color;
+            }
+            // Light backgrounds (paper always, model in light mode): white ink turns black.
+            return lightBg ? 0x000000 : 0xffffff;
+        }
+
+        // ==================================================================
+        //  Text sprites (simplified lift: shared texture cache, no LOD rebuckets)
+        // ==================================================================
+        const textTextureCache = new Map();
+        const TEXT_TEXTURE_CACHE_LIMIT = 1500;
+        const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+
+        function toHexString(colorNumber) {
+            return '#' + colorNumber.toString(16).padStart(6, '0').toUpperCase();
+        }
+        function getCachedTextTexture(rawText, colorHex) {
+            const key = colorHex + '|' + rawText;
+            const cached = textTextureCache.get(key);
+            if (cached) return cached;
+            const fontPx = 72;
+            const lines = rawText.split('\n').map(l => l || ' ');
+            const lineHeightPx = Math.round(fontPx * 1.22);
+            const paddingPx = Math.round(fontPx * 0.22);
+            const canvas = document.createElement('canvas');
+            let ctx2 = canvas.getContext('2d');
+            ctx2.font = `700 ${fontPx}px ${MONO}`;
+            const maxW = Math.max(1, ...lines.map(l => ctx2.measureText(l).width));
+            const cssWidth = Math.ceil(maxW + paddingPx * 2);
+            const cssHeight = Math.ceil(lines.length * lineHeightPx + paddingPx * 2);
+            canvas.width = Math.max(2, cssWidth);
+            canvas.height = Math.max(2, cssHeight);
+            ctx2 = canvas.getContext('2d');
+            ctx2.font = `700 ${fontPx}px ${MONO}`;
+            ctx2.textBaseline = 'top';
+            ctx2.fillStyle = colorHex;
+            ctx2.lineWidth = Math.max(2, fontPx * 0.045);
+            ctx2.strokeStyle = 'rgba(0,0,0,0.72)';
+            lines.forEach((line, i) => {
+                const y = paddingPx + i * lineHeightPx;
+                ctx2.strokeText(line, paddingPx, y);
+                ctx2.fillText(line, paddingPx, y);
+            });
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            const entry = { texture, cssWidth, cssHeight, fontPx };
+            if (textTextureCache.size >= TEXT_TEXTURE_CACHE_LIMIT) {
+                const firstKey = textTextureCache.keys().next().value;
+                textTextureCache.get(firstKey)?.texture?.dispose?.();
+                textTextureCache.delete(firstKey);
+            }
+            textTextureCache.set(key, entry);
+            return entry;
+        }
+        function makeTextSprite(tNode, fallbackHeight, opacity) {
+            const rawText = String(tNode?.text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (!rawText.trim()) return null;
+            const { texture, cssWidth, cssHeight, fontPx } = getCachedTextTexture(rawText, toHexString(tNode.color));
+            const material = new THREE.SpriteMaterial({
+                map: texture, transparent: true, depthTest: false, depthWrite: false,
+                opacity: opacity != null ? opacity : 1,
+            });
+            material.rotation = THREE.MathUtils.degToRad(tNode.rotation || 0);
+            const sprite = new THREE.Sprite(material);
+            sprite.renderOrder = 10;
+            const cx = tNode.halign === 1 || tNode.halign === 4 ? 0.5 : (tNode.halign === 2 ? 1 : 0);
+            const cy = tNode.valign === 1 ? 0 : (tNode.valign === 3 ? 1 : (tNode.valign === 2 ? 0.5 : 0));
+            sprite.center.set(cx, cy);
+            const textHeight = Math.abs(Number(tNode.height)) || fallbackHeight || 1;
+            sprite.scale.set((cssWidth / fontPx) * textHeight, (cssHeight / fontPx) * textHeight, 1);
+            sprite.position.set(tNode.x, tNode.y, 0.05);
+            sprite.userData.__textWorldHeight = (cssHeight / fontPx) * textHeight;
+            return sprite;
+        }
+
+        // ==================================================================
+        //  Bucket scene building
+        //  bucket = { colorHex|null, opacity, entities:[{ctx, entity}] }
+        //  Structure: bucketGroup > per-layer THREE.Group (name = layer)
+        // ==================================================================
+        function addEntityToBucket(ctx, entity, layerDict, colorOverride) {
+            const layerName = entity.layer || '0';
+            if (!layerDict[layerName]) layerDict[layerName] = { pts: [], colors: [], textNodes: [], fills: [] };
+            const layerData = layerDict[layerName];
+            const colorHex = colorOverride != null ? colorOverride : getDrawingHexColor(ctx, entity);
+            const push = (x1, y1, x2, y2) => {
+                if (![x1, y1, x2, y2].every(Number.isFinite)) return;
+                const r = ((colorHex >> 16) & 255) / 255, g = ((colorHex >> 8) & 255) / 255, b = (colorHex & 255) / 255;
+                layerData.pts.push(x1, y1, 0, x2, y2, 0);
+                layerData.colors.push(r, g, b, r, g, b);
+            };
+
+            if (entity.type === 'ACAD_TABLE') {
+                if (!window.DxfHatch?.acadTableGeometry) return;
+                const geo = window.DxfHatch.acadTableGeometry(entity);
+                geo.segments.forEach(s => push(s.x1, s.y1, s.x2, s.y2));
+                for (const cell of geo.cells) {
+                    if (cell.covered) continue;
+                    const data = entity.cells?.[cell.index];
+                    if (!data || !String(data.text).trim()) continue;
+                    layerData.textNodes.push({
+                        text: String(data.text), x: cell.cx, y: cell.cy, color: colorHex,
+                        rotation: Number(entity.rotation) || 0,
+                        height: Math.max(Number(data.textHeight) || cell.h * 0.42, 1e-6),
+                        halign: 1, valign: 2,
+                    });
+                }
+            } else if (['LINE', 'POLYLINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'POINT', 'VIEWPORT'].includes(entity.type)) {
+                // Diff view renders solid lines — linetypes intentionally skipped.
+                for (const s of entityToSegments(ctx, entity)) push(s.x1, s.y1, s.x2, s.y2);
+            } else if (entity.type === 'WIPEOUT') {
+                const vs = entity.vertices || [];
+                for (let i = 0; i < vs.length; i++) {
+                    const a = vs[i], b = vs[(i + 1) % vs.length];
+                    push(a.x, a.y, b.x, b.y);
+                }
+            } else if (entity.type === 'HATCH') {
+                const loops = getHatchLoops(ctx, entity);
+                if (!loops.length) return;
+                if (entity.solid || entity.gradient) {
+                    layerData.fills.push({ shapes: hatchShapes(loops), colorHex });
+                    for (const ring of loops) {
+                        for (let i = 0; i < ring.length - 1; i++) push(ring[i].x, ring[i].y, ring[i + 1].x, ring[i + 1].y);
+                    }
+                } else {
+                    for (const s of window.DxfHatch.patternSegments(entity, loops)) push(s.x1, s.y1, s.x2, s.y2);
+                }
+            } else if (entity.type === 'DIMENSION') {
+                const D = window.DxfDim;
+                const dimSrc = entity.__sourceEntity || entity;
+                const synth = D ? D.synthesizeFromEntity(dimSrc, getDimTextHeight(ctx), 2) : null;
+                if (!synth) return;
+                synth.segments.forEach(s => push(s.x1, s.y1, s.x2, s.y2));
+                for (const pl of synth.polylines || []) {
+                    const vs = pl.vertices;
+                    for (let i = 0; i < vs.length; i++) {
+                        const a = vs[i], b = vs[(i + 1) % vs.length];
+                        if (i === vs.length - 1 && !pl.closed) break;
+                        push(a.x, a.y, b.x, b.y);
+                    }
+                }
+                layerData.textNodes.push({
+                    text: synth.text.value, x: synth.text.x, y: synth.text.y, color: colorHex,
+                    rotation: synth.text.rotationDeg, height: synth.text.height,
+                    halign: 1, valign: synth.text.valign || 1,
+                });
+            } else if (entity.type === 'LEADER') {
+                for (const s of entityToSegments(ctx, entity)) push(s.x1, s.y1, s.x2, s.y2);
+            } else if (entity.type === 'TEXT' || entity.type === 'MTEXT' || entity.type === 'ATTRIB' || entity.type === 'ATTDEF') {
+                const mtCol = entity.type === 'MTEXT' && entity.attachmentPoint ? ((Number(entity.attachmentPoint) - 1) % 3) : null;
+                const aligned = (entity.halign || entity.valign) ? (entity.__textAlignPoint || entity.endPoint) : null;
+                const point = aligned || entity.__textPoint || getTextInsertionPoint(entity);
+                const text = entity.__text ?? getEntityText(entity);
+                if (!point || !text) return;
+                layerData.textNodes.push({
+                    text, x: point.x, y: point.y, color: colorHex,
+                    rotation: entity.__textRotation || 0,
+                    height: entity.__textHeight || 0,
+                    halign: mtCol !== null ? mtCol : (entity.halign || 0),
+                    valign: entity.valign || 0,
+                });
+            }
+        }
+
+        function buildBucketGroup(name, items, colorOverride, opacity) {
+            // items: [{ ctx, entity }] — top-level model entities to explode + render.
+            const layerDict = {};
+            for (const { ctx, entity } of items) {
+                forEachRenderableEntity(ctx, e => addEntityToBucket(ctx, e, layerDict, colorOverride), [entity]);
+            }
+            const bucket = new THREE.Group();
+            bucket.name = name;
+            appendLayerDictToGroup(bucket, layerDict, opacity);
+            return bucket;
+        }
+
+        function layerDictBounds(layerDict) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const data of Object.values(layerDict || {})) {
+                const pts = data?.pts || [];
+                for (let i = 0; i < pts.length; i += 3) {
+                    const x = pts[i], y = pts[i + 1];
+                    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+                    if (x < minX) minX = x; if (x > maxX) maxX = x;
+                    if (y < minY) minY = y; if (y > maxY) maxY = y;
+                }
+                for (const t of (data?.textNodes || [])) {
+                    if (!Number.isFinite(t.x) || !Number.isFinite(t.y)) continue;
+                    if (t.x < minX) minX = t.x; if (t.x > maxX) maxX = t.x;
+                    if (t.y < minY) minY = t.y; if (t.y > maxY) maxY = t.y;
+                }
+            }
+            if (![minX, minY, maxX, maxY].every(Number.isFinite)) return null;
+            return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+        }
+
+        // ==================================================================
+        //  Three.js setup: one camera drives three renderers
+        // ==================================================================
+        const hostMain = document.getElementById('host-main');
+        const hostA = document.getElementById('host-a');
+        const hostB = document.getElementById('host-b');
+
+        let camera = null;
+        let sceneOverlay = null, sceneA = null, sceneB = null;
+        let rMain = null, rA = null, rB = null;
+        let controlsMain = null, controlsA = null, controlsB = null;
+        let viewMode = 'overlay'; // 'overlay' | 'sbs'
+        let renderNeeded = true;
+        let animating = false;
+
+        // Bucket groups (built after compare; re-parented on mode switch)
+        let groups = null; // { unchangedA, unchangedB, deleted, added, modifiedA, modifiedB }
+        let highlightLine = null;
+
+        function makeRenderer(host) {
+            const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            r.setSize(host.clientWidth || 2, host.clientHeight || 2);
+            r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+            host.appendChild(r.domElement);
+            return r;
+        }
+        // All three OrbitControls share ONE camera but each keeps its own
+        // target. r160's ortho zoomToCursor shifts camera.position and only
+        // repositions the ACTIVE instance's target; a later update() on a
+        // peer then does lookAt(staleTarget) and tilts the camera (skew).
+        // Two guards: hard-clamp the spherical angles so update() can never
+        // rotate (enableRotate only blocks input, not drift), and mirror
+        // the changing instance's target to the peers so they never stale.
+        const allControls = [];
+        function makeControls(r) {
+            const c = new OrbitControls(camera, r.domElement);
+            c.zoomToCursor = true;
+            c.enableRotate = false;
+            c.enableDamping = false;
+            c.screenSpacePanning = true;
+            c.zoomSpeed = 2.2;
+            c.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
+            // Top-down 2D lock: polar pinned to pi/2, azimuth pinned to 0.
+            c.minPolarAngle = Math.PI / 2;
+            c.maxPolarAngle = Math.PI / 2;
+            c.minAzimuthAngle = 0;
+            c.maxAzimuthAngle = 0;
+            c.addEventListener('change', () => {
+                for (const o of allControls) if (o !== c) o.target.copy(c.target);
+                requestRender();
+            });
+            allControls.push(c);
+            return c;
+        }
+        function requestRender() { renderNeeded = true; }
+
+        function syncControlsToCamera() {
+            if (!camera) return;
+            camera.up.set(0, 1, 0);
+            camera.position.z = 100;
+            const tx = camera.position.x, ty = camera.position.y;
+            for (const c of [controlsMain, controlsA, controlsB]) {
+                if (!c) continue;
+                c.target.set(tx, ty, 0);
+            }
+            camera.lookAt(tx, ty, 0);
+            for (const c of [controlsMain, controlsA, controlsB]) {
+                if (c && c.enabled) c.update();
+            }
+        }
+
+        function initThree() {
+            if (camera) return;
+            const aspect = Math.max((hostMain.clientWidth || 2) / (hostMain.clientHeight || 2), 0.01);
+            const d = 50;
+            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 2000);
+            camera.position.set(0, 0, 100);
+
+            sceneOverlay = new THREE.Scene(); sceneOverlay.background = new THREE.Color(0x2a2e37);
+            sceneA = new THREE.Scene(); sceneA.background = new THREE.Color(0x2a2e37);
+            sceneB = new THREE.Scene(); sceneB.background = new THREE.Color(0x2a2e37);
+
+            rMain = makeRenderer(hostMain);
+            rA = makeRenderer(hostA);
+            rB = makeRenderer(hostB);
+            controlsMain = makeControls(rMain);
+            controlsA = makeControls(rA);
+            controlsB = makeControls(rB);
+            wireToolEvents(hostMain);
+            wireToolEvents(hostB);
+
+            const hlMat = new THREE.LineBasicMaterial({ color: 0xfacc15, depthTest: false, transparent: true, opacity: 0.98 });
+            highlightLine = new THREE.LineSegments(new THREE.BufferGeometry(), hlMat);
+            highlightLine.frustumCulled = false;
+            highlightLine.renderOrder = 999;
+            highlightLine.visible = false;
+
+            window.addEventListener('resize', onResize);
+            // Hosts resize without a window resize (sidebar transition,
+            // tab/mode switches): observe them directly so the projection
+            // aspect and renderer buffers never lag the layout.
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(onResize);
+                ro.observe(hostMain); ro.observe(hostA); ro.observe(hostB);
+            }
+            if (!animating) { animating = true; animate(); }
+        }
+
+        function measureToolbarHeight() {
+            const tb = document.getElementById('cmp-toolbar');
+            const stage = document.getElementById('compare-stage');
+            if (tb && stage) stage.style.setProperty('--draw-toolbar-h', tb.offsetHeight + 'px');
+        }
+
+        function onResize() {
+            measureToolbarHeight();
+            if (!camera) return;
+            const host = viewMode === 'overlay' ? hostMain : hostA;
+            const w = Math.max(host.clientWidth, 2), h = Math.max(host.clientHeight, 2);
+            const aspect = w / h;
+            const halfH = (camera.top - camera.bottom) / 2;
+            camera.left = -halfH * aspect;
+            camera.right = halfH * aspect;
+            camera.updateProjectionMatrix();
+            rMain.setSize(Math.max(hostMain.clientWidth, 2), Math.max(hostMain.clientHeight, 2));
+            rA.setSize(Math.max(hostA.clientWidth, 2), Math.max(hostA.clientHeight, 2));
+            rB.setSize(Math.max(hostB.clientWidth, 2), Math.max(hostB.clientHeight, 2));
+            requestRender();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!renderNeeded) return;
+            renderNeeded = false;
+            if (viewMode === 'overlay') {
+                rMain.render(sceneOverlay, camera);
+            } else {
+                rA.render(sceneA, camera);
+                rB.render(sceneB, camera);
+            }
+            if (measureLabels.length) positionMeasureLabels();
+            rescaleSnapMarker();
+        }
+
+        function clearScenes() {
+            for (const scene of [sceneOverlay, sceneA, sceneB]) {
+                if (!scene) continue;
+                const cached = new Set();
+                textTextureCache.forEach(e => cached.add(e.texture));
+                scene.traverse(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        const dm = (m) => { if (m?.map && !cached.has(m.map)) m.map.dispose(); m?.dispose?.(); };
+                        Array.isArray(child.material) ? child.material.forEach(dm) : dm(child.material);
+                    }
+                });
+                while (scene.children.length) scene.remove(scene.children[0]);
+            }
+        }
+
+        function applySpaceBackground() {
+            const paper = currentSpace !== 'model';
+            const bg = paper ? 0xcbd5e1 : (isEffectiveDarkMode() ? 0x2a2e37 : 0xf1f5f9);
+            for (const scene of [sceneOverlay, sceneA, sceneB]) {
+                if (scene) scene.background = new THREE.Color(bg);
+            }
+            const btn = document.getElementById('btn-theme');
+            if (btn) {
+                btn.disabled = paper;
+                btn.title = paper ? tr('paperLightLocked', 'Paper space is always light mode') : tr('toggleDarkMode', 'Toggle Dark Mode');
+            }
+        }
+
+        function parentGroupsForMode() {
+            if (!groups) return;
+            applySpaceBackground();
+            // Detach everything first (a group lives in exactly one scene).
+            for (const g of Object.values(groups)) g.parent?.remove(g);
+            highlightLine.parent?.remove(highlightLine);
+            if (viewMode === 'overlay') {
+                sceneOverlay.add(groups.unchangedB, groups.deleted, groups.added, groups.modifiedB);
+                sceneOverlay.add(highlightLine);
+            } else {
+                sceneA.add(groups.unchangedA, groups.deleted, groups.modifiedA);
+                sceneB.add(groups.unchangedB, groups.added, groups.modifiedB);
+                sceneB.add(highlightLine);
+            }
+            applyCategoryVisibility();
+            applyLayerVisibility();
+            requestRender();
+        }
+
+        // ==================================================================
+        //  Compare orchestration
+        // ==================================================================
+        let compareResult = null;
+        let layerVisibility = {};   // layer name -> bool
+        let categoryVisibility = { added: true, deleted: true, modified: true, unchanged: true };
+        let tolerance = 1e-4;
+        let singleFileMode = false;
+        let colorMode = 'changes'; // 'changes' | 'original'
+        let currentSpace = 'model'; // 'model' | layout name lower-case
+        let spaceResults = {};      // key -> { status:'matched'|'missingA'|'missingB', name, result? }
+
+        function spaceKeysUnion() {
+            const keys = [{ key: 'model', name: tr('spaceModel', 'Model'), order: -1 }];
+            const seen = {};
+            const push = (l) => {
+                const k = l.name.toLowerCase();
+                if (seen[k]) return;
+                seen[k] = true;
+                keys.push({ key: k, name: l.name, order: l.tabOrder });
+            };
+            for (const l of ctxA.layouts) push(l);
+            for (const l of ctxB.layouts) push(l);
+            keys.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+            return keys;
+        }
+
+        function runCompare() {
+            // Compare every space (model + union of layout names).
+            spaceResults = {};
+            const blocksA = ctxA.dxf?.blocks || {}, blocksB = ctxB.dxf?.blocks || {};
+            for (const s of spaceKeysUnion()) {
+                const entsA = getSpaceEntities(ctxA, s.key);
+                const entsB = getSpaceEntities(ctxB, s.key);
+                if (entsA === null && entsB === null) continue;
+                if (entsA === null || entsB === null) {
+                    spaceResults[s.key] = { status: entsA === null ? 'missingA' : 'missingB', name: s.name };
+                    continue;
+                }
+                const result = window.DxfCompare.compare(
+                    { entities: entsA, blocks: blocksA },
+                    { entities: entsB, blocks: blocksB },
+                    { tolerance, filterPaperSpace: s.key === 'model' });
+                spaceResults[s.key] = { status: 'matched', name: s.name, result };
+            }
+            if (!spaceResults[currentSpace]) currentSpace = 'model';
+            compareResult = spaceResults[currentSpace]?.result || null;
+        }
+
+        function rebuildDiffScene() {
+            clearScenes();
+            const sr = spaceResults[currentSpace];
+            if (sr && sr.status !== 'matched') {
+                // Layout exists on one side only: everything is added or deleted.
+                const missingA = sr.status === 'missingA';
+                const ctx = missingA ? ctxB : ctxA;
+                const ents = getSpaceEntities(ctx, currentSpace) || [];
+                const orig1 = colorMode === 'original';
+                const oneColor = orig1 ? null : (missingA ? COLORS.added : COLORS.deleted);
+                const g = buildBucketGroup(missingA ? 'added' : 'deleted', ents.map(e => ({ ctx, entity: e })), oneColor, null);
+                const vps = getSpaceViewports(ctx, currentSpace);
+                addPortalContentToBucket(g, ctx, vps, (ctx.modelEntities || []).map(e => ({ entity: e })), oneColor, null);
+                g.add(buildSheetGroup([ctx], currentSpace));
+                const empty = () => new THREE.Group();
+                groups = {
+                    unchangedA: empty(), unchangedB: empty(),
+                    deleted: missingA ? empty() : g,
+                    added: missingA ? g : empty(),
+                    modifiedA: empty(), modifiedB: empty(),
+                };
+                parentGroupsForMode();
+                return;
+            }
+            const r = compareResult;
+            if (!r) return;
+            const orig = colorMode === 'original';
+            const paper = currentSpace !== 'model';
+            // 'changes': diff palette, unchanged dimmed.
+            // 'original': every entity in its drawing color, full opacity.
+            const col = k => orig ? null : COLORS[k];
+            const dim = orig ? null : UNCHANGED_OPACITY;
+            groups = {
+                unchangedA: buildBucketGroup('unchangedA', r.unchanged.map(p => ({ ctx: ctxA, entity: p.a })), col('unchanged'), dim),
+                unchangedB: buildBucketGroup('unchangedB', r.unchanged.map(p => ({ ctx: ctxB, entity: p.b })), col('unchanged'), dim),
+                deleted: buildBucketGroup('deleted', r.deleted.map(p => ({ ctx: ctxA, entity: p.a })), col('deleted'), null),
+                added: buildBucketGroup('added', r.added.map(p => ({ ctx: ctxB, entity: p.b })), col('added'), null),
+                modifiedA: buildBucketGroup('modifiedA', r.modified.map(p => ({ ctx: ctxA, entity: p.a })), col('modified'), null),
+                modifiedB: buildBucketGroup('modifiedB', r.modified.map(p => ({ ctx: ctxB, entity: p.b })), col('modified'), null),
+            };
+            if (paper) {
+                // The printed plan: model content projected through the frames,
+                // coloured by the MODEL-space diff status of each entity.
+                const vpsA = getSpaceViewports(ctxA, currentSpace);
+                const vpsB = getSpaceViewports(ctxB, currentSpace);
+                const mr = spaceResults['model']?.result;
+                if (mr) {
+                    addPortalContentToBucket(groups.unchangedA, ctxA, vpsA, mr.unchanged.map(p => ({ entity: p.a })), col('unchanged'), dim);
+                    addPortalContentToBucket(groups.unchangedB, ctxB, vpsB, mr.unchanged.map(p => ({ entity: p.b })), col('unchanged'), dim);
+                    addPortalContentToBucket(groups.deleted, ctxA, vpsA, mr.deleted.map(p => ({ entity: p.a })), col('deleted'), null);
+                    addPortalContentToBucket(groups.added, ctxB, vpsB, mr.added.map(p => ({ entity: p.b })), col('added'), null);
+                    addPortalContentToBucket(groups.modifiedA, ctxA, vpsA, mr.modified.map(p => ({ entity: p.a })), col('modified'), null);
+                    addPortalContentToBucket(groups.modifiedB, ctxB, vpsB, mr.modified.map(p => ({ entity: p.b })), col('modified'), null);
+                }
+                groups.unchangedA.add(buildSheetGroup([ctxA], currentSpace));
+                groups.unchangedB.add(buildSheetGroup([ctxB], currentSpace));
+            }
+            parentGroupsForMode();
+        }
+
+        function rebuildViewerScene() {
+            clearScenes();
+            const ents = getSpaceEntities(ctxB, currentSpace) || ctxB.modelEntities;
+            const drawingGroup = buildBucketGroup('drawing', ents.map(e => ({ ctx: ctxB, entity: e })), null, null);
+            if (currentSpace !== 'model') {
+                const vps = getSpaceViewports(ctxB, currentSpace);
+                addPortalContentToBucket(drawingGroup, ctxB, vps, (ctxB.modelEntities || []).map(e => ({ entity: e })), null, null);
+                drawingGroup.add(buildSheetGroup([ctxB], currentSpace));
+            }
+            groups = {
+                unchangedA: new THREE.Group(), // placeholders keep mode switching trivial
+                unchangedB: drawingGroup,
+                deleted: new THREE.Group(), added: new THREE.Group(),
+                modifiedA: new THREE.Group(), modifiedB: new THREE.Group(),
+            };
+            parentGroupsForMode();
+        }
+
+        function applyCategoryVisibility() {
+            if (!groups) return;
+            groups.added.visible = categoryVisibility.added;
+            groups.deleted.visible = categoryVisibility.deleted;
+            groups.modifiedA.visible = categoryVisibility.modified;
+            groups.modifiedB.visible = categoryVisibility.modified;
+            groups.unchangedA.visible = categoryVisibility.unchanged;
+            groups.unchangedB.visible = categoryVisibility.unchanged;
+            requestRender();
+        }
+        function applyLayerVisibility() {
+            if (!groups) return;
+            for (const bucket of Object.values(groups)) {
+                for (const layerGroup of bucket.children) {
+                    layerGroup.visible = layerVisibility[layerGroup.name] !== false;
+                }
+            }
+            requestRender();
+        }
+
+        // ==================================================================
+        //  Camera fit / zoom-to-entity
+        // ==================================================================
+        function overallBounds() {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
+            const expand = (ctx, entity) => {
+                for (const s of entityToSegments(ctx, entity)) {
+                    if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
+                    minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
+                    minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
+                    found = true;
+                }
+            };
+            for (const e of (getSpaceEntities(ctxA, currentSpace) || [])) expand(ctxA, e);
+            for (const e of (getSpaceEntities(ctxB, currentSpace) || [])) expand(ctxB, e);
+            if (!found) return null;
+            return { minX, minY, maxX, maxY };
+        }
+        function fitCameraTo(b, paddingFactor = 1.1) {
+            if (!b || !camera) return;
+            const host = viewMode === 'overlay' ? hostMain : hostA;
+            const aspect = Math.max((host.clientWidth || 2) / (host.clientHeight || 2), 0.01);
+            const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+            let w = Math.max(b.maxX - b.minX, 1e-6) * paddingFactor;
+            let h = Math.max(b.maxY - b.minY, 1e-6) * paddingFactor;
+            if (w / h > aspect) h = w / aspect; else w = h * aspect;
+            camera.left = -w / 2; camera.right = w / 2;
+            camera.top = h / 2; camera.bottom = -h / 2;
+            camera.zoom = 1;
+            camera.up.set(0, 1, 0);
+            camera.position.set(cx, cy, 100);
+            camera.lookAt(cx, cy, 0);
+            camera.updateProjectionMatrix();
+            for (const c of [controlsMain, controlsA, controlsB]) {
+                if (!c) continue;
+                c.target.set(cx, cy, 0);
+                c.update();
+            }
+            requestRender();
+        }
+        function zoomToFit() {
+            if (currentSpace !== 'model') {
+                const b = spaceContentBounds(singleFileMode ? [ctxB] : [ctxA, ctxB], currentSpace);
+                if (b) { fitCameraTo(b); return; }
+            }
+            fitCameraTo(overallBounds());
+        }
+
+        function zoomToEntity(ctx, entity) {
+            const segs = entityToSegments(ctx, entity);
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
+            for (const s of segs) {
+                if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
+                minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
+                minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
+                found = true;
+            }
+            if (!found) {
+                const p = getTextInsertionPoint(entity);
+                if (!p) return;
+                minX = p.x - 5; maxX = p.x + 5; minY = p.y - 5; maxY = p.y + 5;
+            }
+            // Keep some context around a tiny entity.
+            const span = Math.max(maxX - minX, maxY - minY, 1e-6);
+            const pad = span * 2;
+            fitCameraTo({ minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad }, 1);
+            // Flash highlight.
+            const pts = [];
+            for (const s of segs) pts.push(s.x1, s.y1, 0.1, s.x2, s.y2, 0.1);
+            if (!pts.length) pts.push(minX, minY, 0.1, maxX, maxY, 0.1);
+            highlightLine.geometry.dispose();
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+            highlightLine.geometry = geom;
+            highlightLine.visible = true;
+            requestRender();
+            setTimeout(() => { highlightLine.visible = false; requestRender(); }, 1600);
+        }
+
+        // ==================================================================
+        //  UI: results panel
+        // ==================================================================
+        const MAX_ROWS_PER_CAT = 300;
+
+        function entityLabel(entity) {
+            const type = entity?.type || '?';
+            const layer = entity?.layer || '0';
+            const h = (typeof entity?.handle === 'string') ? entity.handle : '';
+            const extra = entity?.type === 'INSERT' ? ` "${entity.name || ''}"`
+                : (entity?.text ? ` "${String(cleanDxfText(entity.text)).slice(0, 18)}"` : '');
+            return `${type}${extra} · ${layer}${h ? ' · #' + h : ''}`;
+        }
+
+        function renderCounts() {
+            let c = compareResult?.counts || { added: 0, deleted: 0, modified: 0, unchanged: 0 };
+            const sr = spaceResults[currentSpace];
+            if (sr && sr.status !== 'matched') {
+                const ctx = sr.status === 'missingA' ? ctxB : ctxA;
+                const n = (getSpaceEntities(ctx, currentSpace) || []).length;
+                c = { added: sr.status === 'missingA' ? n : 0, deleted: sr.status === 'missingB' ? n : 0, modified: 0, unchanged: 0 };
+            }
+            document.getElementById('count-added').textContent = c.added.toLocaleString();
+            document.getElementById('count-deleted').textContent = c.deleted.toLocaleString();
+            document.getElementById('count-modified').textContent = c.modified.toLocaleString();
+            document.getElementById('count-unchanged').textContent = c.unchanged.toLocaleString();
+        }
+
+        function layerSwatchColor(name) {
+            // Display-only colour: prefer B's layer table, then A's.
+            for (const ctx of [ctxB, ctxA]) {
+                const lay = ctx.dxf?.tables?.layer?.layers?.[name];
+                if (lay && typeof lay.color === 'number' && lay.color > 0) return lay.color;
+            }
+            return 0x94a3b8;
+        }
+        function layerPresence(name) {
+            const inA = !!ctxA.dxf?.tables?.layer?.layers?.[name];
+            const inB = !!ctxB.dxf?.tables?.layer?.layers?.[name];
+            return { inA, inB };
+        }
+        function renderLayerList() {
+            const listEl = document.getElementById('layer-list');
+            const filter = (document.getElementById('layer-filter').value || '').toLowerCase();
+            listEl.innerHTML = '';
+            const breakdown = compareResult ? window.DxfCompare.layerBreakdown(compareResult) : {};
+            const names = new Set(Object.keys(breakdown));
+            for (const ctx of [ctxA, ctxB]) {
+                for (const n of Object.keys(ctx.dxf?.tables?.layer?.layers || {})) names.add(n);
+            }
+            if (groups) for (const bucket of Object.values(groups)) for (const g of bucket.children) if (g.name !== '__paper_sheet__') names.add(g.name);
+            const sorted = Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            // "Toggle all" header row (editor pattern)
+            const allRow = document.createElement('div');
+            allRow.className = 'dxf-layer-row dxf-layer-row-all';
+            const allCb = document.createElement('input');
+            allCb.type = 'checkbox';
+            allCb.className = 'layer-checkbox';
+            const visStates = sorted.map(n => layerVisibility[n] !== false);
+            allCb.checked = visStates.every(Boolean);
+            allCb.indeterminate = !allCb.checked && visStates.some(Boolean);
+            allCb.addEventListener('change', () => {
+                for (const n of sorted) layerVisibility[n] = allCb.checked;
+                applyLayerVisibility();
+                renderLayerList();
+            });
+            const allSpacer = document.createElement('span');
+            const allLabel = document.createElement('span');
+            allLabel.className = 'dxf-layer-name';
+            allLabel.textContent = tr('toggleAllLayers', 'Toggle all');
+            allRow.append(allCb, allSpacer, allLabel, document.createElement('span'));
+            listEl.appendChild(allRow);
+
+            for (const name of sorted) {
+                if (filter && !name.toLowerCase().includes(filter)) continue;
+                const stats = breakdown[name] || { added: 0, deleted: 0, modified: 0, unchanged: 0 };
+                const visible = layerVisibility[name] !== false;
+                const { inA, inB } = layerPresence(name);
+                const row = document.createElement('div');
+                row.className = 'dxf-layer-row hover:bg-slate-50 rounded transition-colors';
+                row.title = name;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'layer-checkbox';
+                cb.checked = visible;
+                cb.addEventListener('change', () => {
+                    layerVisibility[name] = cb.checked;
+                    applyLayerVisibility();
+                    renderLayerList();
+                });
+
+                const dot = document.createElement('span');
+                dot.className = 'dxf-layer-color';
+                dot.style.background = '#' + layerSwatchColor(name).toString(16).padStart(6, '0');
+
+                const label = document.createElement('span');
+                label.className = 'dxf-layer-name';
+                label.textContent = name;
+
+                const meta = document.createElement('span');
+                meta.className = 'shrink-0 flex items-center gap-1 font-mono text-[10px] justify-self-end pr-1';
+                let metaHtml = '';
+                if (!singleFileMode && (inA || inB)) {
+                    if (!inA) metaHtml += `<span class="text-[9px] font-bold text-emerald-600 uppercase font-sans">${escapeHtml(tr('missingInA', 'missing in A'))}</span>`;
+                    else if (!inB) metaHtml += `<span class="text-[9px] font-bold text-red-500 uppercase font-sans">${escapeHtml(tr('missingInB', 'missing in B'))}</span>`;
+                }
+                if (stats.added) metaHtml += `<span class="text-emerald-600">+${stats.added}</span>`;
+                if (stats.deleted) metaHtml += `<span class="text-red-500">−${stats.deleted}</span>`;
+                if (stats.modified) metaHtml += `<span class="text-orange-500">~${stats.modified}</span>`;
+                meta.innerHTML = metaHtml;
+
+                row.append(cb, dot, label, meta);
+                listEl.appendChild(row);
+            }
+            if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function renderResultList() {
+            const listEl = document.getElementById('result-list');
+            listEl.innerHTML = '';
+            const sr = spaceResults[currentSpace];
+            if (sr && sr.status !== 'matched') {
+                const note = document.createElement('div');
+                note.className = 'text-slate-400 italic py-2';
+                note.textContent = sr.status === 'missingA'
+                    ? tr('layoutOnlyInB', 'This layout only exists in Version B — all entities counted as added.')
+                    : tr('layoutOnlyInA', 'This layout only exists in Version A — all entities counted as deleted.');
+                listEl.appendChild(note);
+                return;
+            }
+            if (!compareResult) return;
+            const r = compareResult;
+            const rows = [];
+            r.added.forEach((p, i) => rows.push({ cat: 'added', ctx: ctxB, entity: p.b, i }));
+            r.deleted.forEach((p, i) => rows.push({ cat: 'deleted', ctx: ctxA, entity: p.a, i }));
+            r.modified.forEach((p, i) => rows.push({ cat: 'modified', ctx: ctxB, entity: p.b, reason: p.reason, i }));
+            const total = rows.length;
+            if (!total) {
+                const empty = document.createElement('div');
+                empty.className = 'text-slate-400 italic py-2';
+                empty.textContent = tr('noChanges', 'No differences found at this tolerance.');
+                listEl.appendChild(empty);
+                return;
+            }
+            const catColor = { added: '#22c55e', deleted: '#ef4444', modified: '#f97316' };
+            const shown = rows.slice(0, MAX_ROWS_PER_CAT * 3);
+            const frag = document.createDocumentFragment();
+            shown.forEach((row, idx) => {
+                const el = document.createElement('div');
+                el.className = 'result-row flex items-center gap-2 py-1 px-1.5 rounded';
+                el.dataset.idx = String(idx);
+                el.innerHTML = `
+                    <span class="cat-dot shrink-0" style="background:${catColor[row.cat]}"></span>
+                    <span class="flex-1 truncate">${escapeHtml(entityLabel(row.entity))}</span>
+                    ${row.reason === 'block' ? `<span class="shrink-0 text-[9px] font-bold text-orange-500 uppercase">${escapeHtml(tr('reasonBlock', 'block def'))}</span>` : ''}`;
+                el.addEventListener('click', () => {
+                    zoomToEntity(row.ctx, row.entity);
+                    setStatus(tr('statusZoomed', 'Zoomed to {label}', { label: entityLabel(row.entity) }));
+                });
+                frag.appendChild(el);
+            });
+            listEl.appendChild(frag);
+            if (total > shown.length) {
+                const more = document.createElement('div');
+                more.className = 'text-slate-400 italic py-1.5';
+                more.textContent = tr('tooManyRows', 'Showing first {n} of {total} changes.', { n: shown.length, total });
+                listEl.appendChild(more);
+            }
+        }
+
+        function renderPapersList() {
+            const listEl = document.getElementById('papers-list');
+            listEl.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            const entries = singleFileMode
+                ? [{ key: 'model', name: tr('spaceModel', 'Model') },
+                   ...ctxB.layouts.map(l => ({ key: l.name.toLowerCase(), name: l.name }))]
+                : spaceKeysUnion().filter(s => spaceResults[s.key]);
+            for (const s of entries) {
+                const sr = spaceResults[s.key];
+                const row = document.createElement('div');
+                const active = s.key === currentSpace;
+                row.className = 'result-row flex items-center gap-2 py-1.5 px-2 rounded ' + (active ? 'bg-indigo-50 font-bold text-indigo-700' : '');
+                let badge = '';
+                if (!singleFileMode && sr) {
+                    if (sr.status === 'missingA') badge = `<span class="shrink-0 text-[9px] font-bold text-emerald-600 uppercase">${escapeHtml(tr('missingInA', 'missing in A'))}</span>`;
+                    else if (sr.status === 'missingB') badge = `<span class="shrink-0 text-[9px] font-bold text-red-500 uppercase">${escapeHtml(tr('missingInB', 'missing in B'))}</span>`;
+                    else {
+                        const c = sr.result.counts;
+                        const parts = [];
+                        if (c.added) parts.push(`<span class="text-emerald-600">+${c.added}</span>`);
+                        if (c.deleted) parts.push(`<span class="text-red-500">−${c.deleted}</span>`);
+                        if (c.modified) parts.push(`<span class="text-orange-500">~${c.modified}</span>`);
+                        badge = `<span class="shrink-0 flex items-center gap-1 font-mono text-[10px]">${parts.join('')}</span>`;
+                    }
+                }
+                row.innerHTML = `<i data-lucide="${s.key === 'model' ? 'box' : 'file'}" class="w-3.5 h-3.5 shrink-0 ${active ? 'text-indigo-600' : 'text-slate-400'}"></i>
+                    <span class="flex-1 truncate" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>${badge}`;
+                row.addEventListener('click', () => switchSpace(s.key));
+                frag.appendChild(row);
+            }
+            listEl.appendChild(frag);
+            if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+        }
+
+        function switchSpace(key) {
+            if (key === currentSpace) return;
+            currentSpace = key;
+            clearMeasurements();
+            if (toolMode) buildMeasureSegCache();
+            syncControlsToCamera();
+            if (singleFileMode) {
+                rebuildViewerScene();
+            } else {
+                compareResult = spaceResults[key]?.result || null;
+                rebuildDiffScene();
+            }
+            refreshPanel();
+            zoomToFit();
+        }
+
+        function refreshPanel() {
+            renderCounts();
+            renderLayerList();
+            renderResultList();
+            renderPapersList();
+        }
+
+        function setStatus(msg) {
+            const el = document.getElementById('status-msg');
+            if (el) el.textContent = msg;
+        }
+
+        // tr() shim mirroring the viewer: PAGE_I18N lookup + {placeholders}.
+        function tr(key, fallback, params) {
+            const d = (typeof getTranslations === 'function' ? getTranslations() : null) || window.PAGE_I18N || {};
+            let s = d[key] || fallback || key;
+            if (params) for (const [k, v] of Object.entries(params)) s = s.split('{' + k + '}').join(String(v));
+            return s;
+        }
+        window.refreshCompareTranslations = function () { if (compareResult || singleFileMode) refreshPanel(); };
+
+        // ==================================================================
+        //  Measure distance + quick room dimensions (read-only overlays)
+        // ==================================================================
+        // ---- Snap marker gizmos (ported from DXF_Editor) ----
+        const GIZMO_COLOR = 0xfb923c;          // marker orange
+        const GIZMO_THICKNESS = 0.16;          // stroke fraction of gizmo size
+        const GIZMO_SCREEN_FRACTION = 0.0067;  // constant on-screen size
+        const gizmoGeometries = {};
+
+        function quadsToGeometry(quads) {
+            const positions = [], indices = [];
+            let base = 0;
+            for (const q of quads) {
+                positions.push(q[0], q[1], 0, q[2], q[3], 0, q[4], q[5], 0, q[6], q[7], 0);
+                indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+                base += 4;
+            }
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geom.setIndex(indices);
+            return geom;
+        }
+        function buildSquareOutlineGeometry(t = GIZMO_THICKNESS) {
+            const o = 1, i = 1 - t;
+            return quadsToGeometry([
+                [-o, o, o, o, o, i, -o, i],
+                [-o, -i, o, -i, o, -o, -o, -o],
+                [-o, i, -i, i, -i, -i, -o, -i],
+                [i, i, o, i, o, -i, i, -i],
+            ]);
+        }
+        function buildTriangleOutlineGeometry(t = GIZMO_THICKNESS) {
+            const A = [0, 1.15], B = [1.0, -0.7], C = [-1.0, -0.7];
+            const quads = [];
+            for (const [p, q] of [[A, B], [B, C], [C, A]]) {
+                const dx = q[0] - p[0], dy = q[1] - p[1];
+                const len = Math.hypot(dx, dy) || 1;
+                const nx = -dy / len * t, ny = dx / len * t;
+                quads.push([p[0] + nx, p[1] + ny, q[0] + nx, q[1] + ny, q[0] - nx, q[1] - ny, p[0] - nx, p[1] - ny]);
+            }
+            return quadsToGeometry(quads);
+        }
+        function buildXGeometry(t = GIZMO_THICKNESS) {
+            const quads = [];
+            for (const [p, q] of [[[-1, -1], [1, 1]], [[-1, 1], [1, -1]]]) {
+                const dx = q[0] - p[0], dy = q[1] - p[1];
+                const len = Math.hypot(dx, dy) || 1;
+                const nx = -dy / len * t, ny = dx / len * t;
+                quads.push([p[0] + nx, p[1] + ny, q[0] + nx, q[1] + ny, q[0] - nx, q[1] - ny, p[0] - nx, p[1] - ny]);
+            }
+            return quadsToGeometry(quads);
+        }
+        function getGizmoGeometry(shape) {
+            if (!gizmoGeometries[shape]) {
+                gizmoGeometries[shape] =
+                    shape === 'triangle' ? buildTriangleOutlineGeometry() :
+                    shape === 'x' ? buildXGeometry() :
+                    buildSquareOutlineGeometry();
+            }
+            return gizmoGeometries[shape];
+        }
+        function getGizmoWorldSize() {
+            const visibleHeight = Math.abs(camera.top - camera.bottom) / Math.max(camera.zoom || 1, 0.0001);
+            return visibleHeight * GIZMO_SCREEN_FRACTION;
+        }
+        // Editor mapping: EDGE -> x, MID -> triangle, END (and others) -> square.
+        function snapTypeToGizmoShape(snapType) {
+            if (snapType === 'EDGE') return 'x';
+            if (snapType === 'MID') return 'triangle';
+            return 'square';
+        }
+        let snapMarker = null;
+        function updateSnapMarker(snap) {
+            if (!snap || !snap.snapped) {
+                if (snapMarker) { snapMarker.parent?.remove(snapMarker); snapMarker.material?.dispose(); snapMarker = null; requestRender(); }
+                return;
+            }
+            const shape = snapTypeToGizmoShape(snap.type);
+            if (!snapMarker || snapMarker.userData.__shape !== shape) {
+                if (snapMarker) { snapMarker.parent?.remove(snapMarker); snapMarker.material?.dispose(); }
+                snapMarker = new THREE.Mesh(getGizmoGeometry(shape), new THREE.MeshBasicMaterial({
+                    color: GIZMO_COLOR, depthTest: false, depthWrite: false, transparent: true, side: THREE.DoubleSide,
+                }));
+                snapMarker.userData.__shape = shape;
+                snapMarker.renderOrder = 1000;
+                ensureMeasureGroup().add(snapMarker);
+            } else if (snapMarker.parent !== measureGroup) {
+                ensureMeasureGroup().add(snapMarker);
+            }
+            snapMarker.position.set(snap.x, snap.y, 0.3);
+            rescaleSnapMarker();
+            requestRender();
+        }
+        function rescaleSnapMarker() {
+            if (!snapMarker || !camera) return;
+            const s = getGizmoWorldSize();
+            snapMarker.scale.set(s, s, 1);
+        }
+
+        let toolMode = null; // null | 'measure' | 'roomdim'
+        let measureFirstPoint = null;
+        let measureSegCache = null;   // [{x1,y1,x2,y2}] for the current space
+        let measureGroup = null;      // persistent overlay lines
+        let measurePreview = null;
+        const measureLabels = [];     // DOM label elements
+
+        function fmtDist(v) {
+            const s = v.toFixed(settings.measurePrecision);
+            return settings.unitLabel ? s + ' ' + settings.unitLabel : s;
+        }
+        function buildMeasureSegCache() {
+            const segs = [];
+            const sides = singleFileMode ? [ctxB] : [ctxA, ctxB];
+            for (const ctx of sides) {
+                for (const e of (getSpaceEntities(ctx, currentSpace) || [])) {
+                    for (const s of entityToSegments(ctx, e)) segs.push(s);
+                }
+            }
+            measureSegCache = segs;
+        }
+        function ensureMeasureGroup() {
+            if (!measureGroup) {
+                measureGroup = new THREE.Group();
+                measureGroup.name = '__measure__';
+                measureGroup.renderOrder = 998;
+            }
+            const target = viewMode === 'overlay' ? sceneOverlay : sceneB;
+            if (measureGroup.parent !== target) { measureGroup.parent?.remove(measureGroup); target.add(measureGroup); }
+            return measureGroup;
+        }
+        function measureColor() { return isEffectiveDarkMode() ? 0xfacc15 : 0xd97706; }
+        function addMeasureLine(p1, p2) {
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute([p1.x, p1.y, 0.2, p2.x, p2.y, 0.2], 3));
+            const line = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ color: measureColor(), depthTest: false }));
+            line.renderOrder = 998;
+            ensureMeasureGroup().add(line);
+            return line;
+        }
+        function activeHost() { return viewMode === 'overlay' ? hostMain : hostB; }
+        function worldToScreen(p, host) {
+            const v = new THREE.Vector3(p.x, p.y, 0).project(camera);
+            return { x: (v.x + 1) / 2 * host.clientWidth, y: (1 - v.y) / 2 * host.clientHeight };
+        }
+        function addMeasureLabel(text, wp) {
+            const host = activeHost();
+            const el = document.createElement('div');
+            el.className = 'measure-label';
+            el.textContent = text;
+            host.appendChild(el);
+            el.__wp = { x: wp.x, y: wp.y };
+            measureLabels.push(el);
+            positionMeasureLabels();
+        }
+        function positionMeasureLabels() {
+            const host = activeHost();
+            for (const el of measureLabels) {
+                const s = worldToScreen(el.__wp, host);
+                el.style.left = s.x + 'px';
+                el.style.top = s.y + 'px';
+            }
+        }
+        function clearMeasurements() {
+            measureFirstPoint = null;
+            if (snapMarker) { snapMarker.parent?.remove(snapMarker); snapMarker.material?.dispose(); snapMarker = null; }
+            if (measurePreview) { measurePreview.parent?.remove(measurePreview); measurePreview.geometry?.dispose(); measurePreview = null; }
+            if (measureGroup) {
+                measureGroup.traverse(c => c.geometry?.dispose());
+                measureGroup.parent?.remove(measureGroup);
+                measureGroup = null;
+            }
+            for (const el of measureLabels) el.remove();
+            measureLabels.length = 0;
+            setMeasureHint(tr('measureHintFirstPoint', 'Click first point'));
+            requestRender();
+        }
+        function setMeasureHint(msg) {
+            const el = document.getElementById('measure-hint');
+            if (el) el.textContent = msg;
+        }
+        function setToolMode(mode) {
+            toolMode = toolMode === mode ? null : mode;
+            measureFirstPoint = null;
+            if (measurePreview) { measurePreview.parent?.remove(measurePreview); measurePreview = null; requestRender(); }
+            if (snapMarker) { snapMarker.parent?.remove(snapMarker); snapMarker.material?.dispose(); snapMarker = null; requestRender(); }
+            document.getElementById('btn-measure').classList.toggle('active', toolMode === 'measure');
+            document.getElementById('btn-roomdim').classList.toggle('active', toolMode === 'roomdim');
+            document.getElementById('measure-panel').classList.toggle('hidden', toolMode !== 'measure');
+            for (const h of [hostMain, hostA, hostB]) h.classList.toggle('measure-active', !!toolMode);
+            if (toolMode === 'measure') {
+                buildMeasureSegCache();
+                setMeasureHint(tr('measureHintFirstPoint', 'Click first point'));
+            } else if (toolMode === 'roomdim') {
+                buildMeasureSegCache();
+                setStatus(tr('roomDimHint', 'Click inside a room'));
+            }
+        }
+        function screenToWorld(ev, host) {
+            const rect = host.getBoundingClientRect();
+            const nx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+            const ny = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+            const v = new THREE.Vector3(nx, ny, 0).unproject(camera);
+            return { x: v.x, y: v.y };
+        }
+        function pxToWorld(px, host) {
+            const rect = host.getBoundingClientRect();
+            return (camera.right - camera.left) / camera.zoom / Math.max(rect.width, 1) * px;
+        }
+        function findSnap(p, host) {
+            if (!measureSegCache) return { x: p.x, y: p.y, type: 'FREE', snapped: false };
+            const tol = pxToWorld(12, host);
+            const snapEnd = document.getElementById('snap-endpoint').checked;
+            const snapMid = document.getElementById('snap-midpoint').checked;
+            const snapEdge = document.getElementById('snap-edge').checked;
+            let best = null;
+            // Editor scoring: nearer wins, with a small per-type priority penalty
+            // so endpoints beat midpoints beat edge points at similar distance.
+            const consider = (q, type, priority) => {
+                const dist = Math.hypot(q.x - p.x, q.y - p.y);
+                if (dist > tol) return;
+                const score = dist + priority * tol * 0.05;
+                if (!best || score < best.score) best = { x: q.x, y: q.y, type, score, snapped: true };
+            };
+            for (const s of measureSegCache) {
+                if (snapEnd) {
+                    consider({ x: s.x1, y: s.y1 }, 'END', 0);
+                    consider({ x: s.x2, y: s.y2 }, 'END', 0);
+                }
+                if (snapMid) consider({ x: (s.x1 + s.x2) / 2, y: (s.y1 + s.y2) / 2 }, 'MID', 1);
+                if (snapEdge) {
+                    const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
+                    const len2 = dx * dx + dy * dy;
+                    if (len2 < 1e-18) continue;
+                    let t = ((p.x - s.x1) * dx + (p.y - s.y1) * dy) / len2;
+                    t = Math.max(0, Math.min(1, t));
+                    consider({ x: s.x1 + t * dx, y: s.y1 + t * dy }, 'EDGE', 3);
+                }
+            }
+            return best || { x: p.x, y: p.y, type: 'FREE', snapped: false };
+        }
+        function snapPoint(p, host) { return findSnap(p, host); }
+        function handleMeasureClick(ev, host) {
+            const p = snapPoint(screenToWorld(ev, host), host);
+            if (!measureFirstPoint) {
+                measureFirstPoint = p;
+                setMeasureHint(tr('measureHintSecondPoint', 'Click second point'));
+                return;
+            }
+            const a = measureFirstPoint, b = p;
+            measureFirstPoint = null;
+            if (measurePreview) { measurePreview.parent?.remove(measurePreview); measurePreview.geometry?.dispose(); measurePreview = null; }
+            addMeasureLine(a, b);
+            addMeasureLabel(fmtDist(Math.hypot(b.x - a.x, b.y - a.y)), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+            setMeasureHint(tr('measureHintFirstPoint', 'Click first point'));
+            requestRender();
+        }
+        function castRay(p, dx, dy) {
+            // Nearest intersection of a ray from p with the segment cache.
+            let best = Infinity;
+            for (const s of measureSegCache) {
+                const rX = dx, rY = dy;
+                const sX = s.x2 - s.x1, sY = s.y2 - s.y1;
+                const denom = rX * sY - rY * sX;
+                if (Math.abs(denom) < 1e-12) continue;
+                const t = ((s.x1 - p.x) * sY - (s.y1 - p.y) * sX) / denom;
+                const u = ((s.x1 - p.x) * rY - (s.y1 - p.y) * rX) / denom;
+                if (t > 1e-9 && u >= -1e-9 && u <= 1 + 1e-9 && t < best) best = t;
+            }
+            return best === Infinity ? null : best;
+        }
+        function handleRoomDimClick(ev, host) {
+            const p = screenToWorld(ev, host);
+            const left = castRay(p, -1, 0), right = castRay(p, 1, 0);
+            const down = castRay(p, 0, -1), up = castRay(p, 0, 1);
+            if (left === null || right === null || down === null || up === null) {
+                setStatus(tr('roomDimNotClosed', 'No closed room found here'));
+                return;
+            }
+            const x1 = p.x - left, x2 = p.x + right;
+            const y1 = p.y - down, y2 = p.y + up;
+            addMeasureLine({ x: x1, y: p.y }, { x: x2, y: p.y });
+            addMeasureLine({ x: p.x, y: y1 }, { x: p.x, y: y2 });
+            addMeasureLabel(fmtDist(x2 - x1), { x: (x1 + x2) / 2, y: p.y });
+            addMeasureLabel(fmtDist(y2 - y1), { x: p.x, y: (y1 + y2) / 2 });
+            setStatus(tr('roomDimHint', 'Click inside a room'));
+            requestRender();
+        }
+        function handleToolPointerMove(ev, host) {
+            if (toolMode !== 'measure') return;
+            const snap = findSnap(screenToWorld(ev, host), host);
+            updateSnapMarker(snap);
+            if (!measureFirstPoint) return;
+            const p = snap;
+            if (!measurePreview) {
+                const geom = new THREE.BufferGeometry();
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(6, 3));
+                measurePreview = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ color: measureColor(), depthTest: false, transparent: true, opacity: 0.6 }));
+                measurePreview.renderOrder = 999;
+                ensureMeasureGroup().add(measurePreview);
+            }
+            const pos = measurePreview.geometry.getAttribute('position');
+            pos.setXYZ(0, measureFirstPoint.x, measureFirstPoint.y, 0.2);
+            pos.setXYZ(1, p.x, p.y, 0.2);
+            pos.needsUpdate = true;
+            requestRender();
+        }
+        function wireToolEvents(host) {
+            host.addEventListener('click', ev => {
+                if (!toolMode || ev.target.closest('.measure-label')) return;
+                if (toolMode === 'measure') handleMeasureClick(ev, host);
+                else handleRoomDimClick(ev, host);
+            });
+            host.addEventListener('pointermove', ev => handleToolPointerMove(ev, host));
+        }
+        document.getElementById('btn-measure').addEventListener('click', () => setToolMode('measure'));
+        document.getElementById('btn-roomdim').addEventListener('click', () => setToolMode('roomdim'));
+        document.getElementById('btn-measure-clear').addEventListener('click', clearMeasurements);
+        window.addEventListener('keydown', ev => {
+            if (ev.key !== 'Escape') return;
+            clearMeasurements();
+            if (toolMode) setToolMode(toolMode); // exits the active tool
+        });
+
+        // ==================================================================
+        //  File selection UI
+        // ==================================================================
+        const fileState = { a: null, b: null };
+
+        function wireDropZone(zoneId, inputId, nameId, slot) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const nameEl = document.getElementById(nameId);
+            // Same interaction pattern as the viewer's drop-zone: the zone is
+            // clickable except on the native file input inside it.
+            zone.addEventListener('click', (e) => {
+                if (e.target === input || input.contains(e.target)) return;
+                input.click();
+            });
+            input.addEventListener('change', () => { if (input.files[0]) setFile(input.files[0]); });
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+            ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, () => zone.classList.add('dragover')));
+            ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, () => zone.classList.remove('dragover')));
+            zone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+            function setFile(f) {
+                fileState[slot] = f;
+                nameEl.textContent = f.name;
+                nameEl.classList.remove('text-slate-500');
+                nameEl.classList.add('text-indigo-600');
+                updateOpenButton();
+            }
+        }
+        function updateOpenButton() {
+            const btn = document.getElementById('btn-open');
+            btn.disabled = !fileState.a && !fileState.b;
+            const label = btn.querySelector('span');
+            if (fileState.a && fileState.b) label.textContent = tr('openCompareBtn', 'Compare');
+            else label.textContent = tr('openViewBtn', 'View drawing');
+            const fmt = f => f ? `${f.name} (${(f.size / 1024).toFixed(1)} KB)` : '-';
+            document.getElementById('info-file-a').textContent = fmt(fileState.a);
+            document.getElementById('info-file-b').textContent = fmt(fileState.b);
+            const fmtDate = f => (f && f.lastModified) ? new Date(f.lastModified).toLocaleString() : '-';
+            document.getElementById('info-date-a').textContent = fmtDate(fileState.a);
+            document.getElementById('info-date-b').textContent = fmtDate(fileState.b);
+        }
+        wireDropZone('drop-a', 'input-a', 'file-a-name', 'a');
+        wireDropZone('drop-b', 'input-b', 'file-b-name', 'b');
+
+        const loader = document.getElementById('loader');
+        const loaderMsg = document.getElementById('loader-msg');
+
+        document.getElementById('btn-open').addEventListener('click', async () => {
+            loader.classList.remove('hidden');
+            loaderMsg.textContent = tr('loaderParsing', 'Parsing…');
+            document.getElementById('error-box').classList.add('hidden');
+            try {
+                // Single file in either slot → viewer mode over ctxB.
+                let fa = fileState.a, fb = fileState.b;
+                if (fa && !fb) { fb = fa; fa = null; }
+                singleFileMode = !fa;
+
+                if (fa) {
+                    const { text, name } = await fileToDxfText(fa);
+                    loadDxfTextIntoCtx(ctxA, text, name);
+                } else {
+                    ctxA.dxf = { entities: [], blocks: {} };
+                    ctxA.modelEntities = [];
+                    ctxA.rawHatches = [];
+                    ctxA.fileName = '';
+                }
+                {
+                    const { text, name } = await fileToDxfText(fb);
+                    loadDxfTextIntoCtx(ctxB, text, name);
+                }
+
+                document.getElementById('info-ents-a').textContent = singleFileMode ? '-' : ctxA.modelEntities.length.toLocaleString();
+                document.getElementById('info-ents-b').textContent = ctxB.modelEntities.length.toLocaleString();
+                document.getElementById('tab-compare').disabled = false;
+                document.getElementById('btn-papers').disabled = false;
+                switchTab('view-compare');
+                requestAnimationFrame(() => { measureToolbarHeight(); applyThemeButton(); if (!singleFileMode) { setRightTab('comparison'); setRightOpen(true); } });
+
+                initThree();
+                onResize();
+
+                currentSpace = 'model';
+                if (singleFileMode) {
+                    compareResult = null;
+                    spaceResults = {};
+                    document.getElementById('compare-title').textContent = ctxB.fileName;
+                    document.getElementById('mode-badge').textContent = tr('viewerOnly', 'viewer');
+                    rebuildViewerScene();
+                    setStatus(tr('viewerLoaded', 'Loaded {a} — viewer mode (load a second file to compare).', { a: ctxB.fileName }));
+                } else {
+                    loaderMsg.textContent = tr('loaderComparing', 'Comparing…');
+                    runCompare();
+                    document.getElementById('compare-title').textContent = ctxA.fileName + '  →  ' + ctxB.fileName;
+                    document.getElementById('mode-badge').textContent = compareResult.mode === 'handle'
+                        ? tr('modeHandle', 'matched by handle') : tr('modeFingerprint', 'matched by geometry');
+                    rebuildDiffScene();
+                    setStatus(tr('compareDone', 'Compared {a} vs {b}: {added} added, {deleted} deleted, {modified} modified.', {
+                        a: ctxA.fileName, b: ctxB.fileName,
+                        added: compareResult.counts.added, deleted: compareResult.counts.deleted, modified: compareResult.counts.modified,
+                    }));
+                }
+                refreshPanel();
+                zoomToFit();
+            } catch (err) {
+                console.error(err);
+                const box = document.getElementById('error-box');
+                document.getElementById('error-text').textContent = (err && err.message) || tr('errorParsingDxf', 'Error parsing DXF.');
+                box.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+            } finally {
+                loader.classList.add('hidden');
+            }
+        });
+
+        // ==================================================================
+        //  Toolbar wiring
+        // ==================================================================
+        // ---- Sidebar (viewer pattern: collapsible rail + tab switching) ----
+        const appSidebar = document.getElementById('app-sidebar');
+        const sidebarTexts = document.querySelectorAll('.sidebar-text');
+        let isSidebarExpanded = false;
+        document.getElementById('sidebar-toggle').addEventListener('click', () => {
+            isSidebarExpanded = !isSidebarExpanded;
+            const toggleWrapper = document.getElementById('sidebar-toggle-icon-wrapper');
+            if (isSidebarExpanded) {
+                appSidebar.classList.replace('w-[72px]', 'w-64');
+                toggleWrapper.style.transform = 'rotate(180deg)';
+                sidebarTexts.forEach(t => t.classList.replace('opacity-0', 'opacity-100'));
+            } else {
+                appSidebar.classList.replace('w-64', 'w-[72px]');
+                toggleWrapper.style.transform = 'rotate(0deg)';
+                sidebarTexts.forEach(t => t.classList.replace('opacity-100', 'opacity-0'));
+            }
+            setTimeout(onResize, 300);
+        });
+        const tabs = document.querySelectorAll('.tab-btn[data-target]');
+        const panels = document.querySelectorAll('.view-panel');
+        function switchTab(targetId) {
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-target="${targetId}"]`)?.classList.add('active');
+            panels.forEach(p => {
+                if (p.id === targetId) { p.classList.remove('hidden'); p.classList.add('flex'); p.style.zIndex = '10'; }
+                else { p.classList.add('hidden'); p.classList.remove('flex'); p.style.zIndex = '1'; }
+            });
+            if (targetId === 'view-compare') {
+                setTimeout(() => { onResize(); requestRender(); }, 50);
+            }
+        }
+        tabs.forEach(tab => tab.addEventListener('click', () => { if (!tab.disabled) switchTab(tab.dataset.target); }));
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            clearMeasurements();
+            document.getElementById('btn-view-overlay').classList.toggle('active', mode === 'overlay');
+            document.getElementById('btn-view-sbs').classList.toggle('active', mode === 'sbs');
+            hostMain.classList.toggle('hidden', mode !== 'overlay');
+            hostA.classList.toggle('hidden', mode !== 'sbs');
+            hostB.classList.toggle('hidden', mode !== 'sbs');
+            controlsMain.enabled = mode === 'overlay';
+            controlsA.enabled = mode === 'sbs';
+            controlsB.enabled = mode === 'sbs';
+            syncControlsToCamera();
+            parentGroupsForMode();
+            // Resize after layout settles.
+            requestAnimationFrame(() => { onResize(); requestRender(); });
+        }
+        document.getElementById('btn-view-overlay').addEventListener('click', () => setViewMode('overlay'));
+        document.getElementById('btn-view-sbs').addEventListener('click', () => setViewMode('sbs'));
+        document.getElementById('btn-fit').addEventListener('click', zoomToFit);
+        // ---- Sliding side panels (editor pattern: translate, canvas untouched) ----
+        function setPapersOpen(open) {
+            const p = document.getElementById('papers-panel');
+            p.classList.toggle('-translate-x-full', !open);
+            document.getElementById('btn-papers').classList.toggle('active', open);
+        }
+        function papersOpen() { return !document.getElementById('papers-panel').classList.contains('-translate-x-full'); }
+        document.getElementById('btn-papers').addEventListener('click', () => setPapersOpen(!papersOpen()));
+        document.getElementById('papers-close').addEventListener('click', () => setPapersOpen(false));
+
+        function setRightOpen(open) {
+            const p = document.getElementById('right-panel');
+            p.classList.toggle('translate-x-full', !open);
+            syncRightButtons();
+        }
+        function rightOpen() { return !document.getElementById('right-panel').classList.contains('translate-x-full'); }
+        let rightTab = 'comparison'; // 'comparison' | 'layers'
+        function setRightTab(tab) {
+            rightTab = tab;
+            document.getElementById('rp-tab-comparison').classList.toggle('active', tab === 'comparison');
+            document.getElementById('rp-tab-layers').classList.toggle('active', tab === 'layers');
+            const cc = document.getElementById('rp-content-comparison');
+            const cl = document.getElementById('rp-content-layers');
+            cc.classList.toggle('hidden', tab !== 'comparison');
+            cc.classList.toggle('flex', tab === 'comparison');
+            cl.classList.toggle('hidden', tab !== 'layers');
+            cl.classList.toggle('flex', tab === 'layers');
+            syncRightButtons();
+        }
+        function syncRightButtons() {
+            const open = rightOpen();
+            document.getElementById('btn-panel').classList.toggle('active', open && rightTab === 'comparison');
+            document.getElementById('btn-layers-tab').classList.toggle('active', open && rightTab === 'layers');
+        }
+        document.getElementById('rp-tab-comparison').addEventListener('click', () => setRightTab('comparison'));
+        document.getElementById('rp-tab-layers').addEventListener('click', () => setRightTab('layers'));
+        document.getElementById('right-panel-close').addEventListener('click', () => setRightOpen(false));
+        document.getElementById('btn-panel').addEventListener('click', () => {
+            if (rightOpen() && rightTab === 'comparison') setRightOpen(false);
+            else { setRightTab('comparison'); setRightOpen(true); }
+        });
+        document.getElementById('btn-layers-tab').addEventListener('click', () => {
+            if (rightOpen() && rightTab === 'layers') setRightOpen(false);
+            else { setRightTab('layers'); setRightOpen(true); }
+        });
+
+        // ---- Dark mode ----
+        function applyThemeButton() {
+            const icon = document.querySelector('#btn-theme i');
+            if (icon) icon.setAttribute('data-lucide', settings.darkMode ? 'sun' : 'moon');
+            if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+        }
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            if (currentSpace !== 'model') return;
+            settings.darkMode = !settings.darkMode;
+            saveSettings();
+            applyThemeButton();
+            if (singleFileMode) rebuildViewerScene(); else if (compareResult || spaceResults[currentSpace]) rebuildDiffScene();
+            requestRender();
+        });
+
+        // ---- Settings popup ----
+        function renderSettings() {
+            const el = document.getElementById('settings-content');
+            const row = (label, hint, control) => `
+                <div class="settings-row">
+                    <div><div class="settings-row-label">${label}</div>${hint ? `<div class="settings-row-hint">${hint}</div>` : ''}</div>
+                    <div class="settings-row-control">${control}</div>
+                </div>`;
+            const check = (id, on) => `<input type="checkbox" id="${id}" class="settings-check-input" ${on ? 'checked' : ''}>`;
+            el.innerHTML = `
+                <div class="settings-section-title settings-section-title--first">${escapeHtml(tr('settingsDisplay', 'Display'))}</div>
+                ${row(escapeHtml(tr('toggleDarkMode', 'Dark mode')), escapeHtml(tr('darkModeHint', 'Drawing area only. Paper layouts are always light.')), check('set-dark', settings.darkMode))}
+                ${row(escapeHtml(tr('setShowText', 'Show text')), '', check('set-text', settings.showText))}
+                ${row(escapeHtml(tr('setShowFills', 'Show hatch fills')), '', check('set-fills', settings.showFills))}
+                ${row(escapeHtml(tr('setShowPortals', 'Show model through viewports')), escapeHtml(tr('setShowPortalsHint', 'Render model content inside paper layout frames.')), check('set-portals', settings.showPortals))}
+                <div class="settings-section-title">${escapeHtml(tr('settingsMeasure', 'Measurement'))}</div>
+                ${row(escapeHtml(tr('setPrecision', 'Decimals')), '', `<select id="set-precision" class="settings-select">${[0,1,2,3,4].map(n => `<option value="${n}" ${settings.measurePrecision === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`)}
+                ${row(escapeHtml(tr('setUnitLabel', 'Unit label')), escapeHtml(tr('setUnitHint', 'Appended to distances, e.g. m or mm.')), `<input id="set-unit" class="settings-select" style="width:70px" value="${escapeHtml(settings.unitLabel)}">`)}`;
+            const rebuild = () => {
+                saveSettings();
+                if (singleFileMode) rebuildViewerScene(); else if (spaceResults[currentSpace]) rebuildDiffScene();
+                requestRender();
+            };
+            el.querySelector('#set-dark').addEventListener('change', e => { settings.darkMode = e.target.checked; applyThemeButton(); rebuild(); });
+            el.querySelector('#set-text').addEventListener('change', e => { settings.showText = e.target.checked; rebuild(); });
+            el.querySelector('#set-fills').addEventListener('change', e => { settings.showFills = e.target.checked; rebuild(); });
+            el.querySelector('#set-portals').addEventListener('change', e => { settings.showPortals = e.target.checked; rebuild(); });
+            el.querySelector('#set-precision').addEventListener('change', e => { settings.measurePrecision = Number(e.target.value); saveSettings(); });
+            el.querySelector('#set-unit').addEventListener('input', e => { settings.unitLabel = e.target.value.trim(); saveSettings(); });
+        }
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            const p = document.getElementById('settings-popup');
+            const opening = p.classList.contains('closed');
+            if (opening) renderSettings();
+            p.classList.toggle('closed', !opening);
+            document.getElementById('btn-settings').classList.toggle('active', opening);
+        });
+        document.getElementById('settings-close').addEventListener('click', () => {
+            document.getElementById('settings-popup').classList.add('closed');
+            document.getElementById('btn-settings').classList.remove('active');
+        });
+
+        const btnDisplay = document.getElementById('btn-display');
+        btnDisplay.addEventListener('click', () => {
+            colorMode = colorMode === 'changes' ? 'original' : 'changes';
+            btnDisplay.classList.toggle('active', colorMode === 'changes');
+            btnDisplay.title = colorMode === 'changes'
+                ? tr('displayChanges', 'Display: changes') : tr('displayOriginal', 'Display: original colors');
+            if (!singleFileMode && compareResult) rebuildDiffScene();
+        });
+
+        // Category chips
+        document.querySelectorAll('#cat-chips .cat-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const cat = chip.dataset.cat;
+                categoryVisibility[cat] = !categoryVisibility[cat];
+                chip.classList.toggle('off', !categoryVisibility[cat]);
+                applyCategoryVisibility();
+            });
+        });
+
+        // Tolerance slider (log scale 1e-6 … 1)
+        const tolSlider = document.getElementById('tol-slider');
+        const tolValue = document.getElementById('tol-value');
+        let tolDebounce = null;
+        tolSlider.addEventListener('input', () => {
+            tolerance = Math.pow(10, Number(tolSlider.value));
+            tolValue.textContent = '1e' + tolSlider.value;
+            if (singleFileMode || !ctxA.dxf) return;
+            clearTimeout(tolDebounce);
+            tolDebounce = setTimeout(() => {
+                loader.classList.remove('hidden');
+                loaderMsg.textContent = tr('loaderComparing', 'Comparing…');
+                setTimeout(() => {
+                    try {
+                        runCompare();
+                        document.getElementById('mode-badge').textContent = compareResult.mode === 'handle'
+                            ? tr('modeHandle', 'matched by handle') : tr('modeFingerprint', 'matched by geometry');
+                        rebuildDiffScene();
+                        refreshPanel();
+                    } finally { loader.classList.add('hidden'); }
+                }, 30);
+            }, 250);
+        });
+
+        // Layer filter
+        document.getElementById('layer-filter').addEventListener('input', renderLayerList);
+
+        // Console triage for real files: window.__cmpDebug
+        Object.defineProperty(window, '__cmpDebug', {
+            get() {
+                const side = (ctx) => ({
+                    file: ctx.fileName,
+                    layouts: ctx.layouts,
+                    viewports: ctx.viewports?.map(v => ({
+                        handle: v.handle, block: v.blockName, fromEntities: v.fromEntities,
+                        cx: v.cx, cy: v.cy, w: v.width, h: v.height,
+                        viewH: v.viewHeight, status: v.status, viewId: v.viewId,
+                    })),
+                    modelCount: ctx.modelEntities?.length,
+                    paperActiveCount: ctx.paperActive?.length,
+                });
+                return {
+                    currentSpace, viewMode, colorMode,
+                    A: side(ctxA), B: side(ctxB),
+                    spaces: Object.fromEntries(Object.entries(spaceResults).map(([k, v]) =>
+                        [k, { status: v.status, name: v.name, counts: v.result?.counts }])),
+                };
+            }
+        });
+    </script>
+</body>
+</html>
