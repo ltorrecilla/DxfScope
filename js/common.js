@@ -432,8 +432,25 @@ function applyLanguage() {
 }
 
 // --- Inject Global Navigation and Footer ---
+// Opt-in per page: injectUI({ linkTarget: '_blank' }) makes every injected
+// nav/footer link open in a new tab. Editors with unsaved work use this so a
+// stray click on the bar cannot navigate away from the drawing. Links that
+// already declare their own target keep it.
+window._uiLinkTarget = null;
+function applyUiLinkTarget(root) {
+    if (!window._uiLinkTarget || !root) return;
+    root.querySelectorAll('a[href]').forEach(a => {
+        if (a.hasAttribute('target')) return;
+        const href = a.getAttribute('href') || '';
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+        a.target = window._uiLinkTarget;
+        a.rel = 'noopener noreferrer';
+    });
+}
+
 window.injectUI = function (options = {}) {
     // Set default behaviors
+    if (typeof options.linkTarget === 'string' && options.linkTarget) window._uiLinkTarget = options.linkTarget;
     const showSignIn = options.showSignIn !== false;
     const showCategories = options.showCategories !== false;
     const showNav = options.showNav !== false;
@@ -561,6 +578,7 @@ window.injectUI = function (options = {}) {
 
         // ADD THIS LINE HERE: Render immediately with default labels
         if (typeof renderNav === 'function') renderNav();
+        applyUiLinkTarget(nav);
     }
 
     window.toggleMobileMenu = function () {
@@ -640,6 +658,7 @@ window.injectUI = function (options = {}) {
 
         footer.innerHTML = footerHTML;
         document.body.appendChild(footer);
+        applyUiLinkTarget(footer);
 
         const yearElement = document.getElementById('current-year');
         if (yearElement) yearElement.textContent = new Date().getFullYear();
@@ -749,6 +768,8 @@ function renderNav() {
             </a>`;
     }
 
+    applyUiLinkTarget(desktopNav);
+    applyUiLinkTarget(mobileNav);
     if (window.lucide) lucide.createIcons();
 }
 

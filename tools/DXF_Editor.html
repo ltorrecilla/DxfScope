@@ -28,6 +28,7 @@
 
     <script>window.SITE_ROOT = '../';</script>
     <script src="../lang/en/global.js"></script>
+    <script src="../lang/en/dxf_editor.js"></script>
     <script src="../js/common.js"></script>
     <script src="../js/dxf/dxf-parser.js"></script>
     <script src="../js/dxf/dxf_emit.js"></script>
@@ -1455,6 +1456,7 @@
             // 2. Generate the Navigation Bar & Footer
             window.injectUI({
                 showNav: true,
+                linkTarget: '_blank',   // a stray click on the bar must not close the drawing
                 transparentNav: false,
                 showSignIn: false,
                 showCategories: true,
@@ -1485,35 +1487,7 @@
                 uploadView.appendChild(injectedFooter);
             }
 
-            // 3. Initialize Tool-Specific Logic (Version Input logic)
-            const currentYear = new Date().getFullYear();
-            const targetVersionInput = document.getElementById('targetVersionInput');
-            if (targetVersionInput) {
-                targetVersionInput.max = currentYear;
-                if (!targetVersionInput.value) targetVersionInput.value = currentYear;
-            }
-
-            const updateAppCb = document.getElementById('updateAppCb');
-            const versionInputContainer = document.getElementById('versionInputContainer');
-
-            function toggleVersionInput() {
-                if (updateAppCb && versionInputContainer) {
-                    if (updateAppCb.checked) {
-                        versionInputContainer.style.opacity = '1';
-                        versionInputContainer.style.pointerEvents = 'auto';
-                    } else {
-                        versionInputContainer.style.opacity = '0.4';
-                        versionInputContainer.style.pointerEvents = 'none';
-                    }
-                }
-            }
-
-            if (updateAppCb) {
-                updateAppCb.addEventListener('change', toggleVersionInput);
-                toggleVersionInput();
-            }
-
-            // 4. Start the translation engine
+            // 3. Start the translation engine
             window.loadLanguage(currentLang, window.pageScriptPrefix);
         }
 
@@ -1905,6 +1879,7 @@
         const textEditInput = document.getElementById('text-edit-input');
         let editingTextEntity = null;       // the SOURCE entity currently being edited
         let hasUnsavedChanges = false;      // dirty flag for the Save button
+        let viewerFittedForDrawing = false; // switchTab zoom-fits only the first time a drawing shows
 
         // ===== Explicit edit registry (source of truth for Save) =====
         // Recorded at action time so serialization never has to *infer* what changed.
@@ -4507,7 +4482,7 @@
                             '70': entity.dimensionType,
                         });
                     } else {
-                        recordGeometryTransform(entity.__rawKey, {
+                        const patch = {
                             '10': g.anchor.x, '20': g.anchor.y,
                             '11': g.text.x, '21': g.text.y,
                             '13': g.p1.x, '23': g.p1.y,
@@ -4515,7 +4490,10 @@
                             '42': g.measurement,
                             '1': entity.text || '',
                             '70': entity.dimensionType,
-                        });
+                        };
+                        // Rotated dims keep their direction in code 50; a rotate op changes it.
+                        if ((Number(entity.dimensionType) & 7) === 0) patch['50'] = Number(entity.angle) || 0;
+                        recordGeometryTransform(entity.__rawKey, patch);
                     }
                 }
             }
@@ -5598,19 +5576,7 @@
                 if (e.type === 'DIMENSION') {
                     // Regenerate the graphics in the target: fresh anonymous *D
                     // block, geometry synthesized from the definition points.
-                    e.block = nextDimBlockName();
-                    if (!editRegistry.createdBlocks) editRegistry.createdBlocks = [];
-                    editRegistry.createdBlocks.push({ name: e.block, entities: [], layer: e.layer || '0' });
-                    registerNewEntity(e, { keepLayer: true });
-                    if (!regenerateDimension(e)) {
-                        // Could not rebuild (unsupported dimension flavor): back it out.
-                        const i1 = currentDxf.entities.indexOf(e);
-                        if (i1 >= 0) currentDxf.entities.splice(i1, 1);
-                        editRegistry.createdEntities = editRegistry.createdEntities.filter(x => x !== e);
-                        editRegistry.createdBlocks = editRegistry.createdBlocks.filter(b => b.name !== e.block);
-                        skipped++;
-                        continue;
-                    }
+                    if (!registerNewDimension(e)) { skipped++; continue; }
                 } else {
                     registerNewEntity(e, { keepLayer: true });
                 }
@@ -5878,15 +5844,23 @@
         });
 
         // ===== Transform operations (move / rotate / scale / mirror) =====
+        // ELLIPSE and (for scale) SPLINE are converted to session entities before
+        // a transform: their raw form holds relative vectors / knot values that a
+        // generic coordinate patch would corrupt, so they re-emit from memory.
+        // HATCH goes through commitHatchGeometry (raw dropped, re-emitted).
+        // ACAD_TABLE: move/copy only; rotation lives in a direction vector.
         const OPS_SUPPORTED = {
-            move:   new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'DIMENSION', 'WIPEOUT']),
-            copy:   new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'VIEWPORT', 'LEADER', 'WIPEOUT']),
-            rotate: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT']),
-            scale:  new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'LEADER', 'WIPEOUT']),
-            mirror: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'LEADER', 'WIPEOUT']),
-            array:  new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT']),
-            stretch: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT']),
+            move:   new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'DIMENSION', 'WIPEOUT', 'POINT', 'ELLIPSE', 'SPLINE', 'HATCH', 'ACAD_TABLE']),
+            copy:   new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'VIEWPORT', 'LEADER', 'WIPEOUT', 'INSERT', 'DIMENSION', 'POINT', 'ELLIPSE', 'SPLINE', 'HATCH', 'ACAD_TABLE']),
+            rotate: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT', 'DIMENSION', 'POINT', 'ELLIPSE', 'SPLINE', 'HATCH']),
+            scale:  new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'LEADER', 'WIPEOUT', 'INSERT', 'DIMENSION', 'POINT', 'ELLIPSE', 'SPLINE', 'HATCH']),
+            mirror: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'LEADER', 'WIPEOUT', 'INSERT', 'DIMENSION', 'POINT', 'ELLIPSE', 'SPLINE', 'HATCH']),
+            array:  new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT', 'POINT', 'ELLIPSE', 'SPLINE']),
+            stretch: new Set(['LINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'LEADER', 'WIPEOUT', 'POINT', 'ELLIPSE', 'SPLINE', 'ACAD_TABLE']),
         };
+        // Raw-patch transforms are unsafe for these; re-emit from memory instead.
+        const OPS_REEMIT_ALWAYS = new Set(['ELLIPSE', 'WIPEOUT']);
+        const OPS_REEMIT_ON_SCALE = new Set(['SPLINE']);
 
         let opsTargets = [];              // source entities the active op will transform
         let opsPreviewSegs = null;        // THREE.LineSegments for the live preview
@@ -6222,9 +6196,7 @@
             if (!editRegistry.createdBlocks) editRegistry.createdBlocks = [];
             editRegistry.createdBlocks.push({ name: t.blockName, entities: blockEnts, layer: '0' });
             pushUndo(tr('opTableCreate', 'Insert table'), []);
-            if (!Array.isArray(currentDxf.entities)) currentDxf.entities = [];
-            currentDxf.entities.push(t);
-            registerNewEntity(t, { keepLayer: false });
+            registerNewEntity(t, { keepLayer: false });   // pushes into currentDxf.entities
             finalizeNewEntities();
             setConsoleMessage(tr('tablePlaced', 'Table placed \u2014 double-click a cell to type into it.'), false);
         }
@@ -6334,6 +6306,53 @@
         });
 
         // Apply a committed operation to the captured targets.
+        // Session copy of a hatch: plain data, no raw identity.
+        function hatchCopyOf(src) {
+            const copy = clonePlain(src);
+            for (const k of Object.keys(copy)) if (k.startsWith('__')) delete copy[k];
+            delete copy.handle;
+            copy.inPaperSpace = !!src.__paperSpace || !!src.inPaperSpace;
+            if (copy.inPaperSpace && src.__layoutName) copy.layoutName = src.__layoutName;
+            return copy;
+        }
+
+        // Session copy of a table (imported or created) with its own *T block.
+        function tableCopyOf(src) {
+            if (src.__unsupported) return null;
+            const copy = clonePlain(src);
+            for (const k of Object.keys(copy)) if (k.startsWith('__')) delete copy[k];
+            copy.__acadTable = true;
+            delete copy.handle;
+            copy.blockName = nextTableBlockName();
+            return copy;
+        }
+        function registerNewTable(t) {
+            const local = window.DxfHatch.acadTableGeometry({ ...t, position: { x: 0, y: 0 }, rotation: 0 });
+            const blockEnts = local.segments.map(s => ({
+                type: 'LINE', layer: '0',
+                vertices: [{ x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 }],
+            }));
+            if (!editRegistry.createdBlocks) editRegistry.createdBlocks = [];
+            editRegistry.createdBlocks.push({ name: t.blockName, entities: blockEnts, layer: '0' });
+            registerNewEntity(t, { keepLayer: true });
+        }
+
+        // Register a DIMENSION whose definition points are already in place:
+        // fresh anonymous *D block, graphics synthesized from the points.
+        // Returns false (and leaves nothing behind) for unsupported flavors.
+        function registerNewDimension(e) {
+            e.block = nextDimBlockName();
+            if (!editRegistry.createdBlocks) editRegistry.createdBlocks = [];
+            editRegistry.createdBlocks.push({ name: e.block, entities: [], layer: e.layer || '0' });
+            registerNewEntity(e, { keepLayer: true });
+            if (regenerateDimension(e)) return true;
+            const i1 = currentDxf.entities.indexOf(e);
+            if (i1 >= 0) currentDxf.entities.splice(i1, 1);
+            editRegistry.createdEntities = editRegistry.createdEntities.filter(x => x !== e);
+            editRegistry.createdBlocks = editRegistry.createdBlocks.filter(b => b.name !== e.block);
+            return false;
+        }
+
         function applyOpsCommit(op) {
             pushUndo(tr('opTransform', 'Move / transform'), selectedEntities);
             const O = window.DxfOpsEdit;
@@ -6342,8 +6361,28 @@
             if (op.kind === 'copy') {
                 let created = 0;
                 for (const src of opsTargets) {
-                    if (src.__acadTable) continue;   // no table emitter — cannot copy
+                    const st = String(src.type).toUpperCase();
+                    if (st === 'HATCH') {
+                        const copy = hatchCopyOf(src);
+                        window.DxfHatch.translateHatch(copy, op.dx, op.dy);
+                        registerNewEntity(copy, { keepLayer: true });
+                        created++;
+                        continue;
+                    }
+                    if (src.__acadTable) {
+                        const copy = tableCopyOf(src);
+                        if (!copy) continue;
+                        O.translateEntity(copy, op.dx, op.dy);
+                        registerNewTable(copy);
+                        created++;
+                        continue;
+                    }
                     const copy = O.cloneEntityData(src);
+                    if (st === 'DIMENSION') {
+                        O.translateEntity(copy, op.dx, op.dy);
+                        if (registerNewDimension(copy)) created++;
+                        continue;
+                    }
                     if (String(src.type).toUpperCase() === 'VIEWPORT') {
                         // Frames: shift the frame, keep the identical model view.
                         const F = window.DxfPaperFrames;
@@ -6382,6 +6421,8 @@
                     if (result === 'whole' && src.__acadTable) {
                         // Table: absolute insertion patch (code 11 is a direction).
                         mergeTableEdit(key, { '10': src.position.x, '20': src.position.y });
+                    } else if (result === 'whole' && OPS_REEMIT_ALWAYS.has(t)) {
+                        convertToCreatedEntity(src);   // NEW: key -> emitted from memory
                     } else if (result === 'whole' && t !== 'LWPOLYLINE' && t !== 'POLYLINE') {
                         // A rigid move persists as a translate transform.
                         recordGeometryTransform(key, { type: 'translate', dx: op.dx, dy: op.dy });
@@ -6424,9 +6465,23 @@
             } else if (op.kind === 'mirror') {
                 // Mirror creates copies; originals stay untouched.
                 let created = 0;
+                const mirrorFn = (x, y) => O.mirrorPoint(x, y, op.p1, op.p2);
+                const mirrorTheta = Math.atan2(op.p2.y - op.p1.y, op.p2.x - op.p1.x);
                 for (const src of opsTargets) {
-                    if (src.__acadTable) continue;   // no table emitter — cannot copy
+                    if (src.__acadTable) continue;   // tables: move/copy only
+                    const st = String(src.type).toUpperCase();
+                    if (st === 'HATCH') {
+                        const copy = hatchCopyOf(src);
+                        window.DxfHatch.transformHatch(copy, mirrorFn, { mirrorRad: mirrorTheta });
+                        registerNewEntity(copy, { keepLayer: true });
+                        created++;
+                        continue;
+                    }
                     const copy = O.mirrorEntityCopy(src, op.p1, op.p2);
+                    if (st === 'DIMENSION') {
+                        if (registerNewDimension(copy)) created++;
+                        continue;
+                    }
                     registerNewEntity(copy, { keepLayer: true });
                     created++;
                 }
@@ -6438,12 +6493,25 @@
                     // image coordinates — no raw patch can express a transform.
                     // Convert imported ones to created entities first; the NEW:
                     // key then routes every recording path to full re-emission.
-                    if (src.type === 'WIPEOUT' && src.__rawKey && !src.__rawKey.startsWith('NEW:')) {
+                    const st = String(src.type).toUpperCase();
+                    if ((OPS_REEMIT_ALWAYS.has(st) || (op.kind === 'scale' && OPS_REEMIT_ON_SCALE.has(st)))
+                        && src.__rawKey && !src.__rawKey.startsWith('NEW:')) {
                         convertToCreatedEntity(src);
+                    }
+                    if (st === 'HATCH') {
+                        // Boundary + pattern transformed in memory; the raw hatch is
+                        // dropped and the entity re-emitted (same path as grip edits).
+                        const H = window.DxfHatch;
+                        if (op.kind === 'move') H.translateHatch(src, op.dx, op.dy);
+                        else if (op.kind === 'rotate') H.transformHatch(src, (x, y) => O.rotatePoint(x, y, op.cx, op.cy, op.angle), { rotateRad: op.angle });
+                        else if (op.kind === 'scale') H.transformHatch(src, (x, y) => O.scalePoint(x, y, op.cx, op.cy, op.factor), { scale: op.factor });
+                        commitHatchGeometry(src);
+                        markDirty();
+                        continue;
                     }
                     if (src.__acadTable) {
                         if (op.kind !== 'move') {
-                            setConsoleMessage(tr('tableMoveOnly', 'Tables support move and delete only.'), true);
+                            setConsoleMessage(tr('tableMoveOnly', 'Tables support move, copy and delete only.'), true);
                             continue;
                         }
                         // The generic translate patch would also shift code 11 —
@@ -6478,9 +6546,11 @@
                         }
                     } else if (op.kind === 'rotate') {
                         O.rotateEntity(src, op.cx, op.cy, op.angle);
+                        if (st === 'DIMENSION') { regenerateDimension(src); continue; }
                         recordGeometryTransform(src.__rawKey, { type: 'rotate', cx: op.cx, cy: op.cy, angle: op.angle });
                     } else if (op.kind === 'scale') {
                         O.scaleEntity(src, op.cx, op.cy, op.factor);
+                        if (st === 'DIMENSION') { regenerateDimension(src); continue; }
                         recordGeometryTransform(src.__rawKey, { type: 'scale', cx: op.cx, cy: op.cy, factor: op.factor });
                     }
                 }
@@ -7680,8 +7750,15 @@
         });
 
 
+        // Drawing shortcuts only make sense while the drawing is on screen.
+        function viewerIsVisible() {
+            const v = document.getElementById('view-viewer');
+            return !!v && !v.classList.contains('hidden');
+        }
+
         window.addEventListener('keydown', (event) => {
             const typing = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+            const onViewer = viewerIsVisible();
 
             // Undo / redo — Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y (Cmd on Mac). Not while typing.
             if (!typing && (event.ctrlKey || event.metaKey) && !event.altKey) {
@@ -7782,7 +7859,7 @@
             // letter handling above (C closes, digits are lengths), so aliases
             // only arm when neither is running. Modify tools don't consume
             // letters, so switching tool by alias works from inside them.
-            if (!typing && currentDxf && /^[a-zA-Z]$/.test(event.key)
+            if (!typing && currentDxf && onViewer && /^[a-zA-Z]$/.test(event.key)
                 && !event.ctrlKey && !event.metaKey && !event.altKey
                 && !(drawTools?.isActive()) && !(typeof opsToolIsActive === 'function' && opsToolIsActive())) {
                 event.preventDefault();
@@ -7794,7 +7871,7 @@
             // ops tool consumes it as Enter just above; the other modes own the
             // pointer, so Space stays out of their way.
             if (event.key === ' ' && !typing) {
-                if (!currentDxf) return;
+                if (!currentDxf || !onViewer) return;
                 if (draggingGrip || isAreaSelecting || insertPlacing
                     || measureMode || hammerMode || modifyTool) return;
                 event.preventDefault();
@@ -7804,8 +7881,8 @@
 
             // Delete / Backspace — remove selected entities
             if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEntities.length > 0) {
-                // Don't fire if the user is typing in an input
-                if (typing) return;
+                // Don't fire if the user is typing in an input or looking at another page
+                if (typing || !onViewer) return;
                 event.preventDefault();
                 deleteSelectedEntities();
                 return;
@@ -9423,6 +9500,9 @@
             const layerRenames = editRegistry.layerRenames || new Map();
             const layerDeletions = editRegistry.layerDeletions || new Set();
             const layerAdditions = editRegistry.layerAdditions || [];
+            // Handles are allocated before the walk so $HANDSEED (patched while
+            // still inside HEADER) ends up above every handle written later.
+            const layerAdditionHandles = layerAdditions.map(() => allocateHandle());
             const layerEntityPatches = editRegistry.layerEntityPatches || new Map();
             const layerLockChanges = editRegistry.layerLockChanges || new Map();
             const layerWeightChanges = editRegistry.layerWeightChanges || new Map();
@@ -9764,9 +9844,14 @@
                     if (entityType === 'ENDTAB' && inLayerTable) {
                         inLayerTable = false;
                         // Insert new layers before ENDTAB
-                        for (const la of layerAdditions) {
-                            out.push('0', 'LAYER', '  2', la.name, ' 70', '    0', ' 62', String(la.color ?? 7));
-                        }
+                        layerAdditions.forEach((la, idx) => {
+                            // Full R2000+ table record: AutoCAD rejects or
+                            // "recovers" layers that lack a handle and markers.
+                            out.push('0', 'LAYER', '5', layerAdditionHandles[idx],
+                                     '100', 'AcDbSymbolTableRecord', '100', 'AcDbLayerTableRecord',
+                                     '2', la.name, '70', '0', '62', String(la.color ?? 7),
+                                     '6', 'Continuous', '370', '-3');
+                        });
                     }
                     if (inLayerTable && entityType === 'LAYER') {
                         // Extract layer name (code 2) from this LAYER block
@@ -10343,6 +10428,8 @@
                         result[k + 1] = String(val * edits.factor);
                     } else if (code === '41' && entityType === 'LWPOLYLINE') {
                         result[k + 1] = String(val * edits.factor);
+                    } else if (entityType === 'INSERT' && (code === '41' || code === '42' || code === '43')) {
+                        result[k + 1] = String(val * edits.factor);   // block scale factors
                     }
                 }
             }
@@ -10499,10 +10586,12 @@
         // Ctrl/Cmd+S to save
         window.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-                if (currentDxf && hasUnsavedChanges) {
-                    e.preventDefault();
-                    saveDxf();
-                }
+                if (!currentDxf) return;
+                // Always swallow it: the browser's own "Save page" dialog is
+                // never what a CAD user means by Ctrl+S.
+                e.preventDefault();
+                if (hasUnsavedChanges) saveDxf();
+                else setConsoleMessage(tr('saveNoChanges', 'No unsaved changes.'), false);
             }
         });
 
@@ -11049,6 +11138,23 @@
         // Core loader: initializes the whole app state from raw DXF text.
         // Used by file open, "New drawing" and the sanitizer's in-place reload.
         function loadDxfFromText(rawText, fileName, sizeBytes) {
+            // Binary DXF has a fixed 22-byte sentinel; say so instead of a generic parse error.
+            if (/^AutoCAD Binary DXF/.test(rawText)) {
+                if (dxfLoaderStatus) dxfLoaderStatus.textContent = tr('couldNotParseDxf', 'Could not parse DXF file');
+                alert(tr('binaryDxfUnsupported', 'This is a binary DXF. Re-save it as ASCII DXF (or DWG) and load again.'));
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            // Old Mac CR-only line endings: the raw-text passes split on \n.
+            if (rawText.indexOf('\n') < 0 && rawText.indexOf('\r') >= 0) rawText = rawText.replace(/\r/g, '\n');
+            // A truncated file without the closing EOF group still holds usable geometry.
+            if (/^\s*0\s*\r?\n\s*SECTION\s*$/m.test(rawText) && !/\n\s*0\s*\r?\n\s*EOF\s*$/.test(rawText.trimEnd() + '\n')) {
+                rawText = rawText.replace(/\s*$/, '') + '\n0\nEOF\n';
+            }
+            // Remember the previous drawing's identity so a failed parse can restore it.
+            const prevName = document.getElementById('info-name').innerText;
+            const prevSize = document.getElementById('info-size').innerText;
+            const prevTitle = document.getElementById('viewer-title').innerText;
             fileNameDisplay.textContent = fileName;
             fileNameDisplay.classList.add('text-indigo-600', 'font-bold');
             document.getElementById('info-name').innerText = fileName;
@@ -11062,8 +11168,17 @@
                 setTimeout(() => { 
                     try {
                         const parser = new window.DxfParser();
+                        // Parse first: a failure must leave the open drawing (and
+                        // its raw text, which the serializer patches) untouched.
+                        const parsed = parser.parseSync(rawText);
                         currentDxfRawText = rawText;
-                        currentDxf = parser.parseSync(currentDxfRawText);
+                        currentDxf = parsed;
+                        // dxf-parser only creates these when the section exists;
+                        // headerless/minimal DXF files must still load.
+                        if (!currentDxf.header) currentDxf.header = {};
+                        if (!Array.isArray(currentDxf.entities)) currentDxf.entities = [];
+                        if (!currentDxf.blocks) currentDxf.blocks = {};
+                        if (!currentDxf.tables) currentDxf.tables = {};
                         assignRawEntityIndices();
                         computeNextHandleSeed();
                         layerRawInfo = parseRawLayerTableInfo(currentDxfRawText);
@@ -11125,13 +11240,14 @@
                         buildSpaceSwitcher();
                         
                         document.getElementById('info-version').innerText = currentDxf.header.$ACADVER || tr('unknownValue', 'Unknown');
-                        document.getElementById('info-entities').innerText = (currentDxf.entities?.length || 0).toLocaleString();
+                        document.getElementById('info-entities').innerText = ((currentDxf.entities?.length || 0) + (rawHatches?.length || 0)).toLocaleString();
                         document.getElementById('info-layers').innerText = getAllLayerNames().length.toLocaleString();
 
                         buildWebGLScene();
                         buildLayerUI();
 
                         hasUnsavedChanges = false;
+                        viewerFittedForDrawing = false;
                         resetEditRegistry();
                         cancelTextEdit();
                         stopDrawTool();
@@ -11145,6 +11261,14 @@
                     } catch (err) {
                         console.error(err);
                         if (dxfLoaderStatus) dxfLoaderStatus.textContent = tr('couldNotParseDxf', 'Could not parse DXF file');
+                        if (currentDxf) {
+                            // Previous drawing is still open: put its labels back.
+                            document.getElementById('info-name').innerText = prevName;
+                            document.getElementById('info-size').innerText = prevSize;
+                            document.getElementById('viewer-title').innerText = prevTitle;
+                            fileNameDisplay.textContent = prevName;
+                        }
+                        if (fileInput) fileInput.value = '';
                         alert(tr('errorParsingDxf', 'Error parsing DXF.'));
                     } finally {
                         loader.classList.add('hidden');
@@ -16587,8 +16711,13 @@
 
             if (targetId === 'view-viewer') {
                 setTimeout(() => {
-                    onWindowResize(); 
-                    if (currentDxf) document.getElementById('btnZoomFit').click(); 
+                    onWindowResize();
+                    // Fit once per drawing; coming back from Shortcuts/Load
+                    // must not throw away the user's current view.
+                    if (currentDxf && !viewerFittedForDrawing) {
+                        viewerFittedForDrawing = true;
+                        document.getElementById('btnZoomFit').click();
+                    }
                 }, 50);
             }
         }
