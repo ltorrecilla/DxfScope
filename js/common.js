@@ -170,36 +170,36 @@ const CATEGORIES = [
 ];
 
 const APPS = [
-    { id: 17, skipModal: false, icon: 'network', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/Organizational_chart.html', imageUrl: window.SITE_ROOT + 'img/tools/org-chart.webp' },
-    { id: 12, skipModal: false, icon: 'list-todo', categories: ['pm'], url: window.SITE_ROOT + 'tools/Meetings.html', imageUrl: window.SITE_ROOT + 'img/tools/meetings.webp' },
-    { id: 13, skipModal: false, icon: 'users-round', categories: ['pm'], url: window.SITE_ROOT + 'tools/Responsibility_Matrix.html' },
-    { id: 1, skipModal: false, icon: 'chart-bar', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/Project_Timeline.html', imageUrl: window.SITE_ROOT + 'img/tools/timeline.webp' },
-    { id: 2, skipModal: false, icon: 'calendars', categories: ['ops', 'pm'], url: window.SITE_ROOT + 'tools/Project_Portfolio.html' },
-    { id: 22, skipModal: false, icon: 'chart-spline', categories: ['pm'], url: window.SITE_ROOT + 'tools/Monte_Carlo_Simulator.html' },
-    { id: 21, skipModal: false, icon: 'file-search', categories: ['ops'], url: window.SITE_ROOT + 'tools/Contract_obligations.html' },
-    { id: 20, skipModal: false, icon: 'triangle-alert', categories: ['ops'], url: window.SITE_ROOT + 'tools/Incident_RCA.html' },
+    { id: 17, skipModal: false, icon: 'network', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/organizational-chart.html', imageUrl: window.SITE_ROOT + 'img/tools/org-chart.webp' },
+    { id: 12, skipModal: false, icon: 'list-todo', categories: ['pm'], url: window.SITE_ROOT + 'tools/meetings.html', imageUrl: window.SITE_ROOT + 'img/tools/meetings.webp' },
+    { id: 13, skipModal: false, icon: 'users-round', categories: ['pm'], url: window.SITE_ROOT + 'tools/responsibility-matrix.html' },
+    { id: 1, skipModal: false, icon: 'chart-bar', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/project-timeline.html', imageUrl: window.SITE_ROOT + 'img/tools/timeline.webp' },
+    { id: 2, skipModal: false, icon: 'calendars', categories: ['ops', 'pm'], url: window.SITE_ROOT + 'tools/project-portfolio.html' },
+    { id: 22, skipModal: false, icon: 'chart-spline', categories: ['pm'], url: window.SITE_ROOT + 'tools/monte-carlo-simulator.html' },
+    { id: 21, skipModal: false, icon: 'file-search', categories: ['ops'], url: window.SITE_ROOT + 'tools/contract-obligations.html' },
+    { id: 20, skipModal: false, icon: 'triangle-alert', categories: ['ops'], url: window.SITE_ROOT + 'tools/incident-rca.html' },
     // { id: 19, skipModal: false, icon: 'building', categories: ['ops'], url: window.SITE_ROOT + 'tools/COBIE_CMMS.html' },
-    { id: 16, skipModal: false, icon: 'combine', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/Data_Merger.html' },
-    { id: 3, skipModal: false, icon: 'file-box', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/IDS_Generator.html' },
-    { id: 11, skipModal: false, icon: 'box', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Audit.html' },
-    { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Compare.html' },
-    { id: 8, skipModal: false, icon: 'square-arrow-right-exit', categories: ['data'], url: window.SITE_ROOT + 'tools/IFC_PSet_Export.html' },
-    { id: 9, skipModal: false, icon: 'square-arrow-right-enter', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/IFC_Inject_Properties.html' },
-    { id: 18, skipModal: false, icon: 'zap', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Optimizer.html' },
-    { id: 4, skipModal: false, icon: 'merge', rotation: 90, categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Merger.html' },
-    { id: 6, skipModal: false, icon: 'spell-check-2', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_PSet_Renamer.html' },
-    { id: 7, skipModal: false, icon: 'shredder', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_PSet_Delete.html' },
-    { id: 5, skipModal: false, icon: 'app-window-mac', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Application_Changer.html' },
-    { id: 10, skipModal: false, icon: 'map-pin', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Reposition.html' },
-    { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/DXF_Editor.html' },
-    { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/DXF_Compare.html' },
-    // { id: 14, skipModal: false, icon: 'arrow-down-up', categories: ['bim'], url: window.SITE_ROOT + 'tools/IFC_Schema_changer.html' },
+    { id: 16, skipModal: false, icon: 'combine', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/data-merger.html' },
+    { id: 3, skipModal: false, icon: 'file-box', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/ids-generator.html' },
+    { id: 11, skipModal: false, icon: 'box', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-audit.html' },
+    { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' },
+    { id: 8, skipModal: false, icon: 'square-arrow-right-exit', categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-pset-export.html' },
+    { id: 9, skipModal: false, icon: 'square-arrow-right-enter', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-inject-properties.html' },
+    { id: 18, skipModal: false, icon: 'zap', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-optimizer.html' },
+    { id: 4, skipModal: false, icon: 'merge', rotation: 90, categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-merger.html' },
+    { id: 6, skipModal: false, icon: 'spell-check-2', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-pset-renamer.html' },
+    { id: 7, skipModal: false, icon: 'shredder', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-pset-delete.html' },
+    { id: 5, skipModal: false, icon: 'app-window-mac', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-application-changer.html' },
+    { id: 10, skipModal: false, icon: 'map-pin', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-reposition.html' },
+    { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-editor.html' },
+    { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-compare.html' },
+    // { id: 14, skipModal: false, icon: 'arrow-down-up', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-schema-changer.html' },
 ];
 
 let activeCategory = 'all';
 
 // Language selector. Add/remove codes here to enable/disable languages.
-const LANGS = ['en', 'de', 'es', 'fr', 'pt', 'it']; // 'ko', 'ja', 'zh'
+const LANGS = ['en', 'de', 'es', 'fr', 'pt', 'it', 'ko', 'ja', 'zh']; //more-here
 const LANG_NAMES = {
     en: 'English', de: 'German', es: 'Spanish', fr: 'French',
     pt: 'Portuguese', it: 'Italian', ko: 'Korean', ja: 'Japanese', zh: 'Chinese'
@@ -221,7 +221,7 @@ function renderLangMenu() {
         const selected = code === currentLang;
         return `<li role="option" data-value="${code}" aria-selected="${selected}"
             class="px-3 py-1.5 text-[12px] font-semibold text-slate-700 cursor-pointer hover:bg-indigo-50 whitespace-nowrap flex items-center justify-between gap-4 ${selected ? 'bg-indigo-50 text-indigo-700' : ''}">
-            <span>${name} <span class="text-slate-400">(${upper})</span></span>
+            <span><span class="text-slate-400">${upper}</span> - ${name}</span>
         </li>`;
     }).join('');
 }
@@ -516,11 +516,11 @@ window.injectUI = function (options = {}) {
                             <svg class="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                         </button>
                         <ul id="langMenu" role="listbox" tabindex="-1"
-                            class="hidden absolute right-0 mt-1 min-w-[10rem] bg-white border border-slate-200 rounded shadow-xl py-1 z-[200] max-h-[60vh] overflow-auto"></ul>
+                            class="hidden absolute right-0 font-mono mt-1 min-w-[10rem] bg-white border border-slate-200 rounded shadow-xl py-1 z-[200] max-h-[60vh] overflow-auto"></ul>
                     </div>
                     ${showSignIn ? `
                     <div class="border-l border-slate-200 pl-3 ml-1">
-                        <a href="${window.SITE_ROOT}info/Login.html" id="ui-nav-signin" data-i18n="signIn" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-none inline-block">Sign In</a>
+                        <a href="${window.SITE_ROOT}info/login.html" id="ui-nav-signin" data-i18n="signIn" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-none inline-block">Sign In</a>
                     </div>` : ''}
                 </div>
 
@@ -623,19 +623,19 @@ window.injectUI = function (options = {}) {
                 <div>
                     <h4 id="ui-footer-legal" data-i18n="footerLegal" class="font-semibold text-slate-900 text-sm mb-4 uppercase tracking-widest">Legal</h4>
                     <ul class="space-y-3 text-sm text-slate-600">
-                        <li><a href="${window.SITE_ROOT}info/Terms_of_Service.html" id="ui-link-terms" data-i18n="linkTerms" class="hover:text-indigo-600 transition-colors">Terms of Service</a></li>
-                        <li><a href="${window.SITE_ROOT}info/Privacy_policy.html" id="ui-link-privacy" data-i18n="linkPrivacy" class="hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
-                        <li><a href="${window.SITE_ROOT}info/Data_procesing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-indigo-600 transition-colors">Data Processing</a></li>
-                        <li><a href="${window.SITE_ROOT}info/Media.html" id="ui-link-media" data-i18n="linkMedia" class="hover:text-indigo-600 transition-colors">Media</a></li>
+                        <li><a href="${window.SITE_ROOT}info/terms-of-service.html" id="ui-link-terms" data-i18n="linkTerms" class="hover:text-indigo-600 transition-colors">Terms of Service</a></li>
+                        <li><a href="${window.SITE_ROOT}info/privacy-policy.html" id="ui-link-privacy" data-i18n="linkPrivacy" class="hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
+                        <li><a href="${window.SITE_ROOT}info/data-procesing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-indigo-600 transition-colors">Data Processing</a></li>
+                        <li><a href="${window.SITE_ROOT}info/fund.html" id="ui-link-media" data-i18n="linkDonate" class="hover:text-indigo-600 transition-colors">Donate</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 id="ui-footer-info" data-i18n="footerInfo" class="font-semibold text-slate-900 text-sm mb-4 uppercase tracking-widest">Information</h4>
                     <ul class="space-y-3 text-sm text-slate-600">
-                        <li><a href="${window.SITE_ROOT}info/Contact.html" id="ui-link-contact" data-i18n="linkContact" class="hover:text-indigo-600 transition-colors">Contact</a></li>
-                        <li><a href="${window.SITE_ROOT}info/About.html" id="ui-link-about" data-i18n="linkAbout" class="hover:text-indigo-600 transition-colors">About</a></li>
-                        <li><a href="${window.SITE_ROOT}info/FAQs.html" id="ui-link-faqs" data-i18n="linkFAQs" class="hover:text-indigo-600 transition-colors">FaQs</a></li>
-                        <li><a href="${window.SITE_ROOT}info/Pricing.html" id="ui-link-pricing" data-i18n="linkPricing" class="hover:text-indigo-600 transition-colors">Pricing</a></li>
+                        <li><a href="${window.SITE_ROOT}info/contact.html" id="ui-link-contact" data-i18n="linkContact" class="hover:text-indigo-600 transition-colors">Contact</a></li>
+                        <li><a href="${window.SITE_ROOT}info/about.html" id="ui-link-about" data-i18n="linkAbout" class="hover:text-indigo-600 transition-colors">About</a></li>
+                        <li><a href="${window.SITE_ROOT}info/faqs.html" id="ui-link-faqs" data-i18n="linkFAQs" class="hover:text-indigo-600 transition-colors">FaQs</a></li>
+                        <li><a href="${window.SITE_ROOT}info/pricing.html" id="ui-link-pricing" data-i18n="linkPricing" class="hover:text-indigo-600 transition-colors">Pricing</a></li>
                     </ul>
                 </div>
             </div>`;
@@ -734,7 +734,7 @@ function renderNav() {
         const donateLabel = d.linkDonate || 'Donate';
         desktopNav.innerHTML += `
             <div class="h-full flex items-center">
-                <a href="${window.SITE_ROOT}info/Fund.html" id="ui-link-donate"
+                <a href="${window.SITE_ROOT}info/fund.html" id="ui-link-donate"
                     class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent text-indigo-600 hover:text-indigo-700 hover:bg-white transition-all duration-300 focus:outline-none">
                     ${donateLabel}
                 </a>
@@ -762,7 +762,7 @@ function renderNav() {
     if (window._showDonation) {
         const donateLabel = d.linkDonate || 'Donate';
         mobileNav.innerHTML += `
-            <a href="${window.SITE_ROOT}info/Fund.html" id="ui-link-donate-mobile"
+            <a href="${window.SITE_ROOT}info/fund.html" id="ui-link-donate-mobile"
                 class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 text-indigo-600 hover:bg-indigo-50 transition-colors focus:outline-none">
                 ${donateLabel}
             </a>`;
@@ -805,13 +805,13 @@ function setupHelpButton() {
     // Prevent adding multiple buttons if this function runs twice
     if (document.getElementById('dynamic-help-btn')) return;
 
-    // 4. Convert filename to Help ID (e.g., "IFC_Audit.html" -> "ifc-audit")
+    // 4. Convert filename to Help ID (e.g., "ifc-audit.html" -> "ifc-audit")
     const helpId = fileNameFull.replace('.html', '').toLowerCase().replace(/_/g, '-');
 
     // 5. Create the Help Button
     const helpBtn = document.createElement('a');
     helpBtn.id = 'dynamic-help-btn';
-    helpBtn.href = `${window.SITE_ROOT}info/Help.html#${helpId}`;
+    helpBtn.href = `${window.SITE_ROOT}info/help.html#${helpId}`;
 
     // Styling: Added 'mr-3' (margin-right) so it spaces nicely before the language toggle
     helpBtn.className = "mr-3 p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors flex items-center justify-center";
