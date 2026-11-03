@@ -12,52 +12,63 @@
  */
 
 // ==========================================
+// SITE CONFIG (js/config.js, git-ignored)
+// ------------------------------------------
+// Private IDs live in js/config.js (template: js/config.example.js).
+// It is injected automatically from the same folder as this file, so
+// pages need no extra <script> tag. A page may still include config.js
+// manually before common.js; then it is used directly.
+// No config file -> analytics stay off, everything else works.
+// ==========================================
+
+// ==========================================
 // GOOGLE ANALYTICS (GA4)
 // ==========================================
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
-gtag('js', new Date());
 
-// Check if user previously declined cookies to prevent tracking before initialization
-if (localStorage.getItem('cookieConsent') === 'declined') {
-    window['ga-disable-G-WF672S6T88'] = true;
-}
+// Active GA measurement ID, set once config.js is loaded (null = analytics off)
+window.LITEAECO_GA_ID = null;
 
-gtag('config', 'G-WF672S6T88');
+function initAnalytics(cfg) {
+    const gaId = cfg && typeof cfg.gaId === 'string' ? cfg.gaId.trim() : '';
+    if (!gaId || window.LITEAECO_GA_ID) return;
+    window.LITEAECO_GA_ID = gaId;
 
-// Dynamically inject the GA script into the head
-(function () {
+    // Respect a previous opt-out before anything is sent
+    if (localStorage.getItem('cookieConsent') === 'declined') {
+        window['ga-disable-' + gaId] = true;
+    }
+
+    gtag('js', new Date());
+    gtag('config', gaId);
+
     const gaScript = document.createElement('script');
     gaScript.async = true;
-    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-WF672S6T88';
-    const firstScript = document.getElementsByTagName('script')[0];
-    if (firstScript && firstScript.parentNode) {
-        firstScript.parentNode.insertBefore(gaScript, firstScript);
-    } else {
-        document.head.appendChild(gaScript);
+    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gaId);
+    document.head.appendChild(gaScript);
+}
+
+(function loadSiteConfig() {
+    // Already provided (config.js included manually before common.js)
+    if (window.LITEAECO_CONFIG) {
+        initAnalytics(window.LITEAECO_CONFIG);
+        return;
     }
+
+    // Resolve config.js next to this file (works from root and subfolders)
+    const self = document.currentScript;
+    const src = (self && self.src)
+        ? self.src.replace(/common\.js(\?.*)?$/, 'config.js')
+        : (window.SITE_ROOT || './') + 'js/config.js';
+
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = () => initAnalytics(window.LITEAECO_CONFIG);
+    s.onerror = () => console.info('liteAECO: js/config.js not found, analytics disabled.');
+    document.head.appendChild(s);
 })();
-
-// Global handler for the buttons
-window.handleCookieChoice = function (choice) {
-    localStorage.setItem('cookieConsent', choice);
-    const banner = document.getElementById('cookie-banner');
-    if (banner) banner.remove();
-
-    if (choice === 'declined') {
-        // Disable Google Analytics tracking for this property
-        window['ga-disable-G-WF672S6T88'] = true;
-
-        // Legacy Matomo opt-out (keeping it just in case you still use it elsewhere)
-        if (window._paq) {
-            _paq.push(['forgetConsentGiven']);
-            _paq.push(['optUserOut']);
-        }
-    } else if (choice === 'accepted') {
-        // Re-enable tracking if they change their mind
-        window['ga-disable-G-WF672S6T88'] = false;
-    }
-};
 
 // ==========================================
 // MINIMAL COOKIE NOTIFICATION
@@ -93,18 +104,23 @@ window.injectCookieBanner = function () {
     document.body.appendChild(banner);
 };
 
-// Global handler for the buttons
+// Global handler for the cookie buttons (single definition)
 window.handleCookieChoice = function (choice) {
     localStorage.setItem('cookieConsent', choice);
     const banner = document.getElementById('cookie-banner');
     if (banner) banner.remove();
 
+    // GA opt-out / opt-in. If config is not loaded yet, initAnalytics()
+    // reads the stored choice when it runs.
+    const gaId = window.LITEAECO_GA_ID;
+    if (gaId) window['ga-disable-' + gaId] = (choice === 'declined');
+
+    // Legacy Matomo opt-out (kept in case it is still used elsewhere)
     if (choice === 'declined' && window._paq) {
         _paq.push(['forgetConsentGiven']);
         _paq.push(['optUserOut']);
     }
 };
-// End Matomo Code
 
 // ==========================================
 // liteAECO - GLOBAL ENGINE (common.js)
@@ -169,32 +185,68 @@ const CATEGORIES = [
     { id: 'ops', label: 'OPERATIONS' },
 ];
 
+// icon:    Lucide name (always set; fallback when svgIcon is missing)
+// svgIcon: optional custom SVG file. Rendered as a CSS mask filled with
+//          currentColor, so it follows the same text-* colours as Lucide.
 const APPS = [
-    { id: 17, skipModal: false, icon: 'network', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/organizational-chart.html', imageUrl: window.SITE_ROOT + 'img/tools/org-chart.webp' },
-    { id: 12, skipModal: false, icon: 'list-todo', categories: ['pm'], url: window.SITE_ROOT + 'tools/meetings.html', imageUrl: window.SITE_ROOT + 'img/tools/meetings.webp' },
-    { id: 13, skipModal: false, icon: 'users-round', categories: ['pm'], url: window.SITE_ROOT + 'tools/responsibility-matrix.html' },
-    { id: 1, skipModal: false, icon: 'chart-bar', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/project-timeline.html', imageUrl: window.SITE_ROOT + 'img/tools/timeline.webp' },
     { id: 2, skipModal: false, icon: 'calendars', categories: ['ops', 'pm'], url: window.SITE_ROOT + 'tools/project-portfolio.html' },
-    { id: 22, skipModal: false, icon: 'chart-spline', categories: ['pm'], url: window.SITE_ROOT + 'tools/monte-carlo-simulator.html' },
+    { id: 26, skipModal: false, icon: 'file-text', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdf-viewer.html' },
+    { id: 11, skipModal: false, icon: 'box', svgIcon: window.SITE_ROOT + 'img/tools/liteaeco-ifc-viewer.svg', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-viewer-audit.html' },
+    { id: 3, skipModal: false, icon: 'file-badge', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/ids-generator.html' },
+
+    { id: 1, skipModal: false, icon: 'chart-bar', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/project-timeline.html', imageUrl: window.SITE_ROOT + 'img/tools/timeline.webp' },
+    { id: 17, skipModal: false, icon: 'user-group', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/organizational-chart.html', imageUrl: window.SITE_ROOT + 'img/tools/org-chart.webp' },
+    { id: 12, skipModal: false, icon: 'list-todo', categories: ['pm'], url: window.SITE_ROOT + 'tools/meetings.html', imageUrl: window.SITE_ROOT + 'img/tools/meetings.webp' },
+    { id: 13, skipModal: false, icon: 'table-2', categories: ['pm'], url: window.SITE_ROOT + 'tools/responsibility-matrix.html' },
+
     { id: 21, skipModal: false, icon: 'file-search', categories: ['ops'], url: window.SITE_ROOT + 'tools/contract-obligations.html' },
     { id: 20, skipModal: false, icon: 'triangle-alert', categories: ['ops'], url: window.SITE_ROOT + 'tools/incident-rca.html' },
-    // { id: 19, skipModal: false, icon: 'building', categories: ['ops'], url: window.SITE_ROOT + 'tools/COBIE_CMMS.html' },
-    { id: 16, skipModal: false, icon: 'combine', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/data-merger.html' },
-    { id: 3, skipModal: false, icon: 'file-box', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/ids-generator.html' },
-    { id: 11, skipModal: false, icon: 'box', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-audit.html' },
-    { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' },
-    { id: 8, skipModal: false, icon: 'square-arrow-right-exit', categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-pset-export.html' },
-    { id: 9, skipModal: false, icon: 'square-arrow-right-enter', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-inject-properties.html' },
     { id: 18, skipModal: false, icon: 'zap', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-optimizer.html' },
     { id: 4, skipModal: false, icon: 'merge', rotation: 90, categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-merger.html' },
+    
+    { id: 22, skipModal: false, icon: 'chart-spline', categories: ['pm'], url: window.SITE_ROOT + 'tools/monte-carlo-simulator.html' },
+    { id: 28, skipModal: false, icon: 'blocks', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/ifc-property-manager.html' },
+    { id: 8, skipModal: false, icon: 'square-arrow-right-exit', categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-pset-export.html' },
+    { id: 9, skipModal: false, icon: 'square-arrow-right-enter', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/ifc-inject-properties.html' },
+    { id: 16, skipModal: false, icon: 'combine', rotation: 180, categories: ['data'], url: window.SITE_ROOT + 'tools/data-merger.html' },
+    
     { id: 6, skipModal: false, icon: 'spell-check-2', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-pset-renamer.html' },
     { id: 7, skipModal: false, icon: 'shredder', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-pset-delete.html' },
     { id: 5, skipModal: false, icon: 'app-window-mac', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-application-changer.html' },
     { id: 10, skipModal: false, icon: 'map-pin', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-reposition.html' },
+
     { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-editor.html' },
     { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-compare.html' },
+    { id: 27, skipModal: false, icon: 'file-diff', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdf-compare.html' },
+    { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' }, 
+    // { id: 19, skipModal: false, icon: 'building', categories: ['ops'], url: window.SITE_ROOT + 'tools/COBIE_CMMS.html' },
     // { id: 14, skipModal: false, icon: 'arrow-down-up', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-schema-changer.html' },
 ];
+
+// ==========================================
+// APP ICON HELPER (shared by nav, cards and modal)
+// ------------------------------------------
+// renderAppIcon(app, 'w-5 h-5', 'stroke-[1.5] transition-transform')
+// -> Lucide <i> or, when app.svgIcon is set, a masked <span> filled with
+//    currentColor. Both inherit the parent's text-* colour and hover states.
+// ==========================================
+window.appRotationClass = function (app) {
+    if (!app) return '';
+    if (app.rotation == 90) return 'rotate-90';
+    if (app.rotation == -90) return '-rotate-90';
+    if (app.rotation == 180) return 'rotate-180';
+    return '';
+};
+
+window.renderAppIcon = function (app, sizeClass = 'w-4 h-4', extraClass = '') {
+    const rot = window.appRotationClass(app);
+    if (app && app.svgIcon) {
+        const url = String(app.svgIcon).replace(/'/g, '%27');
+        return `<span aria-hidden="true" class="inline-block shrink-0 bg-current ${sizeClass} ${rot} ${extraClass}"
+            style="-webkit-mask: url('${url}') center / contain no-repeat; mask: url('${url}') center / contain no-repeat;"></span>`;
+    }
+    return `<i data-lucide="${app ? app.icon : 'box'}" class="${sizeClass} ${rot} ${extraClass}"></i>`;
+};
 
 let activeCategory = 'all';
 
@@ -266,8 +318,12 @@ window.loadLanguage = function (lang, pageScriptPrefix) {
     const seq = ++langRequestSeq;
 
     // 1. PREVENT TRANSLATION BLEED-THROUGH
+    // EN_PAGE (opt-in): a page that loads its English file statically and
+    // freezes it as window.EN_PAGE always falls back to English, never to
+    // the previously shown language.
     window.GLOBAL_I18N = { ...BASE_GLOBAL, categories: { ...BASE_GLOBAL.categories }, apps: { ...BASE_GLOBAL.apps } };
-    if (window.BASE_PAGE) window.PAGE_I18N = { ...window.BASE_PAGE };
+    const resetPage = window.EN_PAGE || window.BASE_PAGE;
+    if (resetPage) window.PAGE_I18N = { ...resetPage };
 
     // Remove old dynamic scripts
     ['dynamic-global-lang', 'dynamic-page-lang'].forEach(id => {
@@ -351,7 +407,8 @@ function autoDetectLanguage() {
 function getTranslations() {
     const curGlobal = window.GLOBAL_I18N || {};
     const curPage = window.PAGE_I18N || {};
-    const basePage = window.BASE_PAGE || {};
+    // EN_PAGE (opt-in, see loadLanguage) is the fallback layer when present
+    const basePage = window.EN_PAGE || window.BASE_PAGE || {};
 
     const merged = {
         ...BASE_GLOBAL,
@@ -372,26 +429,56 @@ function getTranslations() {
 }
 
 // --- Translation Helper for Dynamic Strings ---
-window.t = function (key) {
+//   t(key)                 -> text, or the key itself (original behaviour)
+//   t(key, fallback)       -> text, or fallback when the key is missing
+//   t(key, fallback, vars) -> {name} placeholders filled from vars
+//                             ({ n: 3 } fills "{n} rows"); a dictionary entry
+//                             that is a function is called with vars instead
+window.t = function (key, fallback, vars) {
     const d = typeof getTranslations === 'function' ? getTranslations() : (window.PAGE_I18N || {});
-    // Return the translated string if it exists, otherwise fallback to the key itself
-    return d[key] !== undefined ? d[key] : key;
+    let v = d[key];
+    if (v === undefined || v === null) v = fallback !== undefined ? fallback : key;
+    if (typeof v === 'function') return v(...(Array.isArray(vars) ? vars : [vars]));
+    if (vars && typeof v === 'string') {
+        v = v.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : m));
+    }
+    return v;
 };
 
-function applyLanguage() {
-    // 1. Get the current dictionary
-    const d = typeof getTranslations === 'function' ? getTranslations() : window.PAGE_I18N;
+// --- Translate a DOM subtree ---
+// Pass 1: data-i18n="key"          -> innerHTML (text-only elements: any
+//                                     child icon or input would be replaced)
+// Pass 2: id="ui-some-name"         -> key someName (same rule)
+// Pass 3: data-i18n-title="key"     -> title attribute (tooltips)
+//         data-i18n-placeholder="key" -> placeholder
+//         data-i18n-aria="key"      -> aria-label
+//         (only while the element has that attribute)
+// Pass 4: data-i18n-soft="key"      -> innerHTML, only while the text is
+//                                     still the translated default (code
+//                                     that wrote a file name keeps it)
+// A key missing from the dictionary leaves the element untouched.
+// Pages that render HTML after load call window.applyI18n(container).
+const I18N_ATTRS = [
+    ['data-i18n-title', 'title'],
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-aria', 'aria-label'],
+];
+function i18nApplyTo(root, dict) {
+    const d = dict || (typeof getTranslations === 'function' ? getTranslations() : window.PAGE_I18N);
     if (!d) return;
-
-    document.documentElement.lang = currentLang;
-    if (d.title) document.title = d.title;
+    const scope = root || document;
+    const all = (sel) => {
+        const list = [...scope.querySelectorAll(sel)];
+        if (scope !== document && scope.matches && scope.matches(sel)) list.unshift(scope);
+        return list;
+    };
 
     // Helper: Convert kebab-case to camelCase (e.g. 'page-title' -> 'pageTitle')
     const kebabToCamel = (str) => str.replace(/-([a-z0-9])/ig, (g) => g[1].toUpperCase());
 
     // Helper: Apply the translated text to the element
     const applyTranslation = (el, dictKey) => {
-        if (d[dictKey] !== undefined) {
+        if (d[dictKey] !== undefined && typeof d[dictKey] !== 'function') {
             if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
                 el.placeholder = d[dictKey];
             } else {
@@ -403,7 +490,7 @@ function applyLanguage() {
     // ---------------------------------------------------------
     // TRANSLATION PASS 1: Explicit 'data-i18n' attributes
     // ---------------------------------------------------------
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+    all('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         applyTranslation(el, key);
     });
@@ -411,13 +498,61 @@ function applyLanguage() {
     // ---------------------------------------------------------
     // TRANSLATION PASS 2: Automated 'ui-' IDs
     // ---------------------------------------------------------
-    document.querySelectorAll('[id^="ui-"]').forEach(el => {
+    all('[id^="ui-"]').forEach(el => {
         if (!el.hasAttribute('data-i18n')) {
             const baseId = el.id.substring(3);
             const dictKey = kebabToCamel(baseId);
             applyTranslation(el, dictKey);
         }
     });
+
+    // ---------------------------------------------------------
+    // TRANSLATION PASS 3: attributes (tooltips, placeholders, aria)
+    // Only while the element still HAS the attribute: code that removed a
+    // tooltip on purpose (an enabled button) never gets it back.
+    // ---------------------------------------------------------
+    for (const [dataAttr, target] of I18N_ATTRS) {
+        all('[' + dataAttr + ']').forEach(el => {
+            const v = d[el.getAttribute(dataAttr)];
+            if (v !== undefined && typeof v !== 'function' && el.hasAttribute(target)) el.setAttribute(target, v);
+        });
+    }
+
+    // ---------------------------------------------------------
+    // TRANSLATION PASS 4: 'data-i18n-soft' = default text the code may
+    // replace (a file name, a count, a status). Translated only while the
+    // element still shows the text i18n wrote last (at first: the English
+    // default from EN_PAGE); anything the code wrote since stays.
+    // ---------------------------------------------------------
+    const norm = (x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim();
+    all('[data-i18n-soft]').forEach(el => {
+        const key = el.getAttribute('data-i18n-soft');
+        const v = d[key];
+        if (v === undefined || typeof v === 'function') return;
+        const cur = norm(el.innerHTML);
+        let untouched;
+        if (el.__i18nLast !== undefined) untouched = cur === el.__i18nLast;
+        else if (window.EN_PAGE && window.EN_PAGE[key] !== undefined) untouched = cur === norm(window.EN_PAGE[key]);
+        else untouched = true; // first pass on a page without EN_PAGE: markup default
+        if (!untouched) return;
+        el.innerHTML = v;
+        el.__i18nLast = norm(el.innerHTML);
+    });
+}
+// NOTE: a distinct name - a top-level function in a classic script IS
+// window.<name>, so assigning window.applyI18n to a wrapper calling
+// applyI18n() would call itself forever
+window.applyI18n = function (root) { i18nApplyTo(root); };
+
+function applyLanguage() {
+    // 1. Get the current dictionary
+    const d = typeof getTranslations === 'function' ? getTranslations() : window.PAGE_I18N;
+    if (!d) return;
+
+    document.documentElement.lang = currentLang;
+    if (d.title) document.title = d.title;
+
+    i18nApplyTo(document, d);
 
     if (typeof renderNav === 'function') renderNav();
 
@@ -448,6 +583,22 @@ function applyUiLinkTarget(root) {
     });
 }
 
+/* ---- CDE mode (app window opened from a project hub) ----
+ * ?project=<guid>&open=<relPath> -> {guid, open}; else null.
+ * Used by injectUI: logo "Home" -> the project, "All" -> liteaeco.com, and
+ * app links open in their own window so the project app stays open. */
+window.liteaecoCdeContext = function () {
+    try {
+        const q = new URLSearchParams(window.location.search);
+        const guid = q.get('project'), open = q.get('open');
+        return (guid && open) ? { guid, open } : null;
+    } catch (e) { return null; }
+};
+// "All" category link: the public site in CDE mode, the local index otherwise
+function cdeAllHref() { return window.liteaecoCdeContext() ? 'https://liteaeco.com' : `${window.SITE_ROOT}index.html`; }
+// links that would leave the project app open in their own window in CDE mode
+function cdeTarget() { return window.liteaecoCdeContext() ? ' target="_blank" rel="noopener"' : ''; }
+
 window.injectUI = function (options = {}) {
     // Set default behaviors
     if (typeof options.linkTarget === 'string' && options.linkTarget) window._uiLinkTarget = options.linkTarget;
@@ -458,6 +609,26 @@ window.injectUI = function (options = {}) {
     const showNews = options.showNews !== false;
     const showDonation = options.showDonation !== true;
     window._showDonation = showDonation;
+
+    // CDE mode: this app window was opened from a project hub
+    // (?project=<guid>&open=<path>). The logo then reads "Home" and leads back
+    // to the project; "All" goes to liteaeco.com and app links open in their
+    // own window, so the project app stays open.
+    const cdeCtx = window.liteaecoCdeContext();
+
+    // Logo link: defaults to the hub index, overridable per app.
+    // injectUI({ logoHref: 'https://example.com', logoTarget: '_blank' })
+    // CDE mode: back to the project's Files tab. To return to the app's own
+    // tab instead (meetings -> Meetings, ...), replace 'files' below with the
+    // app's hub tab id (e.g. from an options.cdeTab the app passes in).
+    const logoHref = (typeof options.logoHref === 'string' && options.logoHref)
+        ? options.logoHref
+        : cdeCtx
+            ? `project-core.html?project=${encodeURIComponent(cdeCtx.guid)}&tab=files`
+            : `${window.SITE_ROOT}index.html`;
+    const logoTarget = (typeof options.logoTarget === 'string' && options.logoTarget)
+        ? ` target="${options.logoTarget}" rel="noopener noreferrer"`
+        : '';
 
     // Footer toggles
     const showFooter = options.showFooter !== false;
@@ -486,8 +657,8 @@ window.injectUI = function (options = {}) {
         nav.className = `fixed top-0 left-0 right-0 z-[150] transition-all duration-300 border-b shadow-[0_4px_30px_rgba(0,0,0,0.03)] ${navBgClass}`;
 
         nav.innerHTML = `
-            <div class="max-w-7xl mx-auto px-4 md:px-8 h-12 flex items-center justify-between">
-            <a href="${window.SITE_ROOT}index.html" class="flex items-center gap-3 cursor-pointer group">
+            <div class="mx-auto px-4 md:px-8 h-12 flex items-center justify-between">
+            <a id="ui-logo-link" href="${logoHref}"${logoTarget}${cdeCtx ? ' title="Back to project"' : ''} class="flex items-center gap-3 cursor-pointer group">
                     <svg class="w-6 h-6 shadow-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 62 62">
                         <defs>
                             <linearGradient id="b"><stop offset="0" stop-color="#b6b6f7" /><stop offset="1" stop-color="#487af2" /></linearGradient>
@@ -498,7 +669,7 @@ window.injectUI = function (options = {}) {
                         <path fill="url(#c)" d="m0 0 66 66H33L0 33Z" />
                         <path fill="url(#d)" d="M33 33 66 0v66z" />
                     </svg>
-                    <span class="font-semibold text-lg tracking-tight text-slate-900">liteAECO</span>
+                    <span class="font-semibold text-lg tracking-tight text-slate-900">${cdeCtx ? 'Home' : 'liteAECO'}</span>
                 </a>
 
                 ${showCategories ? `<div id="desktop-nav" class="hidden md:flex items-center h-full"></div>` : ''}
@@ -531,12 +702,28 @@ window.injectUI = function (options = {}) {
             </div>
 
             ${showCategories ? `
-            <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-200 absolute top-full w-full left-0 shadow-lg">
+            <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-200 absolute top-full w-full left-0 shadow-lg max-h-[calc(100vh-3rem)] overflow-y-auto overscroll-contain">
                 <div id="mobile-nav" class="flex flex-col"></div>
             </div>` : ''}
         `;
 
         document.body.insertBefore(nav, document.body.firstChild);
+
+        // CDE mode: "Home" returns to the hub tab this window was opened from
+        // (focus it and close this one) instead of loading a second hub here.
+        // No opener (opened directly / hub closed): follow the link.
+        if (cdeCtx && !options.logoHref) {
+            const logo = nav.querySelector('#ui-logo-link');
+            if (logo) logo.addEventListener('click', (e) => {
+                try {
+                    if (window.opener && !window.opener.closed && window.opener.location.origin === window.location.origin) {
+                        e.preventDefault();
+                        window.opener.focus();
+                        window.close();
+                    }
+                } catch (err) { /* cross-origin opener: follow the link */ }
+            });
+        }
 
         // Setup Event Listeners for Nav Elements
         const langToggle = document.getElementById('langToggle');
@@ -625,7 +812,7 @@ window.injectUI = function (options = {}) {
                     <ul class="space-y-3 text-sm text-slate-600">
                         <li><a href="${window.SITE_ROOT}info/terms-of-service.html" id="ui-link-terms" data-i18n="linkTerms" class="hover:text-indigo-600 transition-colors">Terms of Service</a></li>
                         <li><a href="${window.SITE_ROOT}info/privacy-policy.html" id="ui-link-privacy" data-i18n="linkPrivacy" class="hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
-                        <li><a href="${window.SITE_ROOT}info/data-procesing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-indigo-600 transition-colors">Data Processing</a></li>
+                        <li><a href="${window.SITE_ROOT}info/data-processing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-indigo-600 transition-colors">Data Processing</a></li>
                         <li><a href="${window.SITE_ROOT}info/fund.html" id="ui-link-media" data-i18n="linkDonate" class="hover:text-indigo-600 transition-colors">Donate</a></li>
                     </ul>
                 </div>
@@ -686,7 +873,7 @@ function renderNav() {
         if (cat.id === 'all') {
             return `
             <div class="relative group h-full flex items-center">
-                <a href="${window.SITE_ROOT}index.html" class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
+                <a href="${cdeAllHref()}"${cdeTarget()} class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
                     ${catLabel}
                 </a>
             </div>`;
@@ -710,16 +897,10 @@ function renderNav() {
             const appFileName = app.url.split('/').pop();
             const isCurrentApp = window.location.pathname.includes(appFileName);
 
-            // Map custom rotation to Tailwind class
-            let rotationClass = '';
-            if (app.rotation == 90) rotationClass = 'rotate-90';
-            if (app.rotation == -90) rotationClass = '-rotate-90';
-            if (app.rotation == 180) rotationClass = 'rotate-180';
-
             return `
-                                <a href="${app.url}" class="flex items-center gap-3 p-2 hover:bg-indigo-50 rounded-none transition-colors group/item block ${isCurrentApp ? 'bg-indigo-50/50' : ''}">
+                                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 p-2 hover:bg-indigo-50 rounded-none transition-colors group/item block ${isCurrentApp ? 'bg-indigo-50/50' : ''}">
                                     <div class="w-8 h-8 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-indigo-300 text-indigo-600 shadow-sm' : 'border-slate-100 text-slate-500 group-hover/item:text-indigo-600'}">
-                                        <i data-lucide="${app.icon}" class="w-3.5 h-3.5 transition-transform ${rotationClass}"></i>
+                                        ${window.renderAppIcon(app, 'w-4 h-4', 'transition-transform')}
                                     </div>
                                     <span class="text-sm ${isCurrentApp ? 'font-bold text-indigo-700' : 'font-medium text-slate-700 group-hover/item:text-indigo-700'}">${appTitle}</span>
                                 </a>`
@@ -741,37 +922,64 @@ function renderNav() {
             </div>`;
     }
 
-    // Mobile Nav
+    // Mobile Nav — accordion: category row expands to its app list.
+    const openCat = window._mobileOpenCat || null;
     mobileNav.innerHTML = CATEGORIES.map(cat => {
         const catLabel = (d.categories && d.categories[cat.id]) || cat.label;
 
         if (cat.id === 'all') {
             return `
-            <a href="${window.SITE_ROOT}index.html" class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 transition-colors focus:outline-none ${activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
+            <a href="${cdeAllHref()}"${cdeTarget()} class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 transition-colors focus:outline-none ${activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
                 ${catLabel}
             </a>`;
         }
 
-        return `
-            <button onclick="setCategory('${cat.id}'); toggleMobileMenu();" class="text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 transition-colors focus:outline-none ${activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
-                ${catLabel}
-            </button>`;
-    }).join('');
+        const appsInCat = APPS.filter(app => app.categories && app.categories.includes(cat.id));
+        const isOpen = openCat === cat.id;
 
-    // Donate in the mobile menu too
-    if (window._showDonation) {
-        const donateLabel = d.linkDonate || 'Donate';
-        mobileNav.innerHTML += `
-            <a href="${window.SITE_ROOT}info/fund.html" id="ui-link-donate-mobile"
-                class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 text-indigo-600 hover:bg-indigo-50 transition-colors focus:outline-none">
-                ${donateLabel}
-            </a>`;
-    }
+        const appsHTML = appsInCat.map(app => {
+            const appTitle = (d.apps && d.apps[app.id] && d.apps[app.id].title) || 'Unknown Tool';
+            const appFileName = app.url.split('/').pop();
+            const isCurrentApp = window.location.pathname.includes(appFileName);
+
+            return `
+                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 px-6 py-3 border-b border-slate-100 last:border-b-0 transition-colors ${isCurrentApp ? 'bg-indigo-50/70' : 'hover:bg-white'}">
+                    <div class="w-7 h-7 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-indigo-300 text-indigo-600 shadow-sm' : 'border-slate-100 text-slate-500'}">
+                        ${window.renderAppIcon(app, 'w-4 h-4')}
+                    </div>
+                    <span class="text-sm ${isCurrentApp ? 'font-bold text-indigo-700' : 'font-medium text-slate-700'}">${appTitle}</span>
+                </a>`;
+        }).join('');
+
+        return `
+            <div class="border-b border-slate-100">
+                <button onclick="toggleMobileCat('${cat.id}')" aria-expanded="${isOpen}" class="w-full flex items-center justify-between gap-3 text-left px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors focus:outline-none ${isOpen || activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
+                    <span>${catLabel}</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}"></i>
+                </button>
+                <div class="${isOpen ? '' : 'hidden'} bg-slate-50">
+                    ${appsHTML || `<div class="px-6 py-3 text-sm text-slate-400">—</div>`}
+                </div>
+            </div>`;
+    }).join('');
 
     applyUiLinkTarget(desktopNav);
     applyUiLinkTarget(mobileNav);
     if (window.lucide) lucide.createIcons();
 }
+
+// --- Mobile accordion: open one category at a time ---
+window._mobileOpenCat = null;
+window.toggleMobileCat = function (catId) {
+    window._mobileOpenCat = (window._mobileOpenCat === catId) ? null : catId;
+
+    // On the hub (index.html) keep the old filtering behaviour as well.
+    if (window._mobileOpenCat && typeof renderCards === 'function') {
+        window.setCategory(catId); // this re-renders the nav
+    } else {
+        renderNav();
+    }
+};
 
 window.setCategory = function (catId) {
     activeCategory = catId;
@@ -805,7 +1013,7 @@ function setupHelpButton() {
     // Prevent adding multiple buttons if this function runs twice
     if (document.getElementById('dynamic-help-btn')) return;
 
-    // 4. Convert filename to Help ID (e.g., "ifc-audit.html" -> "ifc-audit")
+    // 4. Convert filename to Help ID (e.g., "ifc-viewer-audit.html" -> "ifc-viewer-audit")
     const helpId = fileNameFull.replace('.html', '').toLowerCase().replace(/_/g, '-');
 
     // 5. Create the Help Button
@@ -835,3 +1043,101 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.lucide) lucide.createIcons();
 });
+
+
+// ==========================================
+// DISCIPLINES (shared by the Project Hub and the 3D viewer)
+// ------------------------------------------
+// One vocabulary for every liteAECO page. A model's discipline is a
+// code from this list, recorded project-wide in the CDE log
+// (model.discipline, core build 18). Role codes are for contacts and
+// BCF only; model pickers use models().
+//   liteAECO.disciplines.models()      model codes, A-Z
+//   liteAECO.disciplines.roles()       role codes, A-Z
+//   liteAECO.disciplines.all()         everything, inference order
+//   liteAECO.disciplines.byCode(code)  entry or null
+//   liteAECO.disciplines.isModelCode(code)
+//   liteAECO.disciplines.normalize(v)  "arc " -> "ARC" (A-Z 0-9, max 12)
+//   liteAECO.disciplines.infer(text)   best guess from a file or folder
+//                                      name, "" when unsure
+// Inference: a code as a whole token (plural allowed, so ARC_VOIDS is
+// VOID), then keywords as whole tokens (multi-word keywords match the
+// spaced name). Never inside a word: ARCHIVE is not ARC.
+// ==========================================
+(function () {
+    var W = typeof window !== 'undefined' ? window : globalThis;
+    // inference order: VOID first so ARC_VOIDS resolves to VOID
+    var DEFS = [
+        { code: 'VOID', label: 'Provisions / Voids', color: '#fdba74', keywords: ['VOID', 'VOIDS', 'PROVISION', 'PROVISIONS', 'OPENING', 'OPENINGS', 'PFV', 'SUD', 'DURCHBRUCH'] },
+        { code: 'ARC', label: 'Architectural', color: '#d4d4d8', keywords: ['ARCH', 'ARCHITECTURE', 'ARCHITECTURAL', 'ARC', 'AA'] },
+        { code: 'STR', label: 'Structural', color: '#fca5a5', keywords: ['STRUCT', 'STRUCTURE', 'STRUCTURAL', 'STR', 'ST'] },
+        { code: 'ELE', label: 'Electrical', color: '#fcd34d', keywords: ['ELECT', 'ELECTRICAL', 'ELECTRICITY', 'ELE', 'EL'] },
+        { code: 'HVAC', label: 'Heating, Ventilation, and Air Conditioning', color: '#a5f3fc', keywords: ['HVAC', 'HEATING', 'VENTILATION', 'AIR CONDITIONING', 'HLKS', 'HL'] },
+        { code: 'SAN', label: 'Sanitary / Plumbing', color: '#93c5fd', keywords: ['SANITARY', 'SANITAER', 'SANIT\u00c4R', 'PLUMBING', 'SAN', 'SA'] },
+        { code: 'MEP', label: 'Mechanical, Electrical, and Plumbing', color: '#ddd6fe', keywords: ['MEP', 'MECHANICAL ELECTRICAL PLUMBING'] },
+        { code: 'FUR', label: 'Furniture', color: '#d9f99d', keywords: ['FURNITURE', 'FURNISHING', 'FURNISHINGS', 'FUR', 'FU', 'MOB'] },
+        { code: 'INT', label: 'Interior design', color: '#c4b5fd', keywords: ['INTERIOR', 'INTERIOR DESIGN', 'INTERIORS', 'INT', 'IN'] },
+        { code: 'FAC', label: 'Facade', color: '#bfdbfe', keywords: ['FACADE', 'FA\u00c7ADE', 'ENVELOPE', 'FAS', 'FA'] },
+        { code: 'FND', label: 'Foundations', color: '#fecaca', keywords: ['FOUNDATION', 'FOUNDATIONS', 'SUBSTRUCTURE'] },
+        { code: 'LAN', label: 'Landscape', color: '#6ee7b7', keywords: ['LANDSCAPE', 'LANDSCAPING', 'SITE', 'LAND', 'LAN'] },
+        { code: 'PRO', label: 'Process', color: '#fde68a', keywords: ['PROCESS', 'PROCESSING', 'PRODUCTION', 'PRO', 'PR'] },
+        { code: 'LAB', label: 'Laboratory', color: '#a7f3d0', keywords: ['LAB', 'LABORATORY', 'LABORATORIES', 'LB'] },
+        { code: 'ICT', label: 'Telecommunications and data', color: '#93c5fd', keywords: ['ICT', 'DATA', 'TELECOM', 'TELECOMMUNICATIONS', 'NETWORK', 'IT', 'TEL'] },
+        { code: 'SEC', label: 'Security and access control', color: '#bef264', keywords: ['SECURITY', 'ACCESS CONTROL', 'ACCESS', 'SEC', 'SE'] },
+        // role codes: contacts and BCF only, never inferred, never a model discipline
+        { code: 'BIM', label: 'BIM management', color: '#e5e7eb', keywords: [], role: true },
+        { code: 'COO', label: 'Coordination', color: '#e5e7eb', keywords: [], role: true },
+        { code: 'REFM', label: 'Real estate and facility management', color: '#e5e7eb', keywords: [], role: true },
+        { code: 'VDC', label: 'Virtual design and construction', color: '#e5e7eb', keywords: [], role: true },
+        { code: 'VIEWER', label: 'Viewer (read only)', color: '#e5e7eb', keywords: [], role: true }
+    ];
+    DEFS.forEach(function (d) { Object.freeze(d.keywords); Object.freeze(d); });
+    var BY = {};
+    DEFS.forEach(function (d) { BY[d.code] = d; });
+    function az(a, b) { return a.code < b.code ? -1 : a.code > b.code ? 1 : 0; }
+    function copy(d) { return { code: d.code, label: d.label, color: d.color, keywords: d.keywords.slice(), role: !!d.role }; }
+
+    function normalize(v) { return String(v == null ? '' : v).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); }
+    function byCode(code) { var c = normalize(code); return Object.prototype.hasOwnProperty.call(BY, c) ? copy(BY[c]) : null; }
+    function isModelCode(code) { var c = normalize(code); return Object.prototype.hasOwnProperty.call(BY, c) && !BY[c].role; }
+
+    function infer(text) {
+        var name = String(text || '').split(/[\\/]/).pop().toUpperCase().replace(/\.(IFC|IFCZIP|IFCXML|FRAG)$/, '');
+        var tokens = name.split(/[^A-Z0-9\u00c4\u00c7\u00d6\u00dc]+/).filter(Boolean);
+        if (!tokens.length) return '';
+        var spaced = ' ' + tokens.join(' ') + ' ';
+        var i, d;
+        for (i = 0; i < DEFS.length; i++) {
+            d = DEFS[i];
+            if (d.role) continue;
+            if (tokens.indexOf(d.code) !== -1 || tokens.indexOf(d.code + 'S') !== -1) return d.code;
+        }
+        // multi-word keywords first: MECHANICAL ELECTRICAL PLUMBING is MEP, not ELE
+        for (var pass = 0; pass < 2; pass++) {
+            for (i = 0; i < DEFS.length; i++) {
+                d = DEFS[i];
+                if (d.role) continue;
+                for (var k = 0; k < d.keywords.length; k++) {
+                    var kw = d.keywords[k];
+                    var multi = kw.indexOf(' ') !== -1;
+                    if (pass === 0 && multi && spaced.indexOf(' ' + kw + ' ') !== -1) return d.code;
+                    if (pass === 1 && !multi && tokens.indexOf(kw) !== -1) return d.code;
+                }
+            }
+        }
+        return '';
+    }
+
+    var api = {
+        VERSION: 1,
+        all: function () { return DEFS.map(copy); },
+        models: function () { return DEFS.filter(function (d) { return !d.role; }).sort(az).map(copy); },
+        roles: function () { return DEFS.filter(function (d) { return d.role; }).sort(az).map(copy); },
+        byCode: byCode,
+        isModelCode: isModelCode,
+        normalize: normalize,
+        infer: infer
+    };
+    W.liteAECO = W.liteAECO || {};
+    W.liteAECO.disciplines = Object.freeze(api);
+})();

@@ -72,7 +72,63 @@
      * `withLayer:false` used for block-local entities where layer is inherited noise? 
      * No — layer changes inside blocks matter too. Keep layer always.
      */
-    function fingerprint(entity, tol) {
+    function translatedEntity(entity, offset) {
+        if (!offset || (!offset.x && !offset.y)) return entity;
+        // MULTILEADER points sit in nested sections (context, leaders, lines):
+        // dxf_mleader.js knows which are locations and which are vectors.
+        var ML = typeof window !== 'undefined' ? window.DxfMLeader
+            : (typeof require === 'function' ? (function () { try { return require('./dxf_mleader.js'); } catch (e) { return null; } })() : null);
+        if (entity.type === 'MULTILEADER' && ML) {
+            var moved = ML.clone(entity);
+            delete moved.__rawBlock;
+            ML.translate(moved, offset.x, offset.y);
+            return moved;
+        }
+        var out = Object.assign({}, entity);
+        var point = function (p) {
+            if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') return p;
+            return Object.assign({}, p, { x: p.x + offset.x, y: p.y + offset.y });
+        };
+        ['position', 'startPoint', 'endPoint', 'center', 'centerPoint', 'insertPoint',
+            'insertionPoint', 'point', 'anchorPoint', 'middleOfText', 'textMidpoint',
+            'linearOrAngularPoint1', 'linearOrAngularPoint2', 'diameterOrRadiusPoint',
+            'arcPoint', 'alignmentPoint'].forEach(function (key) {
+            // An ellipse axis and MTEXT direction are vectors, not locations.
+            if (entity.type === 'ELLIPSE' && key === 'endPoint') return;
+            if (out[key]) out[key] = point(out[key]);
+        });
+        ['vertices', 'points', 'controlPoints', 'fitPoints'].forEach(function (key) {
+            if (Array.isArray(out[key])) out[key] = out[key].map(point);
+        });
+        if (Array.isArray(entity.paths)) out.paths = entity.paths.map(function (path) {
+            var copy = Object.assign({}, path);
+            if (path.vertices) copy.vertices = path.vertices.map(point);
+            if (path.edges) copy.edges = path.edges.map(function (edge) {
+                var e = Object.assign({}, edge);
+                if (edge.controls) e.controls = edge.controls.map(point);
+                if (edge.fits) e.fits = edge.fits.map(point);
+                if (edge.d) {
+                    e.d = Object.assign({}, edge.d);
+                    if (typeof e.d['10'] === 'number') e.d['10'] += offset.x;
+                    if (typeof e.d['20'] === 'number') e.d['20'] += offset.y;
+                    // Line end coordinates; ellipse major-axis coordinates stay local.
+                    if (edge.type === 1) {
+                        if (typeof e.d['11'] === 'number') e.d['11'] += offset.x;
+                        if (typeof e.d['21'] === 'number') e.d['21'] += offset.y;
+                    }
+                }
+                return e;
+            });
+            return copy;
+        });
+        if (Array.isArray(entity.patternLines)) out.patternLines = entity.patternLines.map(function (line) {
+            return Object.assign({}, line, { base: point(line.base) });
+        });
+        return out;
+    }
+
+    function fingerprint(entity, tol, offset) {
+        entity = translatedEntity(entity, offset);
         return (entity.type || '?') + '|' + (entity.layer || '0') + '|' + canon(entity, tol);
     }
 
@@ -213,6 +269,7 @@
      *   drawing*: { entities:[], blocks:{} }  (dxf-parser shape)
      *   opts.tolerance  — quantization step, default 1e-4
      *   opts.forceMode  — 'handle' | 'fingerprint' (optional override)
+     *   opts.offsetB    — {x,y} comparison translation; source entities stay intact
      *
      * Returns {
      *   mode: 'handle'|'fingerprint',
@@ -234,8 +291,22 @@
         var entsA = filterPaper ? modelSpace(drawingA && drawingA.entities) : listEntities(drawingA && drawingA.entities);
         var entsB = filterPaper ? modelSpace(drawingB && drawingB.entities) : listEntities(drawingB && drawingB.entities);
 
+        var offsetB = opts.offsetB;
+        var blocksB = drawingB && drawingB.blocks;
+        // Dimension anonymous blocks store world-space graphics. INSERT block
+        // definitions remain local and must never receive a second translation.
+        if (offsetB && blocksB) {
+            blocksB = Object.assign({}, blocksB);
+            entsB.forEach(function (entity) {
+                if (entity.type !== 'DIMENSION' || !entity.block || !blocksB[entity.block]) return;
+                var original = drawingB.blocks[entity.block];
+                blocksB[entity.block] = Object.assign({}, original, {
+                    entities: (original.entities || []).map(function (e) { return translatedEntity(e, offsetB); })
+                });
+            });
+        }
         var blockDiff = diffBlockDefs(
-            drawingA && drawingA.blocks, drawingB && drawingB.blocks, tol);
+            drawingA && drawingA.blocks, blocksB, tol);
 
         var mode = opts.forceMode;
         if (mode !== 'handle' && mode !== 'fingerprint') {
@@ -259,7 +330,7 @@
             for (var h in byHandleA) {
                 var a = byHandleA[h], b = byHandleB[h];
                 if (!b) { deleted.push({ a: a }); continue; }
-                var fa = fingerprint(a, tol), fb = fingerprint(b, tol);
+                var fa = fingerprint(a, tol), fb = fingerprint(b, tol, offsetB);
                 if (fa === fb) {
                     // Content equal — but a changed block def modifies its INSERTs.
                     if (a.type === 'INSERT' && blockDiff.changed[insertBlockName(a)]) {
@@ -287,7 +358,7 @@
                 (mapA[fp] || (mapA[fp] = [])).push(listA[x]);
             }
             for (var y = 0; y < listB.length; y++) {
-                fp = fingerprint(listB[y], tol);
+                fp = fingerprint(listB[y], tol, offsetB);
                 (mapB[fp] || (mapB[fp] = [])).push(listB[y]);
             }
             for (var f in mapA) {
@@ -347,6 +418,7 @@
     var DxfCompare = {
         DEFAULT_TOLERANCE: DEFAULT_TOLERANCE,
         compare: compare,
+        translatedEntity: translatedEntity,
         fingerprint: fingerprint,
         layerBreakdown: layerBreakdown,
         handleModeViable: handleModeViable,

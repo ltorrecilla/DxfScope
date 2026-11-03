@@ -4,16 +4,33 @@
     <meta charset="UTF-8">
     <meta name="author" content="Luis Torrecilla">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>liteAECO - DXF Compare</title>
+    <title>DXF Compare - Compare Two Versions of a Drawing Side-by-Side | liteAECO</title>
 
-    <meta name="description" content="Compare two DXF or DWG drawings in the browser and highlight added, deleted and modified entities. No upload, no server.">
-    <meta property="og:title" content="liteAECO - DXF Compare">
-    <meta property="og:description" content="Free tools for AEC project teams. Built with a focus on speed and utility.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://liteAECO.com/">
-
+    <!-- Primary Meta Tags -->
+    <meta name="description" content="Free client-side tool to open two versions of a DXF or DWG drawing and compare differences side-by-side. No uploads, private, fast, built for AEC teams.">
     <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://liteaeco.com/tools/dxf-compare.html">
 
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://liteaeco.com/tools/dxf-compare.html">
+    <meta property="og:site_name" content="liteAECO">
+    <meta property="og:title" content="DXF Compare - Compare Two Versions of a Drawing Side-by-Side | liteAECO">
+    <meta property="og:description" content="Free client-side tool to open two versions of a DXF or DWG drawing and compare differences side-by-side. No uploads, private, fast, built for AEC teams.">
+    <meta property="og:image" content="https://liteaeco.com/img/og-dxf-compare.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="liteAECO DXF Compare tool interface">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://liteaeco.com/tools/dxf-compare.html">
+    <meta name="twitter:title" content="DXF Compare - Compare Two Versions of a Drawing Side-by-Side | liteAECO">
+    <meta name="twitter:description" content="Free client-side tool to open two versions of a DXF or DWG drawing and compare differences side-by-side. No uploads, private, fast, built for AEC teams.">
+    <meta name="twitter:image" content="https://liteaeco.com/img/og-dxf-compare.png">
+
+    <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="../img/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png">
@@ -22,19 +39,26 @@
     <link rel="icon" type="image/png" sizes="512x512" href="../img/android-chrome-512x512.png">
     <meta name="theme-color" content="#ffffff">
 
+    <!-- Scripts Design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="../js/vendor/lucide-1.45.0.min.js"></script>
 
+    <!-- Scripts Internal -->
     <script>window.SITE_ROOT = '../';</script>
     <script src="../lang/en/global.js"></script>
     <script src="../js/common.js"></script>
+    <script src="../js/liteaeco-cde.js"></script>
     <script src="../js/dxf/dxf-parser.js"></script>
+    <script src="../js/dxf/dxf_ocs.js"></script>
     <script src="../js/dxf/dxf_sanitize.js"></script>
     <script src="../js/dxf/dxf_dim.js"></script>
     <script src="../js/dxf/dxf_hatch.js"></script>
+    <script src="../js/dxf/dxf_wide.js"></script>
+    <script src="../js/dxf/dxf_mleader.js"></script>
     <script src="../js/dxf/dxf_layout.js"></script>
     <script src="../js/dxf/dxf_compare_engine.js"></script>
 
+    <!-- Scripts External -->
     <script type="importmap">
         {
             "imports": {
@@ -59,6 +83,7 @@
         }
     </script>
 
+    <!-- CSS -->
     <link rel="stylesheet" type="text/css" href="../css/global.css">
     <style>
         html, body { height: 100%; }
@@ -97,6 +122,7 @@
         }
         .draw-toolbar-spacer { flex: 1 1 auto; }
         #papers-panel, #right-panel { top: var(--draw-toolbar-h, 0px); }
+        #canvas-wrap { margin-top: var(--draw-toolbar-h, 0px); }
         .settings-popup { top: max(64px, calc(var(--draw-toolbar-h, 0px) + 16px)); }
         .settings-popup { max-height: calc(100% - max(80px, var(--draw-toolbar-h, 0px) + 32px)); }
 
@@ -144,6 +170,28 @@
             font-size: 10px; font-weight: 700; letter-spacing: .04em;
             padding: 2px 8px; border-radius: 6px; color: #fff;
             background: rgba(15, 23, 42, .65); pointer-events: none;
+        }
+
+        /* ---- Swipe view: one canvas, A left of the divider, B right ---- */
+        #canvas-wrap { position: relative; }
+        .swipe-tag { display: none; }
+        #canvas-wrap.swipe .swipe-tag { display: block; }
+        #swipe-tag-b { left: auto; right: 8px; }
+        #swipe-bar {
+            display: none; position: absolute; top: 0; bottom: 0;
+            left: var(--split, 50%); width: 14px; margin-left: -7px;
+            z-index: 6; cursor: ew-resize; touch-action: none;
+        }
+        #canvas-wrap.swipe #swipe-bar { display: block; }
+        #swipe-bar::before {
+            content: ''; position: absolute; top: 0; bottom: 0;
+            left: 6px; width: 2px; background: #4f46e5;
+        }
+        #swipe-grip {
+            position: absolute; top: 50%; left: -7px; width: 28px; height: 28px;
+            margin-top: -14px; border-radius: 50%; background: #4f46e5;
+            border: 2px solid #fff; box-shadow: 0 1px 6px rgba(15, 23, 42, .3);
+            color: #fff; display: flex; align-items: center; justify-content: center;
         }
 
         .cat-chip { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
@@ -221,8 +269,8 @@
             font-size: 12px; font-weight: 600; color: #1e293b; background: #ffffff;
             border: 1px solid #e2e8f0; border-radius: 4px; padding: 5px 8px; outline: none; cursor: pointer;
         }
-        .settings-select:focus { border-color: #4f46e5; }
-        .settings-check-input { accent-color: #4f46e5; width: 17px; height: 17px; cursor: pointer; }
+        .settings-select:focus { border-color: #111827; }
+        .settings-check-input { accent-color: #111827; width: 17px; height: 17px; cursor: pointer; }
 
         .loader {
             border: 4px solid #e2e8f0; border-top: 4px solid #4f46e5;
@@ -243,7 +291,7 @@
         <!-- Sidebar (same rail as DXF Viewer) -->
         <aside id="app-sidebar" class="z-[80] w-[72px] bg-white border-r border-white shadow-lg flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex flex-col h-full relative">
             <div class="h-16 flex items-center px-6 border-b border-slate-200 shrink-0 w-64 cursor-pointer">
-                <i data-lucide="git-compare" class="text-indigo-600 w-6 h-6 shrink-0 -ml-0"></i>
+                <i data-lucide="columns-2" class="text-indigo-600 w-6 h-6 shrink-0 -ml-0"></i>
                 <h1 class="text-lg font-bold text-slate-900 ml-4 whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text" data-i18n="appName">
                     DXF Compare
                 </h1>
@@ -276,14 +324,14 @@
         <section class="flex-1 bg-slate-100 flex flex-col overflow-hidden relative">
 
             <!-- View: Upload -->
-            <div id="view-upload" class="view-panel absolute inset-0 flex flex-col bg-slate-50 overflow-y-auto z-10 transition-opacity">
-                <div class="md:px-14 pt-12 flex flex-col w-full gap-6 max-w-7xl mx-auto pb-8">
+            <div id="view-upload" class="view-panel absolute inset-0 flex flex-col bg-white overflow-y-auto z-10 transition-opacity">
+                <div class="md:px-14 pt-12 flex flex-col w-full max-w-7xl mx-auto pb-8">
 
-                    <div class="bg-white border border-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded p-6 md:p-8 shrink-0">
-                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-slate-200/60 pb-4">
+                    <div class="shrink-0">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center text-indigo-600 shrink-0">
-                                    <i data-lucide="git-compare" class="w-5 h-5"></i>
+                                <div class="w-10 h-10 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-900 shrink-0">
+                                    <i data-lucide="columns-2" class="w-5 h-5"></i>
                                 </div>
                                 <div>
                                     <h1 class="text-2xl font-bold text-slate-900 tracking-tight leading-tight" data-i18n="appName">CAD Compare</h1>
@@ -292,7 +340,7 @@
                             </div>
                         </div>
 
-                        <details class="text-sm text-slate-600 leading-relaxed group">
+                        <details class="text-sm text-slate-600 leading-relaxed group border-b border-slate-300 pb-4">
                             <summary class="cursor-pointer list-none flex items-center gap-2 font-semibold text-slate-900 select-none">
                                 <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-500 transition-transform group-open:rotate-90"></i>
                                 <span id="ui-rule-title">What this tool does</span>
@@ -300,19 +348,19 @@
 
                             <div class="mt-3 space-y-3">
                                 <p>
-                                    <span id="ui-rule-desc-1">Compare two revisions of a DXF or DWG drawing to see what has been changed, added, deleted or modified. Entities are highlighted in an overlay or side-by-side view. Files never leave your computer. You can also load only one file to use it as a plain viewer.</span>
+                                    <span id="ui-rule-desc-1">Compare two revisions of a DXF or DWG drawing to see what has been changed, added, deleted or modified.<br/>Entities are highlighted in an overlay, side-by-side or swipe view. Files never leave your computer. You can also load only one file to use it as a plain viewer.</span>
                                 </p>
                              </div>
                         </details>
                     </div>
 
-                    <div class="bg-white border border-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] rounded p-6 md:p-8 flex flex-col gap-6 shrink-0">
-                        <h2 class="text-base font-bold text-slate-800 flex items-center">
-                            <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-md inline-flex items-center justify-center text-xs mr-2 font-bold"><i data-lucide="file-code-2" class="w-3.5 h-3.5"></i></span>
-                            <span data-i18n="stepLoadDrawings">Step 1: Load Drawings</span>
+                    <div class="pt-6 md:pt-8 flex flex-col shrink-0">
+                        <h2 class="hidden text-base font-bold text-slate-800 flex items-center mb-4">
+                            <span class="bg-slate-100 text-slate-700 w-6 h-6 rounded-md inline-flex items-center justify-center text-xs mr-2 font-bold"><i data-lucide="file-code-2" class="w-3.5 h-3.5"></i></span>
+                            <span data-i18n="stepLoadDrawings">Load Drawings</span>
                         </h2>
 
-                        <div class="bg-white p-6 rounded border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
                             <div class="flex flex-col h-full">
                                 <div id="drop-a" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
@@ -370,7 +418,7 @@
                                 </div>
 
                                 <button id="btn-open" class="mt-4 w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-[13px] font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 rounded" disabled>
-                                    <i data-lucide="git-compare" class="w-4 h-4"></i>
+                                    <i data-lucide="square-split-horizontal" class="w-4 h-4"></i>
                                     <span data-i18n="openCompareBtn">Compare</span>
                                 </button>
                             </div>
@@ -406,6 +454,15 @@
                                 <i data-lucide="hammer" class="w-3.5 h-3.5"></i>
                             </button>
                             <span class="viewer-toolbar-sep"></span>
+                            <button id="btn-align" class="viewer-btn" style="gap:6px" title="Align drawings" data-i18n-title="alignDrawings" disabled>
+                                <i data-lucide="crosshair" class="w-3.5 h-3.5"></i><span data-i18n="alignLabel">Align</span>
+                            </button>
+                            <button id="btn-move-b" class="viewer-btn" style="gap:6px" title="Move version B" data-i18n-title="moveDrawing" disabled>
+                                <i data-lucide="move" class="w-3.5 h-3.5"></i><span data-i18n="moveLabel">Move B</span>
+                            </button>
+                            <button id="btn-reset-align" class="viewer-btn" title="Reset alignment" data-i18n-title="resetAlignment" disabled>
+                                <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                            </button>
                             <span id="compare-title" class="text-xs font-bold text-slate-700 truncate max-w-[26vw] self-center px-1"></span>
                             <span id="mode-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 self-center"></span>
                             <span class="draw-toolbar-spacer"></span>
@@ -413,7 +470,13 @@
                                 <i data-lucide="layers-2" class="w-3.5 h-3.5"></i>
                             </button>
                             <button id="btn-view-sbs" class="viewer-btn" title="Side-by-side view" data-i18n-title="sbsView">
-                                <i data-lucide="columns-2" class="w-3.5 h-3.5"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="7" height="18" x="3" y="3" rx="1" />
+                                    <rect width="7" height="18" x="14" y="3" rx="1" />
+                                </svg>
+                            </button>
+                            <button id="btn-view-swipe" class="viewer-btn" title="Swipe view" data-i18n-title="swipeView">
+                                <i data-lucide="square-split-horizontal" class="w-3.5 h-3.5"></i>
                             </button>
                             <button id="btn-theme" class="viewer-btn" title="Toggle Dark Mode" data-i18n-title="toggleDarkMode">
                                 <i data-lucide="moon" class="w-3.5 h-3.5"></i>
@@ -424,6 +487,7 @@
                         </div>
                     </div>
 
+                    <div id="alignment-hint" role="status" aria-live="polite" class="hidden absolute bottom-10 left-4 z-30 bg-indigo-50 text-indigo-700 text-xs px-3 py-2 rounded shadow"></div>
                     <!-- Measure bottom bar (editor pattern; measure tool only) -->
                     <div id="measure-panel" class="measure-panel hidden">
                         <span class="measure-panel-title" data-i18n="measureTitle">Measure</span>
@@ -442,6 +506,12 @@
                         </div>
                         <div id="host-b" class="cmp-canvas-host flex-1 hidden">
                             <span class="canvas-tag" data-i18n="tagNew">Version B</span>
+                        </div>
+                        <!-- swipe view only: side tags + draggable divider over host-main -->
+                        <span id="swipe-tag-a" class="canvas-tag swipe-tag" data-i18n="tagOld">Version A</span>
+                        <span id="swipe-tag-b" class="canvas-tag swipe-tag" data-i18n="tagNew">Version B</span>
+                        <div id="swipe-bar" title="Drag to compare" data-i18n-title="swipeDrag">
+                            <div id="swipe-grip"><i data-lucide="chevrons-left-right" class="w-3.5 h-3.5"></i></div>
                         </div>
                     </div>
 
@@ -532,7 +602,6 @@
         // liteAECO - PAGE LOGIC
         // ==========================================
 
-        window.pageScriptPrefix = 'dxf_compare';
         window.BASE_PAGE = JSON.parse(JSON.stringify(window.PAGE_I18N || {}));
 
         // --- DYNAMIC TRANSLATION HOOK ---
@@ -549,6 +618,7 @@
             // 2. Generate the Navigation Bar & Footer
             window.injectUI({
                 showNav: true,
+                linkTarget: '', //_blank
                 transparentNav: false,
                 showSignIn: false,
                 showCategories: true,
@@ -777,12 +847,16 @@
 
             const parser = new window.DxfParser();
             const dxf = parser.parseSync(text);
+            // Mirrored (negative-extrusion) arcs, circles, polylines and ellipses
+            // store OCS coordinates; rewrite them world-aligned so both sides
+            // render where AutoCAD draws them and fingerprint identically.
+            ctx.mirror = window.DxfOcs ? window.DxfOcs.normalizeDrawing(dxf, text) : null;
             ctx.dxf = dxf;
             ctx.fileName = fileName;
             ctx.hatchLoopCache = new WeakMap();
             ctx.dimTextHeightCache = null;
 
-            // dxf-parser drops HATCH / LEADER / WIPEOUT / ACAD_TABLE — recover from raw text.
+            // dxf-parser drops HATCH / LEADER / WIPEOUT / ACAD_TABLE recover from raw text.
             ctx.rawHatches = window.DxfHatch?.parseRawDxfHatches ? window.DxfHatch.parseRawDxfHatches(text) : [];
             if (!Array.isArray(dxf.entities)) dxf.entities = [];
             if (window.DxfDim?.parseRawDxfLeaders) {
@@ -790,6 +864,23 @@
             }
             if (window.DxfHatch?.parseRawDxfWipeouts) {
                 for (const w of window.DxfHatch.parseRawDxfWipeouts(text)) dxf.entities.push(w);
+            }
+            // MULTILEADER is dropped by dxf-parser too; LEADER loses its path type,
+            // hook line and dimstyle overrides.
+            ctx.mleaderBlockNames = new Map();
+            ctx.leaderDimStyles = new Map();
+            if (window.DxfMLeader) {
+                const M = window.DxfMLeader;
+                ctx.mleaderBlockNames = M.parseBlockRecordHandles(text);
+                const found = M.parseRawMultileaders(text);
+                for (const e of found.entities) { delete e.__rawBlock; dxf.entities.push(e); }
+                for (const [name, list] of Object.entries(found.blocks)) {
+                    const blk = dxf.blocks?.[name];
+                    if (blk) { blk.entities = blk.entities || []; for (const e of list) { delete e.__rawBlock; blk.entities.push(e); } }
+                }
+                ctx.leaderDimStyles = M.parseRawDimStyles(text);
+                const extras = M.parseRawLeaderExtras(text);
+                for (const e of dxf.entities) if (e?.type === 'LEADER' && extras.has(e.__rawKey)) e.__leaderExtras = extras.get(e.__rawKey);
             }
             if (window.DxfHatch?.parseRawDxfAcadTables) {
                 for (const t of window.DxfHatch.parseRawDxfAcadTables(text)) {
@@ -811,7 +902,7 @@
         }
 
         // ==================================================================
-        //  DWG import (LibreDWG wasm) — lifted from DXF_Viewer, incl. the
+        //  DWG import (LibreDWG wasm) lifted from DXF_Viewer, incl. the
         //  locateFile: (f) => f fix, which is REQUIRED alongside wasmBinary.
         // ==================================================================
         let libreDwgInstance = null;
@@ -835,7 +926,7 @@
                 ]);
                 const wasmBytes = new Uint8Array(await wasmResp.arrayBuffer());
                 if (!(wasmBytes[0] === 0 && wasmBytes[1] === 0x61 && wasmBytes[2] === 0x73 && wasmBytes[3] === 0x6d)) {
-                    throw new Error('libredwg-web.wasm is not a WebAssembly file — the server returned other content (SPA rewrite?)');
+                    throw new Error('libredwg-web.wasm is not a WebAssembly file, the server returned other content (SPA rewrite?)');
                 }
                 const glueUrl = URL.createObjectURL(new Blob([glueSrc], { type: 'text/javascript' }));
                 const spec = '"../wasm/libredwg-web.js"';
@@ -861,7 +952,7 @@
         async function fileToDxfText(file) {
             const name = String(file.name || 'drawing');
             if (/\.dwg$/i.test(name)) {
-                setStatus(tr('dwgLoading', 'Reading DWG — first time loads the converter (~10 MB)…'));
+                setStatus(tr('dwgLoading', 'Reading DWG, first time loads the converter (~10 MB)…'));
                 const bytes = await file.arrayBuffer();
                 const lib = await ensureLibreDwg();
                 const dxfBytes = lib.dwg_write_dxf(bytes);
@@ -956,7 +1047,7 @@
             return blocks[name] || Object.values(blocks).find(b => b?.name === name || b?.xrefPath === name) || null;
         }
 
-        // ---- curve tessellation (fixed quality — no interactive smoothness UI) ----
+        // ---- curve tessellation (fixed quality no interactive smoothness UI) ----
         const TESS = { maxAngleRad: Math.PI / 72, minSegments: 32, maxSegments: 512, radiusFactor: 8 };
         function getCurveSegmentCount(radius = 1, sweep = Math.PI * 2) {
             const absSweep = Math.max(Math.abs(Number(sweep) || 0), 0);
@@ -1148,7 +1239,38 @@
         }
 
         // entityToSegments: flat line segments for bounds and zoom targets.
+        // MULTILEADER display: child renderables from dxf_mleader.js (cached).
+        function mleaderChildren(ctx, e) {
+            if (!window.DxfMLeader) return [];
+            if (!e.__mlChildren) {
+                e.__mlChildren = window.DxfMLeader.children(e, {
+                    blockNameByHandle: ctx.mleaderBlockNames || new Map(),
+                    getBlock: (name) => getBlockByName(ctx, name),
+                });
+            }
+            return e.__mlChildren;
+        }
+
+        // Classic LEADER path as AutoCAD shows it (spline, hook line).
+        function leaderPathPoints(ctx, entity) {
+            const x = entity?.__leaderExtras;
+            if (!x || !window.DxfMLeader) return entity?.vertices || [];
+            const h = ctx.dxf?.header || {};
+            const st = {};
+            for (const k of ['DIMTAD', 'DIMGAP', 'DIMSCALE', 'DIMASZ']) if (Number.isFinite(Number(h['$' + k]))) st[k] = Number(h['$' + k]);
+            Object.assign(st, ctx.leaderDimStyles?.get(String(x.dimstyle || '').toUpperCase()) || {});
+            return window.DxfMLeader.leaderDisplayPoints(entity.vertices, x, st);
+        }
+
         function entityToSegments(ctx, entity) {
+            if (entity?.type === 'MULTILEADER') {
+                const segs = [];
+                for (const c of mleaderChildren(ctx, entity)) {
+                    if (c.type === 'MTEXT') continue;
+                    for (const sg of entityToSegments(ctx, c)) segs.push(sg);
+                }
+                return segs;
+            }
             if (entity?.type === 'ACAD_TABLE') {
                 return window.DxfHatch?.acadTableGeometry ? window.DxfHatch.acadTableGeometry(entity).segments : [];
             }
@@ -1219,7 +1341,7 @@
             }
             if (entity?.type === 'LEADER') {
                 const D = window.DxfDim;
-                const g = D ? D.leaderGeometry(entity.vertices, entity.textHeight || getDimTextHeight(ctx)) : null;
+                const g = D ? D.leaderGeometry(leaderPathPoints(ctx, entity), entity.textHeight || getDimTextHeight(ctx)) : null;
                 if (!g) return [];
                 const segs = [...g.segments];
                 for (const pl of g.polylines) {
@@ -1291,8 +1413,11 @@
                     if (!p) return null;
                     const bulge = Number(v?.bulge) || 0;
                     if (bulge) p.bulge = bulge * bulgeSign;
+                    if (Number.isFinite(v?.startWidth)) p.startWidth = v.startWidth * matrixScale;
+                    if (Number.isFinite(v?.endWidth)) p.endWidth = v.endWidth * matrixScale;
                     return p;
                 }).filter(Boolean);
+                if (Number.isFinite(entity.width)) transformed.width = entity.width * matrixScale;
             }
             if (entity?.type === 'CIRCLE' || entity?.type === 'ARC') {
                 transformed.__center = transformPoint2D(getPointCandidate(entity.center, entity.centerPoint, entity.position, entity.startPoint), matrix);
@@ -1330,12 +1455,18 @@
                 if (!Array.isArray(entities) || depth > 12) return;
                 entities.forEach(entity => {
                     if (!entity) return;
+                    if (entity.type === 'MULTILEADER') {
+                        visit(mleaderChildren(ctx, entity), matrix, resolveEntityLayer(entity, inheritedLayer), depth + 1, sourceOverride || entity);
+                        return;
+                    }
                     if (entity.type === 'INSERT') {
                         const insertLayer = resolveEntityLayer(entity, inheritedLayer);
                         const block = getBlockByName(ctx, entity.name || entity.block || entity.blockName);
                         const insertMatrix = getInsertMatrix(ctx, entity, matrix);
                         const insSource = sourceOverride || entity;
-                        if (block?.entities?.length) visit(block.entities, insertMatrix, insertLayer, depth + 1, insSource);
+                        // MULTILEADER block content: attribute values replace the ATTDEF tags.
+                        const blockEnts = entity.__skipAttdefs ? (block?.entities || []).filter(c => c?.type !== 'ATTDEF') : block?.entities;
+                        if (blockEnts?.length) visit(blockEnts, insertMatrix, insertLayer, depth + 1, insSource);
                         if (Array.isArray(entity.attributes)) visit(entity.attributes, matrix, insertLayer, depth + 1, insSource);
                         return;
                     }
@@ -1346,7 +1477,7 @@
                             visit(block.entities, matrix, dimLayer, depth + 1, sourceOverride || entity);
                             return;
                         }
-                        // fall through — synthesized by DxfDim in addEntityToBucket
+                        // fall through synthesized by DxfDim in addEntityToBucket
                     }
                     const transformed = transformRenderableEntity(entity, matrix, inheritedLayer);
                     if (sourceOverride && transformed) transformed.__sourceEntity = sourceOverride;
@@ -1491,6 +1622,20 @@
                     group.add(new THREE.LineSegments(geom, mat));
                 }
                 for (const fill of (settings.showFills ? ldata.fills : [])) {
+                    if (fill.tris?.length) {
+                        const pos = new Float32Array(fill.tris.length / 2 * 3);
+                        for (let i = 0, j = 0; i < fill.tris.length; i += 2, j += 3) { pos[j] = fill.tris[i]; pos[j + 1] = fill.tris[i + 1]; }
+                        const geom = new THREE.BufferGeometry();
+                        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                        const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+                            color: new THREE.Color(fill.colorHex), side: THREE.DoubleSide,
+                            transparent: opacity != null, opacity: opacity != null ? opacity : 1,
+                        }));
+                        mesh.position.z = -0.04;
+                        mesh.renderOrder = -1;
+                        group.add(mesh);
+                        continue;
+                    }
                     if (!fill.shapes.length) continue;
                     const geom = new THREE.ShapeGeometry(fill.shapes);
                     const mat = new THREE.MeshBasicMaterial({
@@ -1558,14 +1703,16 @@
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
             for (const ctx of ctxs) {
                 for (const e of (getSpaceEntities(ctx, key) || [])) {
-                    for (const s of entityToSegments(ctx, e)) {
+                    for (const s of alignedSegments(ctx, e, key)) {
                         if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
                         minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
                         minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
                         found = true;
                     }
                 }
-                for (const vp of getSpaceViewports(ctx, key)) {
+                for (const originalVp of getSpaceViewports(ctx, key)) {
+                    const offset = ctx === ctxB ? alignmentOffset(key) : { x: 0, y: 0 };
+                    const vp = { ...originalVp, cx: originalVp.cx + offset.x, cy: originalVp.cy + offset.y };
                     minX = Math.min(minX, vp.cx - vp.width / 2); maxX = Math.max(maxX, vp.cx + vp.width / 2);
                     minY = Math.min(minY, vp.cy - vp.height / 2); maxY = Math.max(maxY, vp.cy + vp.height / 2);
                     found = true;
@@ -1709,8 +1856,13 @@
                     });
                 }
             } else if (['LINE', 'POLYLINE', 'LWPOLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'POINT', 'VIEWPORT'].includes(entity.type)) {
-                // Diff view renders solid lines — linetypes intentionally skipped.
+                // Diff view renders solid lines linetypes intentionally skipped.
                 for (const s of entityToSegments(ctx, entity)) push(s.x1, s.y1, s.x2, s.y2);
+                // Wide polylines (and MULTILEADER arrowheads): filled band.
+                if ((entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') && window.DxfWide?.hasWidth(entity)) {
+                    const tris = window.DxfWide.wideTriangles(entity.vertices, !!(entity.shape || entity.closed), entity.width);
+                    if (tris) layerData.fills.push({ shapes: [], tris, colorHex });
+                }
             } else if (entity.type === 'WIPEOUT') {
                 const vs = entity.vertices || [];
                 for (let i = 0; i < vs.length; i++) {
@@ -1766,7 +1918,7 @@
         }
 
         function buildBucketGroup(name, items, colorOverride, opacity) {
-            // items: [{ ctx, entity }] — top-level model entities to explode + render.
+            // items: [{ ctx, entity }] top-level model entities to explode + render.
             const layerDict = {};
             for (const { ctx, entity } of items) {
                 forEachRenderableEntity(ctx, e => addEntityToBucket(ctx, e, layerDict, colorOverride), [entity]);
@@ -1806,11 +1958,17 @@
 
         let camera = null;
         let sceneOverlay = null, sceneA = null, sceneB = null;
+        // Swipe view: measure + highlight live here, drawn full width on
+        // top of both halves (sceneA left / sceneB right are scissored).
+        let sceneTop = null;
         let rMain = null, rA = null, rB = null;
         let controlsMain = null, controlsA = null, controlsB = null;
-        let viewMode = 'overlay'; // 'overlay' | 'sbs'
+        let viewMode = 'overlay'; // 'overlay' | 'sbs' | 'swipe'
+        let swipeSplit = 0.5;     // divider position, fraction of host-main width
         let renderNeeded = true;
         let animating = false;
+        // host-main renders overlay AND swipe; host-a/host-b only sbs
+        const usesMainHost = () => viewMode !== 'sbs';
 
         // Bucket groups (built after compare; re-parented on mode switch)
         let groups = null; // { unchangedA, unchangedB, deleted, added, modifiedA, modifiedB }
@@ -1878,6 +2036,7 @@
             sceneOverlay = new THREE.Scene(); sceneOverlay.background = new THREE.Color(0x2a2e37);
             sceneA = new THREE.Scene(); sceneA.background = new THREE.Color(0x2a2e37);
             sceneB = new THREE.Scene(); sceneB.background = new THREE.Color(0x2a2e37);
+            sceneTop = new THREE.Scene(); // transparent: no background
 
             rMain = makeRenderer(hostMain);
             rA = makeRenderer(hostA);
@@ -1886,7 +2045,9 @@
             controlsA = makeControls(rA);
             controlsB = makeControls(rB);
             wireToolEvents(hostMain);
+            wireToolEvents(hostA);
             wireToolEvents(hostB);
+            [hostMain, hostA, hostB].forEach(wireAlignmentEvents);
 
             const hlMat = new THREE.LineBasicMaterial({ color: 0xfacc15, depthTest: false, transparent: true, opacity: 0.98 });
             highlightLine = new THREE.LineSegments(new THREE.BufferGeometry(), hlMat);
@@ -1914,7 +2075,7 @@
         function onResize() {
             measureToolbarHeight();
             if (!camera) return;
-            const host = viewMode === 'overlay' ? hostMain : hostA;
+            const host = usesMainHost() ? hostMain : hostA;
             const w = Math.max(host.clientWidth, 2), h = Math.max(host.clientHeight, 2);
             const aspect = w / h;
             const halfH = (camera.top - camera.bottom) / 2;
@@ -1927,12 +2088,32 @@
             requestRender();
         }
 
+        // Swipe: one canvas. A drawn left of the divider, B right of it,
+        // then the shared top layer (measure, highlight) across the full width.
+        const swipeSize = new THREE.Vector2();
+        function renderSwipe() {
+            rMain.getSize(swipeSize);
+            const w = swipeSize.x, h = swipeSize.y;
+            const split = Math.round(w * swipeSplit);
+            rMain.setScissorTest(true);
+            rMain.setScissor(0, 0, split, h);
+            rMain.render(sceneA, camera);
+            rMain.setScissor(split, 0, w - split, h);
+            rMain.render(sceneB, camera);
+            rMain.setScissorTest(false);
+            rMain.autoClear = false;
+            rMain.render(sceneTop, camera);
+            rMain.autoClear = true;
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             if (!renderNeeded) return;
             renderNeeded = false;
             if (viewMode === 'overlay') {
                 rMain.render(sceneOverlay, camera);
+            } else if (viewMode === 'swipe') {
+                renderSwipe();
             } else {
                 rA.render(sceneA, camera);
                 rB.render(sceneB, camera);
@@ -1942,7 +2123,7 @@
         }
 
         function clearScenes() {
-            for (const scene of [sceneOverlay, sceneA, sceneB]) {
+            for (const scene of [sceneOverlay, sceneA, sceneB, sceneTop]) {
                 if (!scene) continue;
                 const cached = new Set();
                 textTextureCache.forEach(e => cached.add(e.texture));
@@ -1972,17 +2153,20 @@
 
         function parentGroupsForMode() {
             if (!groups) return;
+            positionAlignedGroups();
             applySpaceBackground();
             // Detach everything first (a group lives in exactly one scene).
             for (const g of Object.values(groups)) g.parent?.remove(g);
             highlightLine.parent?.remove(highlightLine);
             if (viewMode === 'overlay') {
                 sceneOverlay.add(groups.unchangedB, groups.deleted, groups.added, groups.modifiedB);
+                if (alignmentMode === 'drag') sceneOverlay.add(groups.unchangedA, groups.modifiedA);
                 sceneOverlay.add(highlightLine);
             } else {
+                // sbs and swipe share the same A / B scenes
                 sceneA.add(groups.unchangedA, groups.deleted, groups.modifiedA);
                 sceneB.add(groups.unchangedB, groups.added, groups.modifiedB);
-                sceneB.add(highlightLine);
+                (viewMode === 'swipe' ? sceneTop : sceneB).add(highlightLine);
             }
             applyCategoryVisibility();
             applyLayerVisibility();
@@ -2000,6 +2184,21 @@
         let colorMode = 'changes'; // 'changes' | 'original'
         let currentSpace = 'model'; // 'model' | layout name lower-case
         let spaceResults = {};      // key -> { status:'matched'|'missingA'|'missingB', name, result? }
+
+        const alignments = new Map();
+        let alignmentMode = null, alignmentAnchor = null, alignmentDrag = null;
+        const alignmentOffset = (key = currentSpace) => alignments.get(key) || { x: 0, y: 0 };
+        function alignedSegments(ctx, entity, key = currentSpace) {
+            const offset = ctx === ctxB ? alignmentOffset(key) : { x: 0, y: 0 };
+            return entityToSegments(ctx, entity).map(s => ({ ...s,
+                x1: s.x1 + offset.x, y1: s.y1 + offset.y,
+                x2: s.x2 + offset.x, y2: s.y2 + offset.y }));
+        }
+        function positionAlignedGroups(offset = alignmentOffset()) {
+            for (const key of ['unchangedB', 'added', 'modifiedB'])
+                groups?.[key]?.position.set(offset.x, offset.y, 0);
+            requestRender();
+        }
 
         function spaceKeysUnion() {
             const keys = [{ key: 'model', name: tr('spaceModel', 'Model'), order: -1 }];
@@ -2031,7 +2230,8 @@
                 const result = window.DxfCompare.compare(
                     { entities: entsA, blocks: blocksA },
                     { entities: entsB, blocks: blocksB },
-                    { tolerance, filterPaperSpace: s.key === 'model' });
+                    { tolerance, filterPaperSpace: s.key === 'model', offsetB: alignmentOffset(s.key),
+                        forceMode: alignments.has(s.key) ? 'fingerprint' : undefined });
                 spaceResults[s.key] = { status: 'matched', name: s.name, result };
             }
             if (!spaceResults[currentSpace]) currentSpace = 'model';
@@ -2142,7 +2342,7 @@
         function overallBounds() {
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
             const expand = (ctx, entity) => {
-                for (const s of entityToSegments(ctx, entity)) {
+                for (const s of alignedSegments(ctx, entity)) {
                     if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
                     minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
                     minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
@@ -2156,7 +2356,7 @@
         }
         function fitCameraTo(b, paddingFactor = 1.1) {
             if (!b || !camera) return;
-            const host = viewMode === 'overlay' ? hostMain : hostA;
+            const host = usesMainHost() ? hostMain : hostA;
             const aspect = Math.max((host.clientWidth || 2) / (host.clientHeight || 2), 0.01);
             const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
             let w = Math.max(b.maxX - b.minX, 1e-6) * paddingFactor;
@@ -2185,7 +2385,7 @@
         }
 
         function zoomToEntity(ctx, entity) {
-            const segs = entityToSegments(ctx, entity);
+            const segs = alignedSegments(ctx, entity);
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, found = false;
             for (const s of segs) {
                 if (![s.x1, s.y1, s.x2, s.y2].every(Number.isFinite)) continue;
@@ -2194,7 +2394,9 @@
                 found = true;
             }
             if (!found) {
-                const p = getTextInsertionPoint(entity);
+                const rawPoint = getTextInsertionPoint(entity);
+                const offset = ctx === ctxB ? alignmentOffset() : { x: 0, y: 0 };
+                const p = rawPoint ? { x: rawPoint.x + offset.x, y: rawPoint.y + offset.y } : null;
                 if (!p) return;
                 minX = p.x - 5; maxX = p.x + 5; minY = p.y - 5; maxY = p.y + 5;
             }
@@ -2346,8 +2548,8 @@
                 const note = document.createElement('div');
                 note.className = 'text-slate-400 italic py-2';
                 note.textContent = sr.status === 'missingA'
-                    ? tr('layoutOnlyInB', 'This layout only exists in Version B — all entities counted as added.')
-                    : tr('layoutOnlyInA', 'This layout only exists in Version A — all entities counted as deleted.');
+                    ? tr('layoutOnlyInB', 'This layout only exists in Version B, all entities counted as added.')
+                    : tr('layoutOnlyInA', 'This layout only exists in Version A, all entities counted as deleted.');
                 listEl.appendChild(note);
                 return;
             }
@@ -2428,6 +2630,7 @@
 
         function switchSpace(key) {
             if (key === currentSpace) return;
+            stopAlignment();
             currentSpace = key;
             clearMeasurements();
             if (toolMode) buildMeasureSegCache();
@@ -2443,6 +2646,7 @@
         }
 
         function refreshPanel() {
+            syncAlignmentUi();
             renderCounts();
             renderLayerList();
             renderResultList();
@@ -2578,7 +2782,7 @@
             const sides = singleFileMode ? [ctxB] : [ctxA, ctxB];
             for (const ctx of sides) {
                 for (const e of (getSpaceEntities(ctx, currentSpace) || [])) {
-                    for (const s of entityToSegments(ctx, e)) segs.push(s);
+                    for (const s of alignedSegments(ctx, e)) segs.push(s);
                 }
             }
             measureSegCache = segs;
@@ -2589,7 +2793,8 @@
                 measureGroup.name = '__measure__';
                 measureGroup.renderOrder = 998;
             }
-            const target = viewMode === 'overlay' ? sceneOverlay : sceneB;
+            // swipe: full-width top layer, so both halves show the measurement
+            const target = viewMode === 'overlay' ? sceneOverlay : (viewMode === 'swipe' ? sceneTop : sceneB);
             if (measureGroup.parent !== target) { measureGroup.parent?.remove(measureGroup); target.add(measureGroup); }
             return measureGroup;
         }
@@ -2602,7 +2807,7 @@
             ensureMeasureGroup().add(line);
             return line;
         }
-        function activeHost() { return viewMode === 'overlay' ? hostMain : hostB; }
+        function activeHost() { return usesMainHost() ? hostMain : hostB; }
         function worldToScreen(p, host) {
             const v = new THREE.Vector3(p.x, p.y, 0).project(camera);
             return { x: (v.x + 1) / 2 * host.clientWidth, y: (1 - v.y) / 2 * host.clientHeight };
@@ -2644,6 +2849,7 @@
             if (el) el.textContent = msg;
         }
         function setToolMode(mode) {
+            stopAlignment();
             toolMode = toolMode === mode ? null : mode;
             measureFirstPoint = null;
             if (measurePreview) { measurePreview.parent?.remove(measurePreview); measurePreview = null; requestRender(); }
@@ -2786,6 +2992,134 @@
             if (toolMode) setToolMode(toolMode); // exits the active tool
         });
 
+        function syncAlignmentUi() {
+            const available = !singleFileMode && !!compareResult && spaceResults[currentSpace]?.status === 'matched';
+            for (const id of ['btn-align', 'btn-move-b', 'btn-reset-align'])
+                document.getElementById(id).classList.toggle('hidden', singleFileMode);
+            document.getElementById('btn-align').disabled = !available;
+            document.getElementById('btn-move-b').disabled = !available;
+            document.getElementById('btn-reset-align').disabled = !available || (!alignments.has(currentSpace) && !alignmentMode);
+            for (const [id, active] of [['btn-align', alignmentMode === 'pick-b' || alignmentMode === 'pick-a'], ['btn-move-b', alignmentMode === 'drag']]) {
+                const button = document.getElementById(id);
+                button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
+            }
+            for (const host of [hostMain, hostA, hostB]) host.style.cursor = alignmentMode === 'drag' ? 'move' : alignmentMode ? 'crosshair' : '';
+            const hint = document.getElementById('alignment-hint');
+            hint.classList.toggle('hidden', !alignmentMode);
+            hint.textContent = alignmentMode === 'pick-b' ? tr('alignPickB', 'Select a point on B.') :
+                alignmentMode === 'pick-a' ? tr('alignPickA', 'Select the matching point on A.') : tr('alignDragHint', 'Drag B to align drawings.');
+        }
+        function stopAlignment() {
+            if (!alignmentMode) { syncAlignmentUi(); return; }
+            alignmentMode = null; alignmentAnchor = null; alignmentDrag = null;
+            positionAlignedGroups();
+            if (camera && groups) parentGroupsForMode();
+            measureSegCache = null;
+            if (camera) updateSnapMarker(null);
+            syncAlignmentUi();
+        }
+        function alignmentSnapCache(side) {
+            const ctx = side === 'a' ? ctxA : ctxB;
+            measureSegCache = (getSpaceEntities(ctx, currentSpace) || [])
+                .filter(e => layerVisibility[e.layer || '0'] !== false)
+                .flatMap(e => alignedSegments(ctx, e));
+            if (currentSpace !== 'model') {
+                // Paper layouts also contain projected model geometry. Use the
+                // displayed lines so viewport scales and clipping match picks.
+                measureSegCache = [];
+                const keys = side === 'a' ? ['unchangedA', 'deleted', 'modifiedA'] : ['unchangedB', 'added', 'modifiedB'];
+                for (const key of keys) {
+                    const group = groups?.[key];
+                    if (!group) continue;
+                    group.updateWorldMatrix(true, true);
+                    group.traverse(child => {
+                        if (!child.isLineSegments) return;
+                        for (let parent = child; parent; parent = parent.parent) if (!parent.visible) return;
+                        const positions = child.geometry?.getAttribute('position');
+                        if (!positions) return;
+                        for (let i = 0; i + 1 < positions.count; i += 2) {
+                            const a = new THREE.Vector3().fromBufferAttribute(positions, i).applyMatrix4(child.matrixWorld);
+                            const b = new THREE.Vector3().fromBufferAttribute(positions, i + 1).applyMatrix4(child.matrixWorld);
+                            measureSegCache.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+                        }
+                    });
+                }
+            }
+        }
+        function startAlignment(mode) {
+            if (singleFileMode || spaceResults[currentSpace]?.status !== 'matched') return;
+            const cancel = alignmentMode === mode || (mode === 'pick-b' && alignmentMode === 'pick-a');
+            stopAlignment();
+            if (cancel) return;
+            if (toolMode) setToolMode(toolMode);
+            clearMeasurements();
+            colorMode = 'original';
+            btnDisplay.classList.remove('active'); btnDisplay.title = tr('displayOriginal', 'Display: original colors');
+            rebuildDiffScene();
+            alignmentMode = mode;
+            setRightOpen(false); setPapersOpen(false);
+            setViewMode(mode === 'drag' ? 'overlay' : 'sbs');
+            if (mode !== 'drag') alignmentSnapCache('b');
+            syncAlignmentUi();
+            requestAnimationFrame(() => { onResize(); zoomToFit(); });
+        }
+        function applyAlignment(offset, reset = false) {
+            stopAlignment(); clearMeasurements();
+            if (reset) alignments.delete(currentSpace); else alignments.set(currentSpace, offset);
+            runCompare(); rebuildDiffScene(); refreshPanel();
+            document.getElementById('mode-badge').textContent = compareResult.mode === 'handle'
+                ? tr('modeHandle', 'matched by handle') : tr('modeFingerprint', 'matched by geometry');
+            setStatus(reset ? tr('alignmentReset', 'Original alignment restored.') : tr('alignmentApplied', 'Manual alignment applied.'));
+            setViewMode('overlay');
+            requestAnimationFrame(() => { onResize(); zoomToFit(); });
+        }
+        function wireAlignmentEvents(host) {
+            host.addEventListener('pointerdown', ev => {
+                if (!alignmentMode || ev.button !== 0) return;
+                ev.preventDefault(); ev.stopPropagation();
+                if (alignmentDrag) return;
+                const p = screenToWorld(ev, host);
+                if (alignmentMode === 'drag') {
+                    host.setPointerCapture(ev.pointerId);
+                    alignmentDrag = { pointerId: ev.pointerId, start: p, offset: { ...alignmentOffset() }, current: { ...alignmentOffset() } };
+                    return;
+                }
+                const side = alignmentMode === 'pick-b' ? 'b' : 'a';
+                if (host !== (side === 'b' ? hostB : hostA)) return;
+                const point = findSnap(p, host);
+                if (alignmentMode === 'pick-b') {
+                    alignmentAnchor = point; alignmentMode = 'pick-a';
+                    updateSnapMarker({ ...point, snapped: true, type: 'END' });
+                    alignmentSnapCache('a'); syncAlignmentUi();
+                } else {
+                    const offset = alignmentOffset();
+                    applyAlignment({ x: offset.x + point.x - alignmentAnchor.x, y: offset.y + point.y - alignmentAnchor.y });
+                }
+            }, true);
+            host.addEventListener('pointermove', ev => {
+                if (!alignmentDrag || ev.pointerId !== alignmentDrag.pointerId) return;
+                ev.preventDefault(); ev.stopPropagation();
+                const p = screenToWorld(ev, host), drag = alignmentDrag;
+                drag.current = { x: drag.offset.x + p.x - drag.start.x, y: drag.offset.y + p.y - drag.start.y };
+                positionAlignedGroups(drag.current);
+            }, true);
+            const end = ev => {
+                if (!alignmentDrag || ev.pointerId !== alignmentDrag.pointerId) return;
+                ev.preventDefault(); ev.stopPropagation();
+                const offset = alignmentDrag.current;
+                if (ev.type === 'pointercancel') stopAlignment(); else applyAlignment(offset);
+            };
+            host.addEventListener('pointerup', end, true);
+            host.addEventListener('pointercancel', end, true);
+            host.addEventListener('wheel', ev => {
+                if (alignmentDrag) { ev.preventDefault(); ev.stopPropagation(); }
+            }, { capture: true, passive: false });
+        }
+        document.getElementById('btn-align').addEventListener('click', () => startAlignment('pick-b'));
+        document.getElementById('btn-move-b').addEventListener('click', () => startAlignment('drag'));
+        document.getElementById('btn-reset-align').addEventListener('click', () => applyAlignment({ x: 0, y: 0 }, true));
+        window.addEventListener('keydown', ev => { if (ev.key === 'Escape' && alignmentMode) stopAlignment(); });
+
         // ==================================================================
         //  File selection UI
         // ==================================================================
@@ -2841,6 +3175,7 @@
                 // Single file in either slot → viewer mode over ctxB.
                 let fa = fileState.a, fb = fileState.b;
                 if (fa && !fb) { fb = fa; fa = null; }
+                stopAlignment(); alignments.clear();
                 singleFileMode = !fa;
 
                 if (fa) {
@@ -2857,24 +3192,47 @@
                     loadDxfTextIntoCtx(ctxB, text, name);
                 }
 
+                // One file = viewer mode: side-by-side and swipe have no second
+                // drawing, so their buttons are hidden and we force overlay.
+                ['btn-view-sbs', 'btn-view-swipe'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.classList.toggle('hidden', singleFileMode);
+                });
+                // Same for the comparison panel and the display filter:
+                // both act on diff results, which viewer mode never has.
+                ['btn-panel', 'btn-display'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.classList.toggle('hidden', singleFileMode);
+                });
                 document.getElementById('info-ents-a').textContent = singleFileMode ? '-' : ctxA.modelEntities.length.toLocaleString();
                 document.getElementById('info-ents-b').textContent = ctxB.modelEntities.length.toLocaleString();
                 document.getElementById('tab-compare').disabled = false;
                 document.getElementById('btn-papers').disabled = false;
                 switchTab('view-compare');
-                requestAnimationFrame(() => { measureToolbarHeight(); applyThemeButton(); if (!singleFileMode) { setRightTab('comparison'); setRightOpen(true); } });
+                requestAnimationFrame(() => { measureToolbarHeight(); applyThemeButton(); if (!singleFileMode) { setRightTab('comparison'); setRightOpen(true); } else { setRightOpen(false); } });
 
                 initThree();
                 onResize();
+                // Viewer scenes only live in the overlay scene.
+                if (singleFileMode && viewMode !== 'overlay') setViewMode('overlay');
 
                 currentSpace = 'model';
+                // hub compare link: start colors (before the first diff build)
+                const startView = window.__cdeStartView || null;
+                window.__cdeStartView = null;
+                if (startView && !singleFileMode && startView.colors === 'original' && colorMode !== 'original') {
+                    colorMode = 'original';
+                    const bd = document.getElementById('btn-display');
+                    bd.classList.remove('active');
+                    bd.title = tr('displayOriginal', 'Display: original colors');
+                }
                 if (singleFileMode) {
                     compareResult = null;
                     spaceResults = {};
                     document.getElementById('compare-title').textContent = ctxB.fileName;
                     document.getElementById('mode-badge').textContent = tr('viewerOnly', 'viewer');
                     rebuildViewerScene();
-                    setStatus(tr('viewerLoaded', 'Loaded {a} — viewer mode (load a second file to compare).', { a: ctxB.fileName }));
+                    setStatus(tr('viewerLoaded', 'Loaded {a} viewer mode (load a second file to compare).', { a: ctxB.fileName }));
                 } else {
                     loaderMsg.textContent = tr('loaderComparing', 'Comparing…');
                     runCompare();
@@ -2888,6 +3246,24 @@
                     }));
                 }
                 refreshPanel();
+                // Mirrored objects the OCS pass could not rewrite (text, blocks,
+                // hatches) are drawn unmirrored: say so once, after the summary.
+                const mirrorLeft = {};
+                for (const c of singleFileMode ? [ctxB] : [ctxA, ctxB]) {
+                    for (const [k, n] of Object.entries(c.mirror?.unsupported || {})) mirrorLeft[k] = (mirrorLeft[k] || 0) + n;
+                }
+                const mirrorList = Object.entries(mirrorLeft).map(([k, n]) => `${n} ${k}`).join(', ');
+                if (mirrorList) {
+                    setStatus(document.getElementById('status-msg').textContent + '  ' +
+                        tr('mirrorUnsupported', '{list} mirrored in the file may display unmirrored.', { list: mirrorList }));
+                }
+                // hub compare link: start view (overlay | sbs | swipe)
+                const wantView = startView && !singleFileMode ? startView.view : null;
+                if (wantView && VIEW_MODES.includes(wantView) && wantView !== viewMode) {
+                    setViewMode(wantView);
+                    // refit once the hosts have their size (after setViewMode's resize)
+                    requestAnimationFrame(() => requestAnimationFrame(zoomToFit));
+                }
                 zoomToFit();
             } catch (err) {
                 console.error(err);
@@ -2936,17 +3312,22 @@
         }
         tabs.forEach(tab => tab.addEventListener('click', () => { if (!tab.disabled) switchTab(tab.dataset.target); }));
 
+        const VIEW_MODES = ['overlay', 'sbs', 'swipe'];
         function setViewMode(mode) {
+            if (alignmentMode && ((alignmentMode === 'drag' && mode !== 'overlay') || (alignmentMode !== 'drag' && mode !== 'sbs'))) stopAlignment();
             viewMode = mode;
             clearMeasurements();
+            const main = mode !== 'sbs'; // overlay + swipe render in host-main
             document.getElementById('btn-view-overlay').classList.toggle('active', mode === 'overlay');
             document.getElementById('btn-view-sbs').classList.toggle('active', mode === 'sbs');
-            hostMain.classList.toggle('hidden', mode !== 'overlay');
-            hostA.classList.toggle('hidden', mode !== 'sbs');
-            hostB.classList.toggle('hidden', mode !== 'sbs');
-            controlsMain.enabled = mode === 'overlay';
-            controlsA.enabled = mode === 'sbs';
-            controlsB.enabled = mode === 'sbs';
+            document.getElementById('btn-view-swipe').classList.toggle('active', mode === 'swipe');
+            document.getElementById('canvas-wrap').classList.toggle('swipe', mode === 'swipe');
+            hostMain.classList.toggle('hidden', !main);
+            hostA.classList.toggle('hidden', main);
+            hostB.classList.toggle('hidden', main);
+            controlsMain.enabled = main;
+            controlsA.enabled = !main;
+            controlsB.enabled = !main;
             syncControlsToCamera();
             parentGroupsForMode();
             // Resize after layout settles.
@@ -2954,7 +3335,41 @@
         }
         document.getElementById('btn-view-overlay').addEventListener('click', () => setViewMode('overlay'));
         document.getElementById('btn-view-sbs').addEventListener('click', () => setViewMode('sbs'));
+        document.getElementById('btn-view-swipe').addEventListener('click', () => setViewMode('swipe'));
         document.getElementById('btn-fit').addEventListener('click', zoomToFit);
+
+        // ---- Swipe divider: fraction of the canvas width; drag = redraw only ----
+        function setSplit(f) {
+            swipeSplit = Math.min(Math.max(f, 0), 1);
+            document.getElementById('canvas-wrap').style.setProperty('--split', (swipeSplit * 100) + '%');
+            requestRender();
+        }
+        (function wireSwipe() {
+            const bar = document.getElementById('swipe-bar');
+            let drag = false;
+            bar.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0) return;
+                drag = true;
+                bar.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+            bar.addEventListener('pointermove', (e) => {
+                if (!drag) return;
+                const r = hostMain.getBoundingClientRect();
+                if (r.width > 0) setSplit((e.clientX - r.left) / r.width);
+            });
+            const end = () => { drag = false; };
+            bar.addEventListener('pointerup', end);
+            bar.addEventListener('pointercancel', end);
+            bar.addEventListener('dblclick', () => setSplit(0.5));
+            // wheel over the divider still zooms the drawing
+            bar.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (rMain) rMain.domElement.dispatchEvent(new WheelEvent('wheel', e));
+            }, { passive: false });
+        })();
+        setSplit(0.5);
+
         // ---- Sliding side panels (editor pattern: translate, canvas untouched) ----
         function setPapersOpen(open) {
             const p = document.getElementById('papers-panel');
@@ -3060,6 +3475,7 @@
 
         const btnDisplay = document.getElementById('btn-display');
         btnDisplay.addEventListener('click', () => {
+            stopAlignment();
             colorMode = colorMode === 'changes' ? 'original' : 'changes';
             btnDisplay.classList.toggle('active', colorMode === 'changes');
             btnDisplay.title = colorMode === 'changes'
@@ -3119,13 +3535,151 @@
                     paperActiveCount: ctx.paperActive?.length,
                 });
                 return {
-                    currentSpace, viewMode, colorMode,
+                    currentSpace, viewMode, colorMode, swipeSplit,
                     A: side(ctxA), B: side(ctxB),
                     spaces: Object.fromEntries(Object.entries(spaceResults).map(([k, v]) =>
                         [k, { status: v.status, name: v.name, counts: v.result?.counts }])),
                 };
             }
         });
+
+        /* ==================== CDE project handoff ====================
+         * ?project=<guid>&open=<relPath>. The hub hands over a .dxf/.dwg
+         * inside the linked project folder. READ-ONLY: the file lands in
+         * slot A and the normal open pipeline runs (viewer mode). Slot B
+         * stays manual, so compare still works. No save-back, so the
+         * Autosave/write-back machinery of the xlsx apps is NOT ported.
+         * Permission lapsed (new window, browser restart): one banner,
+         * one click, requestAccess needs the gesture.
+         * Start view: &view=overlay|sbs|swipe (default: swipe), &colors=original. */
+        (function cdeAutoOpen() {
+            let params = null;
+            try {
+                const q = new URLSearchParams(window.location.search);
+                const guid = q.get('project'), open = q.get('open');
+                if (guid && open) params = {
+                    guid: guid, open: open,
+                    va: q.get('va') || '', la: q.get('la') || '',
+                    vb: q.get('vb') || '', lb: q.get('lb') || ''
+                };
+                // start view for hub links (read by the btn-open handler);
+                // swipe is the hub default, a &view= link still wins
+                if (params) {
+                    const view = q.get('view'), colors = q.get('colors');
+                    window.__cdeStartView = {
+                        view: ['overlay', 'sbs', 'swipe'].includes(view) ? view : 'swipe',
+                        colors: colors,
+                    };
+                }
+            } catch (e) { /* no params: normal standalone page */ }
+            if (!params) return;
+
+            const cde = window.liteAECO && window.liteAECO.cde;
+            if (!cde) {
+                cdeFail(tr('cdeMissing', 'Project sync is not available. Update js/liteaeco-cde.js and reload.'));
+                return;
+            }
+
+            function cdeFail(msg) {
+                const box = document.getElementById('error-box');
+                document.getElementById('error-text').textContent = msg;
+                box.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+            }
+
+            async function readAsFile(handle, relPath) {
+                const parts = String(relPath).split('/').filter(Boolean);
+                const fname = parts.pop();
+                let dir = handle;
+                for (const p of parts) dir = await dir.getDirectoryHandle(p, { create: false });
+                const fh = await dir.getFileHandle(fname, { create: false });
+                return fh.getFile();   // real File: name + lastModified come free
+            }
+
+            async function loadIntoSlotA(info) {
+                let f;
+                try { f = await readAsFile(info.handle, params.open); }
+                catch (err) {
+                    console.error('CDE FILE READ ERROR:', err);
+                    cdeFail(tr('cdeFileMissing', 'The drawing was not found in the project folder. It may have been moved or renamed - open the Projects page and rescan.'));
+                    return;
+                }
+                // Compare mode (&va=/&vb= paths, older -> A, newer -> B).
+                // Read-only; archive names become "<name> (vN)".
+                const setName = (id, file) => {
+                    const el = document.getElementById(id);
+                    el.textContent = file.name;
+                    el.classList.remove('text-slate-500');
+                    el.classList.add('text-indigo-600');
+                };
+                let fa = null, fb = null;
+                if (params.va && params.vb) {
+                    const m = /^(.*?)(\.[^.]+)$/.exec(f.name) || [f.name, f.name, ''];
+                    const named = (raw, lbl) => new File([raw], m[1] + ' (' + lbl + ')' + m[2], { lastModified: raw.lastModified });
+                    try {
+                        const ra = params.va === params.open ? f : await readAsFile(info.handle, params.va);
+                        const rb = params.vb === params.open ? f : await readAsFile(info.handle, params.vb);
+                        fa = named(ra, params.la || 'A');
+                        fb = named(rb, params.lb || 'B');
+                    } catch (err) {
+                        console.error('CDE ARCHIVE READ ERROR:', err);
+                        window.__cdeStartView = null;
+                        cdeFail(tr('cdeArchiveMissing', 'A selected version is no longer in the archive. Showing the current drawing only.'));
+                    }
+                }
+                if (fa && fb) {
+                    fileState.a = fa; setName('file-a-name', fa);
+                    fileState.b = fb; setName('file-b-name', fb);
+                } else {
+                    fileState.a = f; setName('file-a-name', f);
+                }
+                updateOpenButton();
+                // Reuse the WHOLE open pipeline (loader, DWG convert, parse,
+                // viewer scene) instead of duplicating it here.
+                document.getElementById('btn-open').click();
+            }
+
+            function showRegrantBanner() {
+                const host = document.getElementById('view-upload');
+                if (!host) return;
+                const banner = document.createElement('div');
+                banner.id = 'cde-regrant';
+                banner.className = 'mx-auto w-full max-w-5xl mt-4 px-4';
+                banner.innerHTML =
+                    '<div class="flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded p-3">' +
+                    '<i data-lucide="folder-lock" class="w-5 h-5 text-indigo-600 shrink-0"></i>' +
+                    '<span class="text-sm text-indigo-900 flex-1">' + tr('cdeRegrantMsg', 'The browser needs one click to re-open the project folder.') + '</span>' +
+                    '<button id="cde-regrant-btn" class="shrink-0 py-1.5 px-4 text-[13px] font-bold text-white bg-slate-900 hover:bg-slate-800 rounded transition">' + tr('cdeRegrantBtn', 'Open drawing') + '</button>' +
+                    '</div>';
+                host.insertBefore(banner, host.firstChild);
+                if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+                document.getElementById('cde-regrant-btn').addEventListener('click', async () => {
+                    try {
+                        const info = await cde.requestAccess(params.guid);
+                        if (info && info.permission === 'granted') {
+                            banner.remove();
+                            loadIntoSlotA(info);
+                        } else {
+                            cdeFail(tr('cdeNoAccess', 'Folder access was not granted.'));
+                        }
+                    } catch (err) {
+                        console.error('CDE REQUEST ACCESS ERROR:', err);
+                        cdeFail(tr('cdeNoAccess', 'Folder access was not granted.'));
+                    }
+                });
+            }
+
+            (async () => {
+                let info = null;
+                try { info = await cde.openProject(params.guid); } catch (e) { }
+                if (!info) {
+                    cdeFail(tr('cdeNoHandle', 'This project has no linked folder on this machine. Open the Projects page and link it first.'));
+                    return;
+                }
+                if (info.permission === 'granted') loadIntoSlotA(info);
+                else showRegrantBanner();
+            })();
+        })();
     </script>
 </body>
 </html>

@@ -12,8 +12,11 @@
  *       buildPayload: () => object,            // full serializable state
  *       applyPayload: (obj) => boolean,        // restore state, return true
  *       describe: (obj) => "label",            // resume-modal label
- *       iconOffId: "save-icon-off",            // plain save icon (optional)
- *       iconOnId: "save-icon-on",              // save-check icon (optional)
+ *       iconOffId: "save-icon-off",            // idle icon(s) (optional)
+ *       iconOnId: "save-icon-on",              // active icon(s) (optional)
+ *         ^ both accept one id, a comma-separated list, or an array, e.g.
+ *           iconOffId: "mtg-save-icon-off,save-icon-off"
+ *           so several buttons share one autosave colour state.
  *       disconnectBtnId: "save-menu-disconnect",
  *       toast: (msg, isErr) => {},             // optional notifier
  *       debounceMs: 2000
@@ -95,6 +98,7 @@
 
         const A = {
             adapter: null, dirty: false, timer: null, paused: false,
+            writing: false,   // a flush write is in flight, not yet confirmed
             lastSavedAt: null, writeCount: 0,
             channel: ("BroadcastChannel" in window) ? new BroadcastChannel(DB) : null,
             sessionId: Math.random().toString(36).slice(2),
@@ -117,6 +121,7 @@
 
             async flush() {
                 if (!this.adapter || !this.dirty || this.paused) return;
+                this.writing = true;
                 try {
                     const text = JSON.stringify(cfg.buildPayload(), null, 2);
                     await this.adapter.write(text);
@@ -131,6 +136,7 @@
                     }
                     this.renderStatus("saved");
                 } catch (e) { this.renderStatus("error"); }
+                finally { this.writing = false; }
             },
 
             async connectFile() {
@@ -180,11 +186,25 @@
                     if (document.visibilityState === "hidden" && this.dirty) this.flush();
                 });
                 window.addEventListener("beforeunload", (e) => {
+                    // Tools with deferred typing hand over any uncommitted
+                    // keystrokes first, so they count as dirty below.
+                    try {
+                        if (typeof cfg.hasPendingInput === "function" && cfg.hasPendingInput()
+                            && typeof cfg.commitPendingInput === "function") {
+                            cfg.commitPendingInput();
+                        }
+                    } catch (err) { }
                     if (this.adapter && !this.paused) {
-                        if (this.dirty) this.flush();
-                        e.preventDefault();
-                        e.returnValue = tt("autosaveLeaveMessage", "Autosave is on and the changes to this project have been saved. Your session will be restored when you return.");
-                        return e.returnValue;
+                        // Autosave owns persistence: a CLEAN session leaves
+                        // silently. Warn while a write is unconfirmed - either
+                        // still pending (dirty) or in flight (writing).
+                        if (this.dirty || this.writing) {
+                            this.flush();
+                            e.preventDefault();
+                            e.returnValue = tt("unsavedLeaveMessage", "You have unsaved changes. Are you sure you want to leave?");
+                            return e.returnValue;
+                        }
+                        return;
                     }
                     if (typeof cfg.hasUnsaved === "function" && cfg.hasUnsaved()) {
                         e.preventDefault();
@@ -283,30 +303,128 @@
                 });
             },
 
+            /* ---- bottom-right save indicator ----
+             * Users work faster than the disk: while anything is UNSAVED the
+             * indicator stays visible ("Saving..."), so leaving early is a
+             * conscious act. It only fades AFTER a successful write. Errors
+             * stay pinned until autosave recovers. One element per tool,
+             * shared fixed container across tools on the same page. */
+            _toastEl: null, _toastTimer: null, _toastArmed: false,
+
+            toastNotify(state) {
+                if (state === "off") {
+                    clearTimeout(this._toastTimer);
+                    this._toastArmed = false;
+                    if (this._toastEl) { this._toastEl.remove(); this._toastEl = null; }
+                    return;
+                }
+                // "saved" without preceding unsaved work (e.g. the silent
+                // restore at page load) needs no toast: nothing was at risk.
+                if (state === "saved" && !this._toastArmed) return;
+                if (state === "dirty" || state === "error") this._toastArmed = true;
+                let wrap = document.getElementById("las-toasts");
+                if (!wrap) {
+                    wrap = document.createElement("div");
+                    wrap.id = "las-toasts";
+                    wrap.style.cssText = "position:fixed;bottom:1rem;right:1rem;z-index:90;display:flex;flex-direction:column;gap:.5rem;align-items:flex-end;pointer-events:none;";
+                    document.body.appendChild(wrap);
+                }
+                if (!this._toastEl) {
+                    const t = document.createElement("div");
+                    t.style.cssText = "display:flex;align-items:center;gap:.5rem;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 30px rgba(0,0,0,.08);border-radius:.5rem;padding:.6rem 1rem;font-size:13px;font-weight:600;color:#334155;transition:opacity .5s;";
+                    t.innerHTML = '<span data-ic style="display:inline-flex;width:16px;height:16px;flex-shrink:0"></span><span data-tx></span>';
+                    wrap.appendChild(t);
+                    this._toastEl = t;
+                }
+                clearTimeout(this._toastTimer);
+                const el = this._toastEl;
+                const ic = el.querySelector("[data-ic]");
+                const tx = el.querySelector("[data-tx]");
+                el.style.opacity = "1";
+                const SPIN = '<svg style="animation:las-spin 1s linear infinite" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="3" opacity=".25"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#6366f1" stroke-width="3" stroke-linecap="round"></path></svg>';
+                const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+                const WARN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>';
+                if (!document.getElementById("las-spin-kf")) {
+                    const st = document.createElement("style");
+                    st.id = "las-spin-kf";
+                    st.textContent = "@keyframes las-spin{to{transform:rotate(360deg)}}";
+                    document.head.appendChild(st);
+                }
+                if (state === "dirty") {
+                    ic.innerHTML = SPIN;
+                    tx.textContent = tt("toastSaving", "Saving...");
+                } else if (state === "saved") {
+                    ic.innerHTML = CHECK;
+                    tx.textContent = tt("toastSaved", "Saved");
+                    this._toastArmed = false;
+                    const self = this;
+                    this._toastTimer = setTimeout(function () {
+                        el.style.opacity = "0";
+                        self._toastTimer = setTimeout(function () {
+                            el.remove();
+                            if (self._toastEl === el) self._toastEl = null;
+                        }, 600);
+                    }, 1800);
+                } else if (state === "error") {
+                    ic.innerHTML = WARN;
+                    tx.textContent = tt("toastSaveError", "Not saved - check the Save menu");
+                }
+            },
+
+            /* iconOffId / iconOnId accept ONE id, a comma-separated list, or an
+             * array of ids. Every matching element is switched together, so a
+             * tool can light up both its CDE "Save" icon and its "Export"
+             * (file-output) icon from the same autosave state. */
+            _pickIcons(v) {
+                if (!v) return [];
+                const ids = Array.isArray(v) ? v : String(v).split(",");
+                const out = [];
+                for (const raw of ids) {
+                    const id = String(raw).trim();
+                    if (!id) continue;
+                    const el = document.getElementById(id);
+                    if (el && out.indexOf(el) === -1) out.push(el);
+                }
+                return out;
+            },
+
             renderStatus(state) {
-                const off = cfg.iconOffId ? document.getElementById(cfg.iconOffId) : null;
-                const on = cfg.iconOnId ? document.getElementById(cfg.iconOnId) : null;
+                this.toastNotify(state);
+                const offs = this._pickIcons(cfg.iconOffId);
+                const ons = this._pickIcons(cfg.iconOnId);
                 const disc = cfg.disconnectBtnId ? document.getElementById(cfg.disconnectBtnId) : null;
-                if (!off || !on) return;
-                const btn = off.closest("button");
+                if (!offs.length || !ons.length) return;
+                // Every colour the module may have applied before - all of them
+                // have to come off, or an old class wins the cascade.
+                const COLORS = ["text-white", "text-green-600", "text-slate-600", "text-amber-500", "text-rose-500"];
+                const setTitle = (title) => {
+                    offs.forEach((o) => { const b = o.closest("button"); if (b) b.title = title; });
+                    ons.forEach((o) => { const b = o.closest("button"); if (b) b.title = title; });
+                };
                 const setOn = (color, title) => {
-                    off.classList.add("hidden");
-                    on.classList.remove("hidden", "text-green-600", "text-amber-500", "text-rose-500");
-                    on.classList.add(color);
-                    if (btn) btn.title = title;
+                    offs.forEach((o) => o.classList.add("hidden"));
+                    ons.forEach((o) => {
+                        o.classList.remove("hidden");
+                        COLORS.forEach((c) => o.classList.remove(c));
+                        o.classList.add(color);
+                    });
+                    setTitle(title);
                     if (disc) disc.classList.remove("hidden");
                 };
                 if (state === "saved") {
                     const t = this.lastSavedAt;
-                    setOn("text-green-600", tt("autosaved", "Autosaved") + " " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"));
+                    setOn("text-slate-600", tt("autosaved", "Autosaved") + " " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"));
                 } else if (state === "dirty") {
                     setOn("text-amber-500", tt("autosaveDirty", "Autosave: unsaved changes\u2026"));
                 } else if (state === "error") {
                     setOn("text-rose-500", tt("autosaveReconnectShort", "Autosave: reconnect needed \u2013 open the Save menu"));
                 } else {
-                    on.classList.add("hidden");
-                    off.classList.remove("hidden");
-                    if (btn) btn.title = tt("autosaveOff", "Autosave off \u2013 enable it in this menu");
+                    ons.forEach((o) => {
+                        o.classList.add("hidden");
+                        COLORS.forEach((c) => o.classList.remove(c));
+                    });
+                    offs.forEach((o) => o.classList.remove("hidden"));
+                    setTitle(tt("autosaveOff", "Autosave off \u2013 enable it in this menu"));
                     if (disc) disc.classList.add("hidden");
                 }
                 if (window.lucide) try { lucide.createIcons(); } catch (e) { }
