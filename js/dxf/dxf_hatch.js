@@ -12,7 +12,12 @@
  *   patternSegments(hatch, loops)     → line segments for a pattern fill
  *
  * Pattern definition data (codes 53/43/44/45/46/49) is written by CAD applications
- * with the hatch scale and angle already applied, so it is used as-is.
+ * with the hatch scale and angle already applied, so it is used as-is. The
+ * offset (45/46) is the WCS vector from one line of a family to the next: its
+ * component along the normal is the spacing, along the line the dash shift.
+ *
+ * The pattern library lives in dxf_hatch_patterns.js (ISO units); imperial
+ * drawings ($MEASUREMENT 0) use it scaled by 1/25.4, like acad.pat.
  *
  * window.DxfHatch + Node exports.
  */
@@ -96,7 +101,7 @@
                 case '2': h.patternName = String(v).trim(); break;
                 case '70': h.solid = int(v) === 1; break;
                 case '30': h.elevation = num(v); break;
-                case '450': h.gradient = int(v) === 1; break;
+                case '71': h.associative = int(v) === 1; break;
                 default: break;
             }
         }
@@ -182,14 +187,24 @@
                     }
                 }
             }
+            // Source objects of an associative boundary (97 count, 330 handles).
+            while (i < pairs.length && !['97', '92', '75', '76'].includes(pairs[i][0])) i++;
+            if (i < pairs.length && pairs[i][0] === '97') {
+                const nSrc = int(pairs[i][1]); i++;
+                const src = [];
+                while (i < pairs.length && pairs[i][0] === '330' && src.length < nSrc) { src.push(String(pairs[i][1]).trim()); i++; }
+                if (src.length) path.sources = src;
+            }
             h.paths.push(path);
         }
 
         // ---- trailing style + pattern definition ----
+        const trailStart = i;
         let numPatLines = 0;
         while (i < pairs.length) {
             const [c, v] = pairs[i];
             if (c === '75') h.style = int(v);
+            else if (c === '76') h.patternType = int(v);
             else if (c === '52') h.patternAngle = num(v);
             else if (c === '41') h.patternScale = num(v);
             else if (c === '77') h.double = int(v) === 1;
@@ -216,7 +231,122 @@
             }
             h.patternLines.push(pl);
         }
+        // ---- gradient (450…470), written after the seed points ----
+        let g = null, colorSlot = -1, seedLeft = 0, seed = null;
+        for (i = trailStart; i < pairs.length; i++) {
+            const [c, v] = pairs[i];
+            // Seed points (98 count, then 10/20): the clicked points of a pick-point hatch.
+            if (c === '98') { seedLeft = int(v); continue; }
+            if (seedLeft > 0 && c === '10') { seed = { x: num(v), y: 0 }; continue; }
+            if (seed && c === '20') { seed.y = num(v); (h.seeds = h.seeds || []).push(seed); seed = null; seedLeft--; continue; }
+            if (c === '450') { if (int(v) === 1) g = { name: 'LINEAR', angle: 0, shift: 0, oneColor: false, tint: 0, colors: [] }; continue; }
+            if (!g) continue;
+            if (c === '460') g.angle = num(v);
+            else if (c === '461') g.shift = num(v);
+            else if (c === '452') g.oneColor = int(v) === 1;
+            else if (c === '462') g.tint = num(v);
+            else if (c === '463') { colorSlot = g.colors.length; g.colors.push({ value: num(v), rgb: null, aci: null }); }
+            else if (c === '421' && colorSlot >= 0) g.colors[colorSlot].rgb = int(v) & 0xffffff;
+            else if (c === '63' && colorSlot >= 0) g.colors[colorSlot].aci = int(v);
+            else if (c === '470') g.name = String(v).trim().toUpperCase() || 'LINEAR';
+        }
+        if (g) {
+            const rgbOf = (k) => { const col = g.colors[k]; if (!col) return null; return col.rgb ?? (col.aci != null ? aciRgb(col.aci) : null); };
+            h.gradient = {
+                name: GRADIENT_NAMES.includes(g.name) ? g.name : 'LINEAR',
+                angle: g.angle, shift: g.shift, oneColor: g.oneColor, tint: g.tint,
+                color1: rgbOf(0) ?? 0x0000ff, color2: rgbOf(1) ?? 0xffff00,
+            };
+            h.solid = true;
+        }
         return h.paths.length ? h : null;
+    }
+
+    // ===================== Gradients =====================
+    const GRADIENT_NAMES = ['LINEAR', 'CYLINDER', 'INVCYLINDER', 'SPHERICAL', 'INVSPHERICAL',
+        'HEMISPHERICAL', 'INVHEMISPHERICAL', 'CURVED', 'INVCURVED'];
+    // Minimal ACI → RGB for gradient colours given as an index (the first 9 + greys).
+    function aciRgb(aci) {
+        const base = [0x000000, 0xff0000, 0xffff00, 0x00ff00, 0x00ffff, 0x0000ff, 0xff00ff, 0xffffff, 0x808080, 0xc0c0c0];
+        return base[aci] ?? 0x808080;
+    }
+    const mixRgb = (a, b, t) => {
+        const ch = (sh) => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t);
+        return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+    };
+    /** The two end colours; a one-colour gradient blends to its tint (0 dark … 1 light). */
+    function gradientColors(g) {
+        if (!g) return [0x808080, 0x808080];
+        if (!g.oneColor) return [g.color1, g.color2];
+        const t = Math.max(0, Math.min(1, Number(g.tint) || 0));
+        const c2 = t < 0.5 ? mixRgb(g.color1, 0x000000, 1 - 2 * t) : mixRgb(g.color1, 0xffffff, 2 * t - 1);
+        return [g.color1, c2];
+    }
+    /**
+     * Frame for evaluating a gradient over a box: direction, extent, centre.
+     * The un-centred ("shifted") variant moves the centre a quarter back along
+     * the direction, like AutoCAD's Centered option switched off.
+     */
+    function gradientFrame(g, bbox) {
+        const a = Number(g && g.angle) || 0;
+        const dir = { x: Math.cos(a), y: Math.sin(a) };
+        const cx = (bbox.minX + bbox.maxX) / 2, cy = (bbox.minY + bbox.maxY) / 2;
+        const hw = (bbox.maxX - bbox.minX) / 2, hh = (bbox.maxY - bbox.minY) / 2;
+        const half = Math.abs(dir.x) * hw + Math.abs(dir.y) * hh || 1;   // half extent along dir
+        const radius = Math.hypot(hw, hh) || 1;
+        const shift = Math.max(0, Math.min(1, Number(g && g.shift) || 0)) * 0.25;
+        return { dir, half, radius, shift, cx: cx - dir.x * half * shift * 2, cy: cy - dir.y * half * shift * 2, type: Math.max(0, GRADIENT_NAMES.indexOf(g && g.name)) };
+    }
+    /** Blend value 0 (colour 1) … 1 (colour 2) at (x, y); mirrored in the editor's shader. */
+    function gradientValue(frame, x, y) {
+        const dx = x - frame.cx, dy = y - frame.cy;
+        const u = Math.max(0, Math.min(1, 0.5 + (dx * frame.dir.x + dy * frame.dir.y) / (2 * frame.half)));
+        const r = Math.min(1, Math.hypot(dx, dy) / frame.radius);
+        const hx = x - (frame.cx - frame.dir.x * frame.half), hy = y - (frame.cy - frame.dir.y * frame.half);
+        const rh = Math.min(1, Math.hypot(hx, hy) / (2 * frame.radius));
+        switch (frame.type) {
+            case 0: return u;                                        // LINEAR
+            case 1: return 1 - (2 * u - 1) * (2 * u - 1);            // CYLINDER: colour 2 in the middle
+            case 2: return (2 * u - 1) * (2 * u - 1);                // INVCYLINDER
+            case 3: return 1 - r;                                    // SPHERICAL: colour 2 at the centre
+            case 4: return r;                                        // INVSPHERICAL
+            case 5: return 1 - rh;                                   // HEMISPHERICAL: from the start edge
+            case 6: return rh;
+            case 7: return 1 - (1 - u) * (1 - u);                    // CURVED
+            case 8: return (1 - u) * (1 - u);                        // INVCURVED
+            default: return u;
+        }
+    }
+
+    /**
+     * Island detection style (75): 0 normal = alternate fill by nesting depth,
+     * 1 outer = only the outermost area (deeper loops ignored), 2 ignore = only
+     * the outermost boundaries, islands filled over.
+     */
+    function styledLoops(hatch, loops) {
+        const st = Number(hatch && hatch.style) || 0;
+        if (st === 0 || !loops || loops.length < 2) return loops;
+        const depth = loops.map((ring, i) => {
+            let d = 0;
+            for (let j = 0; j < loops.length; j++) if (j !== i && pointInRing(ring[0], loops[j])) d++;
+            return d;
+        });
+        return loops.filter((_, i) => depth[i] <= (st === 1 ? 1 : 0));
+    }
+
+    /**
+     * Pattern origin: where the pattern grid is anchored. Recovered from the
+     * first line family (its base = origin + rotated, scaled definition base).
+     */
+    function hatchOrigin(hatch, measurement) {
+        const pl = hatch && hatch.patternLines && hatch.patternLines[0];
+        if (!pl || !pl.base) return { x: 0, y: 0 };
+        const defs = patternDefs(hatch.patternName, measurement === 0 ? 0 : 1);
+        const d = defs && defs[0];
+        if (!d) return { x: num(pl.base.x), y: num(pl.base.y) };
+        const s = num(hatch.patternScale) || 1, th = num(hatch.patternAngle) * DEG;
+        const bx = d.base.x * s, by = d.base.y * s;
+        return { x: num(pl.base.x) - (bx * Math.cos(th) - by * Math.sin(th)), y: num(pl.base.y) - (bx * Math.sin(th) + by * Math.cos(th)) };
     }
 
     // ===================== Boundary → point rings =====================
@@ -451,9 +581,12 @@
         const diag = Math.hypot(bbox.maxX - bbox.minX, bbox.maxY - bbox.minY) || 1;
 
         const families = [...(hatch.patternLines || [])];
-        if (hatch.double) {
+        // AutoCAD writes a double user hatch as two families already; only a
+        // file that stored one family with 77=1 needs the second one built.
+        if (hatch.double && families.length === 1) {
+            // Double: a second family turned 90°, offset vector turned with it.
             for (const pl of [...families]) {
-                families.push({ ...pl, angle: pl.angle + 90, offset: { x: pl.offset.x, y: pl.offset.y } });
+                families.push({ ...pl, angle: pl.angle + 90, offset: { x: -pl.offset.y, y: pl.offset.x } });
             }
         }
 
@@ -461,7 +594,9 @@
             const th = pl.angle * DEG;
             const dir = { x: Math.cos(th), y: Math.sin(th) };
             const nrm = { x: -Math.sin(th), y: Math.cos(th) };
-            const spacing = pl.offset.y;
+            // 45/46 is a WCS vector: spacing = its normal part, shift = its part along the line.
+            const off = { x: num(pl.offset && pl.offset.x), y: num(pl.offset && pl.offset.y) };
+            const spacing = off.x * nrm.x + off.y * nrm.y;
             if (!(Math.abs(spacing) > 1e-9)) continue; // degenerate definition
 
             // Perpendicular extent of the boundary relative to the pattern base.
@@ -475,16 +610,15 @@
                 if (p < pMin) pMin = p;
                 if (p > pMax) pMax = p;
             }
-            const k0 = Math.floor(pMin / Math.abs(spacing)) - 1;
-            const k1 = Math.ceil(pMax / Math.abs(spacing)) + 1;
+            // Line k lies at k·spacing along the normal (spacing may be negative).
+            const a0 = pMin / spacing, a1 = pMax / spacing;
+            const k0 = Math.floor(Math.min(a0, a1)) - 1;
+            const k1 = Math.ceil(Math.max(a0, a1)) + 1;
             if (!Number.isFinite(k0) || !Number.isFinite(k1)) continue;
             if ((k1 - k0) > 100000) continue; // pattern scale is nonsense for this boundary
 
             for (let k = k0; k <= k1; k++) {
-                const org = {
-                    x: pl.base.x + (pl.offset.x * k) * dir.x + (spacing * k) * nrm.x,
-                    y: pl.base.y + (pl.offset.x * k) * dir.y + (spacing * k) * nrm.y,
-                };
+                const org = { x: pl.base.x + off.x * k, y: pl.base.y + off.y * k };
                 let spans = clipLineToLoops(org, dir, loops);
                 if (!spans.length) continue;
                 spans = applyDashes(spans, pl.dashes, 0);
@@ -510,43 +644,106 @@
 
 
     // ===================== Pattern library =====================
-    // The standard ANSI definitions (as they appear in acad.pat). Values are in
-    // pattern units and get scaled/rotated before they are written to the file,
-    // because CAD applications store hatch pattern data already transformed.
-    const PATTERN_DEFS = {
-        SOLID: [],
-        ANSI31: [{ angle: 45, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [] }],
-        ANSI32: [
-            { angle: 45, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.375 }, dashes: [] },
-            { angle: 45, base: { x: 0.176776695, y: 0 }, offset: { x: 0, y: 0.375 }, dashes: [] },
-        ],
-        ANSI37: [
-            { angle: 45, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [] },
-            { angle: 135, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [] },
-        ],
-        NET: [
-            { angle: 0, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [] },
-            { angle: 90, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [] },
-        ],
-        DASHED: [{ angle: 0, base: { x: 0, y: 0 }, offset: { x: 0, y: 0.125 }, dashes: [0.25, -0.125] }],
+    // Definitions in ISO units with WCS offsets (see dxf_hatch_patterns.js).
+    // When that file is not loaded, a few common patterns are still available.
+    const FALLBACK_ISO = {
+        ANSI31: [[45, [0, 0], [-2.2450640303, 2.2450640303], []]],
+        ANSI32: [[45, [0, 0], [-6.7351920908, 6.7351920908], []], [45, [4.490128053, 0], [-6.7351920908, 6.7351920908], []]],
+        ANSI37: [[45, [0, 0], [-2.2450640303, 2.2450640303], []], [135, [0, 0], [-2.2450640303, -2.2450640303], []]],
+        NET: [[0, [0, 0], [0, 3.175], []], [90, [0, 0], [-3.175, 0], []]],
+        DASH: [[0, [0, 0], [3.175, 3.175], [3.175, -3.175]]],
     };
+    function libraryISO() {
+        const lib = (root && root.DxfHatchPatterns) || (typeof module !== 'undefined' && (() => {
+            try { return require('./dxf_hatch_patterns.js'); } catch (e) { return null; }
+        })());
+        return (lib && lib.ISO) || FALLBACK_ISO;
+    }
+    const toDef = (l, f) => ({
+        angle: l[0], base: { x: l[1][0] * f, y: l[1][1] * f },
+        offset: { x: l[2][0] * f, y: l[2][1] * f }, dashes: l[3].map(d => d * f),
+    });
 
-    function patternNames() { return Object.keys(PATTERN_DEFS); }
+    /** Definition of one pattern for a drawing: measurement 0 = imperial, 1 = ISO. */
+    function patternDefs(name, measurement) {
+        const key = String(name || '').toUpperCase();
+        if (key === 'SOLID') return [];
+        // User-defined: parallel lines, spacing 1 × scale (the scale field is the spacing).
+        if (key === '_USER') return [{ angle: 0, base: { x: 0, y: 0 }, offset: { x: 0, y: 1 }, dashes: [] }];
+        const lines = libraryISO()[key];
+        if (!lines) return null;
+        const f = measurement === 0 ? 1 / 25.4 : 1;
+        return lines.map(l => toDef(l, f));
+    }
 
-    /** Scale + rotate a pattern definition. Offsets are frame-relative, so they only scale. */
-    function transformPattern(defs, scale, angleDeg) {
+    /**
+     * Which library a drawing uses: $MEASUREMENT when set, otherwise the
+     * insertion units (inches/feet/miles/yards → imperial), otherwise ISO.
+     */
+    function measurementOf(header) {
+        const h = header || {};
+        const m = Number(h.$MEASUREMENT);
+        if (m === 0 || m === 1) return m;
+        const u = Number(h.$INSUNITS);
+        if ([1, 2, 3, 8, 9, 10].includes(u)) return 0;
+        return 1;
+    }
+
+    // Compatibility: name → ISO definition (SOLID = []).
+    const PATTERN_DEFS = new Proxy({}, {
+        get(_, k) { return typeof k === 'string' ? (patternDefs(k, 1) || undefined) : undefined; },
+        has(_, k) { return typeof k === 'string' && !!patternDefs(k, 1); },
+        ownKeys() { return patternNames(); },
+        getOwnPropertyDescriptor(_, k) {
+            const v = typeof k === 'string' ? patternDefs(k, 1) : null;
+            return v ? { value: v, enumerable: true, configurable: true } : undefined;
+        },
+    });
+
+    function patternNames() { return ['SOLID', '_USER', ...Object.keys(libraryISO()).filter(n => n !== 'SOLID')]; }
+
+    /**
+     * Scale + rotate a pattern definition for writing to codes 53/43-46/49.
+     * Base points and offsets are both WCS vectors, so both turn with the hatch.
+     */
+    function transformPattern(defs, scale, angleDeg, origin, double) {
         const s = scale > 0 ? scale : 1;
         const th = (angleDeg || 0) * DEG;
         const cos = Math.cos(th), sin = Math.sin(th);
-        return defs.map(d => ({
-            angle: d.angle + (angleDeg || 0),
-            base: {
-                x: (d.base.x * s) * cos - (d.base.y * s) * sin,
-                y: (d.base.x * s) * sin + (d.base.y * s) * cos,
-            },
-            offset: { x: d.offset.x * s, y: d.offset.y * s },
-            dashes: d.dashes.map(v => v * s),
-        }));
+        const ox = origin ? num(origin.x) : 0, oy = origin ? num(origin.y) : 0;
+        const rot = (v) => ({ x: (v.x * s) * cos - (v.y * s) * sin, y: (v.x * s) * sin + (v.y * s) * cos });
+        let list = defs || [];
+        // Double: every family again at +90° (AutoCAD: user-defined patterns).
+        if (double) list = list.concat(list.map(d => ({
+            angle: d.angle + 90, base: { x: -d.base.y, y: d.base.x }, offset: { x: -d.offset.y, y: d.offset.x }, dashes: d.dashes,
+        })));
+        return list.map(d => {
+            const b = rot(d.base);
+            return {
+                angle: d.angle + (angleDeg || 0),
+                base: { x: b.x + ox, y: b.y + oy },
+                offset: rot(d.offset),
+                dashes: d.dashes.map(v => v * s),
+            };
+        });
+    }
+
+    /**
+     * Rough line count of a pattern over a region (density warning before it
+     * is built): sum over families of the extent across the lines / spacing.
+     */
+    function estimateLineCount(defs, scale, bbox) {
+        if (!defs || !defs.length || !bbox) return 0;
+        const s = scale > 0 ? scale : 1;
+        const diag = Math.hypot(bbox.maxX - bbox.minX, bbox.maxY - bbox.minY);
+        let n = 0;
+        for (const d of defs) {
+            const th = d.angle * DEG;
+            const sp = Math.abs(-Math.sin(th) * d.offset.x + Math.cos(th) * d.offset.y) * s;
+            if (sp > 1e-12) n += diag / sp;
+            else return Infinity;
+        }
+        return n;
     }
 
     // ===================== Boundary from existing entities =====================
@@ -592,22 +789,24 @@
     function makeHatchFromEntities(entities, opts) {
         const o = opts || {};
         const paths = [];
-        for (const e of entities || []) {
+        (entities || []).forEach((e, k) => {
             const p = boundaryFromEntity(e);
-            if (p) paths.push(p);
-        }
+            if (!p) return;
+            // Linked hatch: each boundary remembers its shape's handle.
+            if (o.linkSources && o.linkSources[k]) p.sources = [String(o.linkSources[k])];
+            paths.push(p);
+        });
         if (!paths.length) return null;
 
-        const name = PATTERN_DEFS[o.patternName] ? o.patternName : 'SOLID';
-        const solid = name === 'SOLID';
         const hatch = {
             type: 'HATCH', layer: o.layer || '0',
-            patternName: name, solid, gradient: false,
-            style: 0, patternAngle: o.angle || 0, patternScale: o.scale > 0 ? o.scale : 1,
-            double: false, elevation: 0, paths,
-            patternLines: solid ? [] : transformPattern(PATTERN_DEFS[name], o.scale, o.angle),
+            patternName: 'SOLID', solid: true, gradient: false,
+            style: 0, patternAngle: 0, patternScale: 1,
+            double: false, elevation: 0, paths, patternLines: [],
             colorNumber: null, trueColor: null,
         };
+        applyPatternToHatch(hatch, { ...o, origin: o.origin || { x: 0, y: 0 } });
+        if (o.linkSources && paths.every(p => p.sources && p.sources[0])) hatch.associative = true;
         // Island flags: a path contained by another is "outermost", not "external".
         const loops = buildHatchLoops(hatch, o.helpers || {});
         const areas = loops.map(r => Math.abs(ringArea(r)));
@@ -624,18 +823,30 @@
 
     // ===================== Emission =====================
 
-    function emitHatchPairs(hatch, handle, layer) {
+    function emitHatchPairs(hatch, handle, layer, opts) {
         const n = (v) => String(Math.round(Number(v) * 1e9) / 1e9);
-        const out = [
-            '0', 'HATCH', '5', String(handle), '8', layer || hatch.layer || '0',
-            '100', 'AcDbEntity', '100', 'AcDbHatch',
+        const o = opts || {};
+        const out = ['0', 'HATCH', '5', String(handle), '100', 'AcDbEntity'];
+        // Common codes: paper space, layer, colour, lineweight (dropped before,
+        // so a re-emitted hatch lost its colour and fell into model space).
+        if (o.paperSpace || hatch.__paperSpace || hatch.inPaperSpace) {
+            out.push('67', '1');
+            const lay = o.layoutName || hatch.__layoutName || hatch.layoutName;
+            if (lay) out.push('410', String(lay));
+        }
+        out.push('8', layer || hatch.layer || '0');
+        const aci = Number.isFinite(o.colorIndex) ? o.colorIndex : Number(hatch.colorNumber ?? hatch.colorIndex);
+        if (Number.isFinite(aci) && aci >= 0 && aci <= 256) out.push('62', String(Math.round(aci)));
+        if (Number.isFinite(o.lineweight)) out.push('370', String(Math.round(o.lineweight)));
+        const tc = Number.isFinite(o.trueColor) ? o.trueColor : (hatch.trueColor != null ? Number(hatch.trueColor) : NaN);
+        if (Number.isFinite(tc)) out.push('420', String(Math.round(tc) & 0xffffff));
+        out.push('100', 'AcDbHatch',
             '10', '0', '20', '0', '30', n(hatch.elevation || 0),
             '210', '0', '220', '0', '230', '1',
-            '2', hatch.patternName || 'SOLID',
-            '70', hatch.solid ? '1' : '0',
-            '71', '0',                       // non-associative
-            '91', String(hatch.paths.length),
-        ];
+            '2', hatch.gradient ? 'SOLID' : (hatch.patternName || 'SOLID'),
+            '70', hatch.solid || hatch.gradient ? '1' : '0',
+            '71', hatch.associative ? '1' : '0',
+            '91', String(hatch.paths.length));
         for (const p of hatch.paths) {
             out.push('92', String(p.flags | (p.polyline ? 2 : 0)));
             if (p.polyline) {
@@ -659,11 +870,16 @@
                     }
                 }
             }
-            out.push('97', '0');            // no associated source objects
+            // Associative: the boundary's source objects by handle.
+            const src = hatch.associative && Array.isArray(p.sources) ? p.sources.filter(Boolean) : [];
+            out.push('97', String(src.length));
+            for (const hnd of src) out.push('330', String(hnd));
         }
-        out.push('75', String(hatch.style || 0), '76', '1');
-        if (!hatch.solid) {
-            out.push('52', n(hatch.patternAngle || 0), '41', n(hatch.patternScale || 1), '77', '0',
+        const name = String(hatch.patternName || '').toUpperCase();
+        const ptype = name === '_USER' ? 0 : (name === 'SOLID' || patternDefs(name, 1)) ? 1 : 2;
+        out.push('75', String(hatch.style || 0), '76', String(Number.isFinite(hatch.patternType) && !hatch.__repatterned ? hatch.patternType : ptype));
+        if (!hatch.solid && !hatch.gradient) {
+            out.push('52', n(hatch.patternAngle || 0), '41', n(hatch.patternScale || 1), '77', hatch.double ? '1' : '0',
                      '78', String(hatch.patternLines.length));
             for (const pl of hatch.patternLines) {
                 out.push('53', n(pl.angle), '43', n(pl.base.x), '44', n(pl.base.y),
@@ -671,7 +887,17 @@
                 for (const d of pl.dashes) out.push('49', n(d));
             }
         }
-        out.push('98', '0');                // no seed points
+        const seeds = Array.isArray(hatch.seeds) ? hatch.seeds : [];
+        out.push('98', String(seeds.length));
+        for (const sp of seeds) out.push('10', n(sp.x), '20', n(sp.y));
+        const g = hatch.gradient;
+        if (g && typeof g === 'object') {
+            out.push('450', '1', '451', '0', '460', n(g.angle || 0), '461', n(g.shift || 0),
+                '452', g.oneColor ? '1' : '0', '462', n(g.tint || 0), '453', '2',
+                '463', '0', '421', String((g.color1 >>> 0) & 0xffffff),
+                '463', '1', '421', String(((g.oneColor ? 0xffffff : g.color2) >>> 0) & 0xffffff),
+                '470', GRADIENT_NAMES.includes(g.name) ? g.name : 'LINEAR');
+        }
         return out;
     }
 
@@ -680,16 +906,51 @@
      * the derived pattern-line definitions. Boundary paths are untouched, so the
      * fill still covers exactly the same area.
      */
+    /**
+     * opts: patternName ('SOLID', '_USER', a library name, or 'GR_<NAME>' for a
+     * gradient), scale, angle (degrees), origin {x,y} (kept when omitted),
+     * double, style (75), gradient {color1, color2, oneColor, tint, shift}
+     * (angle for gradients comes from opts.angle), measurement.
+     */
     function applyPatternToHatch(hatch, opts) {
         const o = opts || {};
-        const name = PATTERN_DEFS[o.patternName] ? o.patternName : hatch.patternName;
-        const solid = name === 'SOLID';
-        hatch.patternName = name;
-        hatch.solid = solid;
-        hatch.gradient = false;
+        const meas = o.measurement === 0 ? 0 : 1;
+        const origin = o.origin || hatchOrigin(hatch, meas);
+        if (Number.isInteger(o.style) && o.style >= 0 && o.style <= 2) hatch.style = o.style;
+        let want = o.patternName ? String(o.patternName).toUpperCase()
+            : hatch.gradient ? 'GR_' + hatch.gradient.name : String(hatch.patternName || 'SOLID').toUpperCase();
         if (Number.isFinite(o.scale) && o.scale > 0) hatch.patternScale = o.scale;
         if (Number.isFinite(o.angle)) hatch.patternAngle = o.angle;
-        hatch.patternLines = solid ? [] : transformPattern(PATTERN_DEFS[name], hatch.patternScale, hatch.patternAngle);
+        if (typeof o.double === 'boolean') hatch.double = o.double;
+        if (want.startsWith('GR_')) {
+            const gname = want.slice(3);
+            const prev = hatch.gradient && typeof hatch.gradient === 'object' ? hatch.gradient : {};
+            const gi = o.gradient || {};
+            hatch.gradient = {
+                name: GRADIENT_NAMES.includes(gname) ? gname : 'LINEAR',
+                angle: Number.isFinite(o.angle) ? o.angle * DEG : (prev.angle ?? 0),
+                shift: Number.isFinite(gi.shift) ? gi.shift : (prev.shift ?? 0),
+                oneColor: typeof gi.oneColor === 'boolean' ? gi.oneColor : !!prev.oneColor,
+                tint: Number.isFinite(gi.tint) ? gi.tint : (prev.tint ?? 0.5),
+                color1: Number.isFinite(gi.color1) ? gi.color1 : (prev.color1 ?? 0x0000ff),
+                color2: Number.isFinite(gi.color2) ? gi.color2 : (prev.color2 ?? 0xffff00),
+            };
+            hatch.patternName = 'SOLID';
+            hatch.solid = true;
+            hatch.patternLines = [];
+            hatch.double = false;
+            hatch.__repatterned = true;
+            return hatch;
+        }
+        const defs = patternDefs(want, meas);
+        if (!defs) return hatch;            // unknown pattern (custom .pat): keep its lines
+        const solid = want === 'SOLID';
+        hatch.patternName = want;
+        hatch.solid = solid;
+        hatch.gradient = false;
+        hatch.__repatterned = true;
+        if (want !== '_USER') hatch.double = false;   // AutoCAD: double is for user-defined lines
+        hatch.patternLines = solid ? [] : transformPattern(defs, hatch.patternScale, hatch.patternAngle, origin, hatch.double);
         return hatch;
     }
 
@@ -856,6 +1117,7 @@
             pl.base.x = num(pl.base.x) + dx;
             pl.base.y = num(pl.base.y) + dy;
         }
+        for (const sp of hatch.seeds || []) { sp.x = num(sp.x) + dx; sp.y = num(sp.y) + dy; }
         return hatch;
     }
 
@@ -919,23 +1181,26 @@
                 }
             }
         }
+        for (const sp of hatch.seeds || []) mapPt(sp, 'x', 'y');
+        if (hatch.gradient && typeof hatch.gradient === 'object') {
+            let ga = num(hatch.gradient.angle);
+            if (mirror) ga = 2 * (o.mirrorRad || 0) - ga;
+            hatch.gradient.angle = ga + (Number(o.rotateRad) || 0);
+        }
         if (!hatch.solid) {
             let ang = num(hatch.patternAngle);
             if (mirror) ang = 2 * mirrorDeg - ang;
             hatch.patternAngle = ang + rotDeg;
             hatch.patternScale = (num(hatch.patternScale) || 1) * f;
-            if (PATTERN_DEFS[hatch.patternName]) {
-                // Known pattern: rebuild the line set from the definition.
-                hatch.patternLines = transformPattern(PATTERN_DEFS[hatch.patternName], hatch.patternScale, hatch.patternAngle);
-            } else {
-                for (const pl of hatch.patternLines || []) {
-                    let a = num(pl.angle);
-                    if (mirror) a = 2 * mirrorDeg - a;
-                    pl.angle = a + rotDeg;
-                    if (pl.base) mapPt(pl.base, 'x', 'y');
-                    if (pl.offset) { const v = vec(num(pl.offset.x), num(pl.offset.y)); pl.offset.x = v.x; pl.offset.y = v.y; }
-                    if (Array.isArray(pl.dashes)) pl.dashes = pl.dashes.map(dd => num(dd) * f);
-                }
+            // Base points and offsets are WCS: map them exactly like the boundary,
+            // so the fill keeps its phase (works for any pattern, known or not).
+            for (const pl of hatch.patternLines || []) {
+                let a = num(pl.angle);
+                if (mirror) a = 2 * mirrorDeg - a;
+                pl.angle = a + rotDeg;
+                if (pl.base) mapPt(pl.base, 'x', 'y');
+                if (pl.offset) { const v = vec(num(pl.offset.x), num(pl.offset.y)); pl.offset.x = v.x; pl.offset.y = v.y; }
+                if (Array.isArray(pl.dashes)) pl.dashes = pl.dashes.map(dd => num(dd) * f);
             }
         }
         return hatch;
@@ -1280,7 +1545,8 @@
         acadTableGeometry, acadTableCellAt, markCoveredCells,
         buildHatchLoops, classifyLoops,
         patternSegments, pointInHatch, pointInRing, ringArea,
-        PATTERN_DEFS, patternNames, transformPattern,
+        PATTERN_DEFS, patternNames, transformPattern, patternDefs, measurementOf, estimateLineCount, ringsBBox,
+        GRADIENT_NAMES, gradientColors, gradientFrame, gradientValue, styledLoops, hatchOrigin,
         boundaryFromEntity, makeHatchFromEntities, applyPatternToHatch, emitHatchPairs,
         hatchAnchors, setHatchAnchor, hatchStraightSegments,
         hatchCircleEdges, setHatchCircleRadius, translateHatch, transformHatch,

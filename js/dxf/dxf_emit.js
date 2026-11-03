@@ -24,6 +24,9 @@
     function head(type, handle, layer, opts) {
         const pairs = ['0', type];
         if (handle) pairs.push('5', String(handle));
+        // Strict readers (AutoCAD, ezdxf) want the AcDbEntity subclass marker
+        // before the common codes; the type's own marker follows in each emitter.
+        pairs.push('100', 'AcDbEntity');
         if (opts && opts.paperSpace) {
             pairs.push('67', '1');
             if (opts.layoutName) pairs.push('410', String(opts.layoutName));
@@ -70,30 +73,58 @@
     function emitLine(p1, p2, layer, handle, opts) {
         return [
             ...head('LINE', handle, layer, opts),
+            '100', 'AcDbLine',
             '10', num(p1.x), '20', num(p1.y), '30', '0',
             '11', num(p2.x), '21', num(p2.y), '31', '0',
         ];
     }
 
-    /** LWPOLYLINE through verts [{x,y,bulge?}]; closed flag sets bit 1 of code 70. */
-    function emitLwPolyline(verts, closed, layer, handle, opts) {
+    /**
+     * LWPOLYLINE through verts [{x,y,bulge?,startWidth?,endWidth?}]; closed flag
+     * sets bit 1 of code 70. constantWidth (code 43) applies to every span that
+     * has no width of its own; per-vertex widths go out as 40/41.
+     */
+    function emitLwPolyline(verts, closed, layer, handle, opts, constantWidth) {
+        const cw = Number(constantWidth);
+        const perVertex = verts.some(v => Number(v.startWidth) > 0 || Number(v.endWidth) > 0);
         const pairs = [
             ...head('LWPOLYLINE', handle, layer, opts),
             '100', 'AcDbPolyline',
             '90', String(verts.length),
             '70', closed ? '1' : '0',
         ];
+        if (!perVertex && Number.isFinite(cw) && cw > 0) pairs.push('43', num(cw));
         for (const v of verts) {
             pairs.push('10', num(v.x), '20', num(v.y));
+            if (perVertex) {
+                const sw = Number(v.startWidth), ew = Number(v.endWidth);
+                const fallback = Number.isFinite(cw) && cw > 0 ? cw : 0;
+                const s = Number.isFinite(sw) && sw > 0 ? sw : (Number.isFinite(ew) && ew > 0 ? 0 : fallback);
+                const e = Number.isFinite(ew) && ew > 0 ? ew : (Number.isFinite(sw) && sw > 0 ? 0 : fallback);
+                if (s || e) pairs.push('40', num(s), '41', num(e));
+            }
             if (v.bulge) pairs.push('42', num(v.bulge));
         }
         return pairs;
+    }
+
+    /** XLINE or RAY: base point + unit direction vector (11/21/31). */
+    function emitXline(type, base, dir, layer, handle, opts) {
+        const t = String(type).toUpperCase() === 'RAY' ? 'RAY' : 'XLINE';
+        const L = Math.hypot(Number(dir.x) || 0, Number(dir.y) || 0) || 1;
+        return [
+            ...head(t, handle, layer, opts),
+            '100', t === 'RAY' ? 'AcDbRay' : 'AcDbXline',
+            '10', num(base.x), '20', num(base.y), '30', '0',
+            '11', num((Number(dir.x) || 0) / L), '21', num((Number(dir.y) || 0) / L), '31', '0',
+        ];
     }
 
     /** CIRCLE with center c and radius r. */
     function emitCircle(c, r, layer, handle, opts) {
         return [
             ...head('CIRCLE', handle, layer, opts),
+            '100', 'AcDbCircle',
             '10', num(c.x), '20', num(c.y), '30', '0',
             '40', num(Math.abs(r)),
         ];
@@ -103,8 +134,10 @@
     function emitArc(c, r, startDeg, endDeg, layer, handle, opts) {
         return [
             ...head('ARC', handle, layer, opts),
+            '100', 'AcDbCircle',
             '10', num(c.x), '20', num(c.y), '30', '0',
             '40', num(Math.abs(r)),
+            '100', 'AcDbArc',
             '50', num(startDeg),
             '51', num(endDeg),
         ];
@@ -119,11 +152,13 @@
             .replace(/\r\n/g, ' ').replace(/[\r\n]/g, ' ');
         const pairs = [
             ...head('TEXT', handle, layer, opts),
+            '100', 'AcDbText',
             '10', num(pos.x), '20', num(pos.y), '30', '0',
             '40', num(Math.abs(height) || 1),
             '1', safe,
         ];
         if (rotationDeg) pairs.push('50', num(rotationDeg));
+        pairs.push('100', 'AcDbText');   // second AcDbText precedes the alignment codes
         return pairs;
     }
 
@@ -229,6 +264,7 @@
     function emitPoint(pos, layer, handle, opts) {
         return [
             ...head('POINT', handle, layer, opts),
+            '100', 'AcDbPoint',
             '10', num(pos.x), '20', num(pos.y), '30', num(pos.z || 0),
         ];
     }
@@ -474,7 +510,12 @@
             case 'LWPOLYLINE':
             case 'POLYLINE':
                 if (entity.vertices?.length >= 2)
-                    return emitLwPolyline(entity.vertices, !!(entity.shape || entity.closed), L, h, opts);
+                    return emitLwPolyline(entity.vertices, !!(entity.shape || entity.closed), L, h, opts, entity.width);
+                return [];
+            case 'XLINE':
+            case 'RAY':
+                if (entity.basePoint && entity.direction)
+                    return emitXline(entity.type, entity.basePoint, entity.direction, L, h, opts);
                 return [];
             case 'CIRCLE':
                 return emitCircle(entity.center, entity.radius, L, h, opts);
@@ -612,7 +653,7 @@
     }
 
     const DxfEmit = {
-        num, emitLine, emitLwPolyline, entityStyleOpts, emitCircle, emitArc, emitText, emitMText,
+        num, emitLine, emitLwPolyline, emitXline, entityStyleOpts, emitCircle, emitArc, emitText, emitMText,
         emitViewport, emitInsert, emitPoint, emitEllipse,
         emitEntity, emitBlockDef, emitBlockRecord,
         acadTableSubclassPairs, emitAcadTable,

@@ -50,9 +50,9 @@
     }
 
     // Apply fn(x, y) → {x, y} to every 2D point-bearing field of an entity.
-    const POINT_FIELDS = ['startPoint', 'position', 'endPoint', 'alignmentPoint', 'center',
+    const POINT_FIELDS = ['startPoint', 'position', 'endPoint', 'alignmentPoint', 'center', 'basePoint',
         // DIMENSION definition points — moving a dim moves what it measures FROM.
-        'anchorPoint', 'diameterOrRadiusPoint', 'linearOrAngularPoint1', 'linearOrAngularPoint2', 'middleOfText'];
+        'anchorPoint', 'diameterOrRadiusPoint', 'linearOrAngularPoint1', 'linearOrAngularPoint2', 'middleOfText', 'arcPoint'];
     // Point arrays: polyline/leader/wipeout vertices, SPLINE control + fit points.
     const POINT_ARRAYS = ['vertices', 'controlPoints', 'fitPoints'];
     function forEachEntityPoint(e, fn) {
@@ -90,6 +90,8 @@
         const t = String(e.type || '').toUpperCase();
         if (t === 'ELLIPSE') {
             mapVector(e.majorAxisEndPoint, (x, y) => rotatePoint(x, y, 0, 0, ang));
+        } else if (t === 'XLINE' || t === 'RAY') {
+            mapVector(e.direction, (x, y) => rotatePoint(x, y, 0, 0, ang));
         } else if (t === 'DIMENSION') {
             // Rotated (linear) dimensions carry their direction in code 50 (degrees);
             // aligned/radial flavors derive it from the definition points.
@@ -114,6 +116,14 @@
             mapVector(e.majorAxisEndPoint, (x, y) => ({ x: x * f, y: y * f }));
         } else if (t === 'CIRCLE' || t === 'ARC') {
             if (Number.isFinite(e.radius)) e.radius *= f;
+        } else if (t === 'LWPOLYLINE' || t === 'POLYLINE') {
+            // Widths scale with the shape, as in AutoCAD.
+            const k = Math.abs(f);
+            if (Number.isFinite(e.width)) e.width *= k;
+            for (const v of e.vertices || []) {
+                if (Number.isFinite(v.startWidth)) v.startWidth *= k;
+                if (Number.isFinite(v.endWidth)) v.endWidth *= k;
+            }
         } else if (t === 'TEXT' || t === 'MTEXT' || t === 'ATTRIB' || t === 'ATTDEF') {
             if (Number.isFinite(e.textHeight)) e.textHeight *= f;
             if (Number.isFinite(e.height)) e.height *= f;
@@ -172,6 +182,9 @@
                 copy.endAngle = ((-s) % TAU + TAU) % TAU;
                 if (copy.endAngle <= copy.startAngle) copy.endAngle += TAU;
             }
+        }
+        if (t === 'XLINE' || t === 'RAY') {
+            mapVector(copy.direction, (x, y) => mirrorPoint(x, y, { x: 0, y: 0 }, { x: Math.cos(theta), y: Math.sin(theta) }));
         }
         if (t === 'INSERT') {
             // Ref_theta · R(r) · S = R(2theta - r) · diag(sx, -sy): the block keeps its
@@ -288,6 +301,11 @@
         }
         if (t === 'ELLIPSE') {
             if (!pointInBox(e.center, box)) return 'none';
+            translateEntity(e, dx, dy);
+            return 'whole';
+        }
+        if (t === 'XLINE' || t === 'RAY') {
+            if (!pointInBox(e.basePoint, box)) return 'none';
             translateEntity(e, dx, dy);
             return 'whole';
         }

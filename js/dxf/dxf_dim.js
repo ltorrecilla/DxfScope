@@ -164,6 +164,19 @@
             }
             return g;
         }
+        if (baseType === 2) {
+            // 2-line angular: 13,14 = line 1, 15,10 = line 2, 16 = arc point.
+            const g = buildAngularDimGeometry(entity.linearOrAngularPoint1, entity.linearOrAngularPoint2,
+                entity.diameterOrRadiusPoint, entity.anchorPoint, entity.arcPoint,
+                textHeight > 0 ? textHeight : 1, Number.isFinite(decimals) ? Math.min(decimals, 2) : 0, textGap, arrowSize);
+            if (!g) return null;
+            g.dimensionType = entity.dimensionType;
+            if (entity.text && entity.text !== '<>') {
+                g.text.value = resolveDimTextOverride(entity.text, g.text.value);
+                g.textOverride = entity.text;
+            }
+            return g;
+        }
         if (baseType === 6) {
             const feature = entity.linearOrAngularPoint1;
             const leaderEnd = entity.linearOrAngularPoint2;
@@ -495,8 +508,114 @@
         return out;
     }
 
+    // ===================== Angular (2-line) =====================
+    const TAU = Math.PI * 2;
+    const normAng = (a) => { a %= TAU; return a < 0 ? a + TAU : a; };
+
+    /**
+     * Geometry for a 2-line ANGULAR dimension (DIMANGULAR).
+     *  l1a,l1b / l2a,l2b — the two lines (codes 13,14 / 15,10)
+     *  arcPt             — where the dimension arc passes (code 16); its
+     *                      quadrant picks which of the four angles is measured
+     * Arc with arrows at both ends, extension lines when the arc lies beyond
+     * a line's end, text (degrees) at the arc middle, outside.
+     */
+    function buildAngularDimGeometry(l1a, l1b, l2a, l2b, arcPt, h, decimals, textGap, arrowSize) {
+        if (!l1a || !l1b || !l2a || !l2b || !arcPt) return null;
+        const d1x = l1b.x - l1a.x, d1y = l1b.y - l1a.y, d2x = l2b.x - l2a.x, d2y = l2b.y - l2a.y;
+        const L1 = Math.hypot(d1x, d1y), L2 = Math.hypot(d2x, d2y);
+        if (!(L1 > 0) || !(L2 > 0)) return null;
+        const den = d1x * d2y - d1y * d2x;
+        if (Math.abs(den) < 1e-12 * L1 * L2) return null;           // parallel lines
+        const t = ((l2a.x - l1a.x) * d2y - (l2a.y - l1a.y) * d2x) / den;
+        const C = { x: l1a.x + d1x * t, y: l1a.y + d1y * t };
+        const r = Math.hypot(arcPt.x - C.x, arcPt.y - C.y);
+        if (!(r > 0)) return null;
+        const u1 = { x: d1x / L1, y: d1y / L1 }, u2 = { x: d2x / L2, y: d2y / L2 };
+        const ap = Math.atan2(arcPt.y - C.y, arcPt.x - C.x);
+        let a0 = 0, sweep = 0, ray1 = null, ray2 = null;
+        for (const s1 of [1, -1]) for (const s2 of [1, -1]) {
+            const r1 = { x: u1.x * s1, y: u1.y * s1 }, r2 = { x: u2.x * s2, y: u2.y * s2 };
+            const b1 = Math.atan2(r1.y, r1.x), b2 = Math.atan2(r2.y, r2.x);
+            // Try both orders so the CCW sweep is the smaller one.
+            for (const [s, e, ra, rb] of [[b1, b2, r1, r2], [b2, b1, r2, r1]]) {
+                const sw = normAng(e - s);
+                if (sw > 1e-12 && sw < Math.PI + 1e-12 && normAng(ap - s) <= sw + 1e-12 && !ray1) { a0 = s; sweep = sw; ray1 = ra; ray2 = rb; }
+            }
+        }
+        if (!ray1) return null;
+        const gap = 0.25 * h, beyond = 0.5 * h;
+        const tGap = Number.isFinite(textGap) && textGap >= 0 ? textGap : 0.3 * h;
+        const aLen = arrowSize > 0 ? arrowSize : h;
+        const segments = [], polylines = [];
+        const P = (a, rad = r) => ({ x: C.x + Math.cos(a) * rad, y: C.y + Math.sin(a) * rad });
+        // Extension line along a ray when its line stops short of the arc.
+        const ext = (ray, la, lb) => {
+            const pa = (la.x - C.x) * ray.x + (la.y - C.y) * ray.y, pb = (lb.x - C.x) * ray.x + (lb.y - C.y) * ray.y;
+            const far = Math.max(pa, pb), near = Math.min(pa, pb);
+            if (far >= r - 1e-9 && near <= r + 1e-9) return;           // the line reaches the arc
+            const from = far < r ? far + gap : near - gap, to = far < r ? r + beyond : r - beyond;
+            segments.push({ x1: C.x + ray.x * from, y1: C.y + ray.y * from, x2: C.x + ray.x * to, y2: C.y + ray.y * to });
+        };
+        const line1IsRay1 = Math.abs(ray1.x * u1.y - ray1.y * u1.x) < 1e-9;
+        ext(ray1, line1IsRay1 ? l1a : l2a, line1IsRay1 ? l1b : l2b);
+        ext(ray2, line1IsRay1 ? l2a : l1a, line1IsRay1 ? l2b : l1b);
+        // The arc, flattened for previews/hit tests (marked so blocks get a real ARC).
+        const n = Math.max(8, Math.ceil(sweep / (Math.PI / 48)));
+        for (let k = 0; k < n; k++) {
+            const p = P(a0 + sweep * k / n), q = P(a0 + sweep * (k + 1) / n);
+            segments.push({ x1: p.x, y1: p.y, x2: q.x, y2: q.y, arc: true });
+        }
+        // Arrows at both ends, bodies running along the arc inward.
+        const s0 = P(a0, r), s1 = P(a0 + sweep, r);
+        polylines.push(arrowheadPolyline(s0, -Math.sin(a0), Math.cos(a0), aLen, aLen / 3));
+        polylines.push(arrowheadPolyline(s1, Math.sin(a0 + sweep), -Math.cos(a0 + sweep), aLen, aLen / 3));
+        const deg = sweep * 180 / Math.PI;
+        const dp = Number.isFinite(decimals) ? decimals : 0;
+        const mid = a0 + sweep / 2;
+        let rot = (mid * 180 / Math.PI) - 90;
+        let textR = r + tGap;
+        if (Math.sin(mid) < -1e-9) rot += 180;   // readable below the centre
+        rot = ((rot % 360) + 360) % 360;
+        const tp = P(mid, textR);
+        const text = {
+            value: String(Number(deg.toFixed(dp))) + '\u00B0',
+            x: tp.x, y: tp.y, rotationDeg: rot, height: h,
+            valign: Math.sin(mid) < -1e-9 ? 3 : 1,
+        };
+        return {
+            segments, polylines, text, measurement: sweep, angular: true,
+            arcs: [{ c: C, r, a0, a1: a0 + sweep }],
+            center: C, anchor: { x: tp.x, y: tp.y },
+            l1a: { ...l1a }, l1b: { ...l1b }, l2a: { ...l2a }, l2b: { ...l2b }, arcPt: { x: arcPt.x, y: arcPt.y },
+            dimensionType: 32 | 2,
+        };
+    }
+
+    /** 2-line ANGULAR DIMENSION pairs (type 2, block-ref flag set). 42 is in radians. */
+    function emitAngularDimensionPairs(dim, handle, layer, blockName) {
+        const n = (v) => String(Math.round(Number(v) * 1e9) / 1e9);
+        return [
+            '0', 'DIMENSION', '5', String(handle), '8', layer || '0',
+            '100', 'AcDbEntity', '100', 'AcDbDimension',
+            '2', blockName,
+            '10', n(dim.l2b.x), '20', n(dim.l2b.y), '30', '0',
+            '11', n(dim.text.x), '21', n(dim.text.y), '31', '0',
+            '70', String(32 | 2),
+            '1', dim.textOverride ? String(dim.textOverride) : '',
+            '71', '5',
+            '42', n(dim.measurement),
+            '100', 'AcDb2LineAngularDimension',
+            '13', n(dim.l1a.x), '23', n(dim.l1a.y), '33', '0',
+            '14', n(dim.l1b.x), '24', n(dim.l1b.y), '34', '0',
+            '15', n(dim.l2a.x), '25', n(dim.l2a.y), '35', '0',
+            '16', n(dim.arcPt.x), '26', n(dim.arcPt.y), '36', '0',
+        ];
+    }
+
     /** DIMENSION entity pairs for the raw serializer. */
     function emitDimensionPairs(dim, handle, layer, blockName) {
+        if (dim && dim.angular) return emitAngularDimensionPairs(dim, handle, layer, blockName);
         if (dim && dim.radial) return emitRadialDimensionPairs(dim, handle, layer, blockName);
         if (dim && dim.ordinate) return emitOrdinateDimensionPairs(dim, handle, layer, blockName);
         const n = (v) => String(Math.round(Number(v) * 1e9) / 1e9);
@@ -523,6 +642,7 @@
     const DxfDim = { buildDimGeometry, computeDimFromClicks, synthesizeFromEntity, emitDimensionPairs,
         buildRadialDimGeometry, emitRadialDimensionPairs,
         buildOrdinateDimGeometry, emitOrdinateDimensionPairs,
+        buildAngularDimGeometry, emitAngularDimensionPairs,
         leaderGeometry, parseRawDxfLeaders };
     if (typeof module !== 'undefined' && module.exports) module.exports = DxfDim;
     if (root) root.DxfDim = DxfDim;
