@@ -76,7 +76,7 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        accent: { DEFAULT: '#4f46e5', hover: '#4338ca', light: '#e0e7ff', lighthov: '#c7d2fe', lighter: '#eef2ff', }
+                        accent: { DEFAULT: '#2563eb', hover: '#1d4ed8', light: '#e0e7ff', lighthov: '#bfdbfe', lighter: '#eff6ff', }
                     }
                 }
             }
@@ -101,13 +101,13 @@
         }
         .tab-btn:hover:not(:disabled) { background-color: #f1f5f9; color: #0f172a; }
         .tab-btn.active {
-            background-color: #e2e8f0; color: #4f46e5; font-weight: 600;
-            box-shadow: inset 3px 0 0 #4f46e5;
+            background-color: #e2e8f0; color: #2563eb; font-weight: 600;
+            box-shadow: inset 3px 0 0 #2563eb;
         }
         .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .tab-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; }
 
-        .dragover, .drop-zone.dragover { border-color: #4f46e5 !important; background-color: rgba(238, 242, 255, 0.5) !important; }
+        .dragover, .drop-zone.dragover { border-color: #2563eb !important; background-color: rgba(238, 242, 255, 0.5) !important; }
 
         /* ---- Editor top toolbar ---- */
         .draw-toolbar {
@@ -133,7 +133,7 @@
             font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
         }
         .viewer-btn:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; border-color: transparent; }
-        .viewer-btn.active { background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; font-weight: 600; }
+        .viewer-btn.active { background: #e0e7ff; color: #2563eb; border-color: #bfdbfe; font-weight: 600; }
         .viewer-btn:disabled { opacity: 0.42; cursor: not-allowed; background: #ffffff; color: #94a3b8; }
         .viewer-toolbar-sep { width: 1px; height: 18px; background: #e2e8f0; margin: 0 2px; align-self: center; }
 
@@ -147,7 +147,7 @@
         .measure-panel.hidden { display: none !important; }
         .measure-panel-title { font-weight: 800; color: #111827; padding-right: 2px; }
         .measure-snap-option { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: #475569; white-space: nowrap; }
-        .measure-snap-option input[type="checkbox"] { accent-color: #4f46e5; width: 13px; height: 13px; }
+        .measure-snap-option input[type="checkbox"] { accent-color: #2563eb; width: 13px; height: 13px; }
         .measure-clear-btn {
             border: 1px solid #e2e8f0; background: #ffffff; color: #334155; border-radius: 4px;
             padding: 3px 8px; font-size: 11px; font-weight: 800; cursor: pointer;
@@ -185,11 +185,11 @@
         #canvas-wrap.swipe #swipe-bar { display: block; }
         #swipe-bar::before {
             content: ''; position: absolute; top: 0; bottom: 0;
-            left: 6px; width: 2px; background: #4f46e5;
+            left: 6px; width: 2px; background: #2563eb;
         }
         #swipe-grip {
             position: absolute; top: 50%; left: -7px; width: 28px; height: 28px;
-            margin-top: -14px; border-radius: 50%; background: #4f46e5;
+            margin-top: -14px; border-radius: 50%; background: #2563eb;
             border: 2px solid #fff; box-shadow: 0 1px 6px rgba(15, 23, 42, .3);
             color: #fff; display: flex; align-items: center; justify-content: center;
         }
@@ -218,7 +218,7 @@
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'><line x1='4' y1='8' x2='12' y2='8'/></svg>");
             background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
         }
-        .layer-checkbox:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        .layer-checkbox:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
         .dxf-layer-row {
             display: grid; grid-template-columns: 14px 14px minmax(0, 1fr) auto;
             align-items: center; column-gap: 8px; min-height: 30px; padding: 4px 2px;
@@ -232,7 +232,7 @@
         }
 
         .result-row { cursor: pointer; }
-        .result-row:hover { background: #eef2ff; }
+        .result-row:hover { background: #eff6ff; }
         .layer-row:hover { background: #f8fafc; }
 
         /* ---- Right panel tabs (editor inspector pattern) ---- */
@@ -241,7 +241,7 @@
             color: #64748b; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer;
         }
         .panel-tab:hover { color: #1e293b; }
-        .panel-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 800; }
+        .panel-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 800; }
 
         /* ---- Settings popup (editor) ---- */
         .prop-popup-close { color: #94a3b8; background: transparent; border: none; cursor: pointer; padding: 2px; }
@@ -273,7 +273,7 @@
         .settings-check-input { accent-color: #111827; width: 17px; height: 17px; cursor: pointer; }
 
         .loader {
-            border: 4px solid #e2e8f0; border-top: 4px solid #4f46e5;
+            border: 4px solid #e2e8f0; border-top: 4px solid #2563eb;
             border-radius: 50%; width: 40px; height: 40px;
             animation: spin 0.9s linear infinite;
         }
@@ -291,7 +291,7 @@
         <!-- Sidebar (same rail as DXF Viewer) -->
         <aside id="app-sidebar" class="z-[80] w-[72px] bg-white border-r border-white shadow-lg flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex flex-col h-full relative">
             <div class="h-16 flex items-center px-6 border-b border-slate-200 shrink-0 w-64 cursor-pointer">
-                <i data-lucide="columns-2" class="text-indigo-600 w-6 h-6 shrink-0 -ml-0"></i>
+                <i data-lucide="columns-2" class="text-blue-600 w-6 h-6 shrink-0 -ml-0"></i>
                 <h1 class="text-lg font-bold text-slate-900 ml-4 whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text" data-i18n="appName">
                     DXF Compare
                 </h1>
@@ -335,14 +335,14 @@
                                 </div>
                                 <div>
                                     <h1 class="text-2xl font-bold text-slate-900 tracking-tight leading-tight" data-i18n="appName">CAD Compare</h1>
-                                    <p class="text-sm font-medium text-indigo-500 uppercase tracking-widest mt-0.5" data-i18n="compareSubtitle">DXF DWG - Drawing revision comparison</p>
+                                    <p class="text-sm font-medium text-blue-500 uppercase tracking-widest mt-0.5" data-i18n="compareSubtitle">DXF DWG - Drawing revision comparison</p>
                                 </div>
                             </div>
                         </div>
 
                         <details class="text-sm text-slate-600 leading-relaxed group border-b border-slate-300 pb-4">
                             <summary class="cursor-pointer list-none flex items-center gap-2 font-semibold text-slate-900 select-none">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-500 transition-transform group-open:rotate-90"></i>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500 transition-transform group-open:rotate-90"></i>
                                 <span id="ui-rule-title">What this tool does</span>
                             </summary>
 
@@ -363,30 +363,30 @@
                         <div class="bg-white p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
                             <div class="flex flex-col h-full">
-                                <div id="drop-a" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
+                                <div id="drop-a" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-500 hover:bg-blue-50/30 bg-slate-50/50 cursor-pointer transition-all">
                                     <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
                                         <i data-lucide="file-minus" class="w-8 h-8 text-slate-400 mb-1 transition-colors"></i>
                                         <div class="flex text-sm text-slate-600 justify-center font-medium">
-                                            <span class="text-indigo-600 font-semibold" data-i18n="dropAtitle">Version A</span>
+                                            <span class="text-blue-600 font-semibold" data-i18n="dropAtitle">Version A</span>
                                         </div>
                                         <p class="text-xs text-slate-500 font-medium mt-1" data-i18n="dropHint">Drop a .dxf or .dwg, or click to browse</p>
                                         <p class="text-xs text-slate-500 font-medium mt-1 truncate max-w-[300px]" id="file-a-name" data-i18n="noFileSelected">No file selected</p>
                                     </div>
-                                    <input type="file" id="input-a" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700">
+                                    <input type="file" id="input-a" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700">
                                 </div>
                             </div>
 
                             <div class="flex flex-col h-full">
-                                <div id="drop-b" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
+                                <div id="drop-b" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-500 hover:bg-blue-50/30 bg-slate-50/50 cursor-pointer transition-all">
                                     <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
                                         <i data-lucide="file-plus" class="w-8 h-8 text-slate-400 mb-1 transition-colors"></i>
                                         <div class="flex text-sm text-slate-600 justify-center font-medium">
-                                            <span class="text-indigo-600 font-semibold" data-i18n="dropBtitle">Version B</span>
+                                            <span class="text-blue-600 font-semibold" data-i18n="dropBtitle">Version B</span>
                                         </div>
                                         <p class="text-xs text-slate-500 font-medium mt-1" data-i18n="dropHint">Drop a .dxf or .dwg, or click to browse</p>
                                         <p class="text-xs text-slate-500 font-medium mt-1 truncate max-w-[300px]" id="file-b-name" data-i18n="noFileSelected">No file selected</p>
                                     </div>
-                                    <input type="file" id="input-b" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700">
+                                    <input type="file" id="input-b" accept=".dxf,.dwg" title="DXF or DWG" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700">
                                 </div>
                             </div>
 
@@ -406,10 +406,10 @@
                                     <div id="info-date-b" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
 
                                     <div class="hidden text-slate-500 font-medium" data-i18n="entitiesAlabel">Entities A:</div>
-                                    <div id="info-ents-a" class="hidden col-span-3 text-indigo-600 font-bold truncate">-</div>
+                                    <div id="info-ents-a" class="hidden col-span-3 text-blue-600 font-bold truncate">-</div>
 
                                     <div class="hidden text-slate-500 font-medium" data-i18n="entitiesBlabel">Entities B:</div>
-                                    <div id="info-ents-b" class="hidden col-span-3 text-indigo-600 font-bold truncate">-</div>
+                                    <div id="info-ents-b" class="hidden col-span-3 text-blue-600 font-bold truncate">-</div>
                                 </div>
 
                                 <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-start gap-2">
@@ -487,7 +487,7 @@
                         </div>
                     </div>
 
-                    <div id="alignment-hint" role="status" aria-live="polite" class="hidden absolute bottom-10 left-4 z-30 bg-indigo-50 text-indigo-700 text-xs px-3 py-2 rounded shadow"></div>
+                    <div id="alignment-hint" role="status" aria-live="polite" class="hidden absolute bottom-10 left-4 z-30 bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded shadow"></div>
                     <!-- Measure bottom bar (editor pattern; measure tool only) -->
                     <div id="measure-panel" class="measure-panel hidden">
                         <span class="measure-panel-title" data-i18n="measureTitle">Measure</span>
@@ -523,7 +523,7 @@
                     <!-- Layout panel (left, slides in like the editor Block Library) -->
                     <aside id="papers-panel" class="absolute bottom-7 left-0 w-72 bg-white border-r border-slate-200 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.08)] z-30 flex flex-col -translate-x-full transition-transform duration-300">
                         <div class="flex border-b border-slate-200 bg-slate-50 shrink-0 relative">
-                            <span class="flex-1 py-3 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 text-center" data-i18n="papersTitle">Layout</span>
+                            <span class="flex-1 py-3 text-xs font-bold text-blue-600 border-b-2 border-blue-600 text-center" data-i18n="papersTitle">Layout</span>
                             <button id="papers-close" class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded" title="Close" data-i18n-title="closeBtn">
                                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
                             </button>
@@ -553,9 +553,9 @@
                             <div class="p-3 border-b border-slate-200">
                                 <div class="flex items-center justify-between mb-1">
                                     <label class="text-[11px] font-bold text-slate-600" data-i18n="toleranceLabel">Match tolerance</label>
-                                    <span id="tol-value" class="text-[11px] font-mono text-indigo-600">1e-4</span>
+                                    <span id="tol-value" class="text-[11px] font-mono text-blue-600">1e-4</span>
                                 </div>
-                                <input id="tol-slider" type="range" min="-6" max="0" step="1" value="-4" class="w-full accent-indigo-600">
+                                <input id="tol-slider" type="range" min="-6" max="0" step="1" value="-4" class="w-full accent-blue-600">
                                 <p class="text-[10px] text-slate-400 mt-1" data-i18n="toleranceHint">Coordinates are rounded to this step (drawing units) before matching. Re-runs the comparison.</p>
                             </div>
                             <div class="p-3 flex-1 min-h-0 flex flex-col">
@@ -2605,7 +2605,7 @@
                 const sr = spaceResults[s.key];
                 const row = document.createElement('div');
                 const active = s.key === currentSpace;
-                row.className = 'result-row flex items-center gap-2 py-1.5 px-2 rounded ' + (active ? 'bg-indigo-50 font-bold text-indigo-700' : '');
+                row.className = 'result-row flex items-center gap-2 py-1.5 px-2 rounded ' + (active ? 'bg-blue-50 font-bold text-blue-700' : '');
                 let badge = '';
                 if (!singleFileMode && sr) {
                     if (sr.status === 'missingA') badge = `<span class="shrink-0 text-[9px] font-bold text-emerald-600 uppercase">${escapeHtml(tr('missingInA', 'missing in A'))}</span>`;
@@ -2619,7 +2619,7 @@
                         badge = `<span class="shrink-0 flex items-center gap-1 font-mono text-[10px]">${parts.join('')}</span>`;
                     }
                 }
-                row.innerHTML = `<i data-lucide="${s.key === 'model' ? 'box' : 'file'}" class="w-3.5 h-3.5 shrink-0 ${active ? 'text-indigo-600' : 'text-slate-400'}"></i>
+                row.innerHTML = `<i data-lucide="${s.key === 'model' ? 'box' : 'file'}" class="w-3.5 h-3.5 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}"></i>
                     <span class="flex-1 truncate" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>${badge}`;
                 row.addEventListener('click', () => switchSpace(s.key));
                 frag.appendChild(row);
@@ -3144,7 +3144,7 @@
                 fileState[slot] = f;
                 nameEl.textContent = f.name;
                 nameEl.classList.remove('text-slate-500');
-                nameEl.classList.add('text-indigo-600');
+                nameEl.classList.add('text-blue-600');
                 updateOpenButton();
             }
         }
@@ -3610,7 +3610,7 @@
                     const el = document.getElementById(id);
                     el.textContent = file.name;
                     el.classList.remove('text-slate-500');
-                    el.classList.add('text-indigo-600');
+                    el.classList.add('text-blue-600');
                 };
                 let fa = null, fb = null;
                 if (params.va && params.vb) {
@@ -3646,9 +3646,9 @@
                 banner.id = 'cde-regrant';
                 banner.className = 'mx-auto w-full max-w-5xl mt-4 px-4';
                 banner.innerHTML =
-                    '<div class="flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded p-3">' +
-                    '<i data-lucide="folder-lock" class="w-5 h-5 text-indigo-600 shrink-0"></i>' +
-                    '<span class="text-sm text-indigo-900 flex-1">' + tr('cdeRegrantMsg', 'The browser needs one click to re-open the project folder.') + '</span>' +
+                    '<div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded p-3">' +
+                    '<i data-lucide="folder-lock" class="w-5 h-5 text-blue-600 shrink-0"></i>' +
+                    '<span class="text-sm text-blue-900 flex-1">' + tr('cdeRegrantMsg', 'The browser needs one click to re-open the project folder.') + '</span>' +
                     '<button id="cde-regrant-btn" class="shrink-0 py-1.5 px-4 text-[13px] font-bold text-white bg-slate-900 hover:bg-slate-800 rounded transition">' + tr('cdeRegrantBtn', 'Open drawing') + '</button>' +
                     '</div>';
                 host.insertBefore(banner, host.firstChild);

@@ -1,0 +1,68 @@
+/* Opt-in shared theme. Include only on pages ready for both themes. */
+html[data-theme-enabled] { color-scheme: light; background: #fff; }
+html[data-theme-enabled].dark { color-scheme: dark; background: #171717; }
+.theme-toggle {
+    align-items: center; justify-content: center; width: 32px; height: 32px;
+    flex-shrink: 0; border-radius: 4px; color: #64748b;
+}
+.theme-toggle:hover { color: #2563eb; background: #f1f5f9; }
+.theme-toggle:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+@media screen {
+    /* Translated legal prose can replace its inline link classes. */
+    html[data-theme-enabled].dark .theme-info-copy a { color: #60a5fa; }
+    html[data-theme-enabled].dark .theme-info-copy a:hover { color: #93c5fd; }
+    html[data-theme-enabled].dark { --las-surface: #262626; --las-border: #404040; --las-text: #e5e5e5; }
+    /* Compatibility rules are restricted to injected shell components. */
+    .dark body > nav.fixed { background-color: #171717 !important; border-color: #404040 !important; box-shadow: none !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) :is(.bg-white, .bg-white\/50, .bg-white\/80) { background-color: #262626 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .bg-slate-50 { background-color: #404040 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) :is(.bg-blue-50, .bg-blue-50\/50, .bg-blue-50\/70) { background-color: rgba(59, 130, 246, .16) !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) :is(.border-slate-50, .border-slate-100, .border-slate-200) { border-color: #404040 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-slate-900 { color: #e5e5e5 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-slate-700 { color: #d4d4d4 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) :is(.text-slate-600, .text-slate-500) { color: #a3a3a3 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-blue-700 { color: #93c5fd !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-blue-600 { color: #60a5fa !important; }
+    .dark :is(body > nav, body > footer) :is(.hover\:bg-white:hover, .hover\:bg-slate-50:hover, .hover\:bg-slate-100:hover, .hover\:bg-white\/80:hover) { background-color: #404040 !important; }
+    .dark :is(body > nav, body > footer) .hover\:bg-blue-50:hover { background-color: rgba(59, 130, 246, .16) !important; }
+    .dark :is(body > nav, body > footer) :is(.hover\:text-slate-900:hover) { color: #e5e5e5 !important; }
+    .dark body > nav .bg-slate-900 { background-color: #2563eb !important; }
+    .dark body > nav .bg-slate-900:hover { background-color: #1d4ed8 !important; }
+    .dark body > footer { background-color: #171717; border-color: #404040 !important; }
+    .dark body > nav.backdrop-blur-md { background-color: rgba(23, 23, 23, .85) !important; }
+    .dark #cookie-banner { background-color: #262626; border-color: #404040; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-slate-800 { color: #e5e5e5 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .text-slate-400 { color: #a3a3a3 !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) :is(.hover\:text-blue-800:hover, .hover\:text-blue-600:hover) { color: #93c5fd !important; }
+    .dark :is(body > nav, body > footer, #cookie-banner) .hover\:text-slate-800:hover { color: #fafafa !important; }
+    .dark .theme-toggle { color: #a3a3a3; }
+    .dark .theme-toggle:hover { color: #fafafa; background: #404040; }
+    html[data-theme-enabled] .spinner { border-color: rgba(59, 130, 246, .3); border-top-color: #2563eb; }
+    html[data-theme-enabled] .drop-zone.dragover { border-color: #3b82f6; background-color: #dbeafe; }
+    html[data-theme-enabled].dark .drop-zone.dragover { border-color: #60a5fa; background-color: rgba(59, 130, 246, .16); }
+    html[data-theme-enabled] .list-item-active { background-color: #dbeafe !important; color: #1d4ed8 !important; border-color: #bfdbfe !important; }
+    html[data-theme-enabled].dark .list-item-active { background-color: rgba(59, 130, 246, .16) !important; color: #93c5fd !important; border-color: #3b82f6 !important; }
+    html[data-theme-enabled] .shadow-logo { filter: drop-shadow(0px 5px 5px rgba(59, 130, 246, .3)); }
+    html[data-theme-enabled].dark ::-webkit-scrollbar,
+    html[data-theme-enabled].dark ::-webkit-scrollbar-corner { background: #262626; }
+    html[data-theme-enabled].dark ::-webkit-scrollbar-thumb { background: #525252; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-theme-enabled] *, html[data-theme-enabled] *::before, html[data-theme-enabled] *::after {
+        transition-duration: 0s !important; animation-duration: 0s !important;
+    }
+}
+@media print {
+    /* Report apps use screen-only dark utilities, retaining their original
+       semantic colors instead of the simple tools' blanket white reset. */
+    html[data-theme-enabled]:has(body.theme-report-print) { color-scheme: light !important; background: #fff !important; }
+    body.theme-report-print { background: #fff !important; color: #0f172a !important; }
+    body.theme-report-print :is(nav, footer, .no-print, .att-noprint, .fixed, #las-toasts, #cde-toasts, #toast) { display: none !important; }
+    html[data-theme-enabled] { color-scheme: light !important; background: white !important; }
+    .theme-print-light, .theme-print-light * {
+        color: #0f172a !important; background-color: white !important;
+        border-color: #cbd5e1 !important; box-shadow: none !important;
+    }
+    .theme-print-light > nav, .theme-print-light > footer,
+    .theme-print-light #cookie-banner, .theme-print-light #toast { display: none !important; }
+}
