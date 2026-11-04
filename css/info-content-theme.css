@@ -1,0 +1,28 @@
+/* Scoped to translated Help articles and FAQ answers. Screenshots and other
+   media retain their original colors; print keeps the light content styles. */
+@media screen {
+    .help-article { overflow-wrap: anywhere; }
+    .help-article pre { max-width: 100%; overflow-x: auto; }
+    html[data-theme-enabled].dark .help-article h1 { color: #f5f5f5; }
+    html[data-theme-enabled].dark .help-article h2 { color: #e5e5e5; border-color: #404040; }
+    html[data-theme-enabled].dark .help-article code { background-color: #404040; color: #93c5fd; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) a { color: #60a5fa; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) a:hover { color: #93c5fd; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .bg-slate-50 { background-color: #262626; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .text-slate-700 { color: #d4d4d4; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .border-slate-200 { border-color: #404040; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .border-slate-300 { border-color: #525252; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .bg-blue-50 { background-color: rgb(23 37 84 / .4); }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.text-blue-600, .text-accent) { color: #60a5fa; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .text-blue-700 { color: #93c5fd; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .border-blue-300 { border-color: #1e40af; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.bg-amber-50, .bg-amber-100) { background-color: rgb(69 26 3 / .4); }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.text-amber-600, .text-amber-700) { color: #fcd34d; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.border-amber-200, .border-amber-300) { border-color: #92400e; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .bg-emerald-50 { background-color: rgb(2 44 34 / .4); }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.text-emerald-600, .text-emerald-700) { color: #6ee7b7; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .border-emerald-300 { border-color: #065f46; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .bg-red-50 { background-color: rgb(69 10 10 / .4); }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) .text-red-700 { color: #fca5a5; }
+    html[data-theme-enabled].dark :is(.help-article, .faq-content) :is(.border-red-200, .border-red-300) { border-color: #991b1b; }
+}

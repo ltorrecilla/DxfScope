@@ -94,7 +94,7 @@ window.injectCookieBanner = function () {
             <button onclick="window.handleCookieChoice('declined')" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-800 transition-colors">
                 Opt-out
             </button>
-            <button onclick="window.handleCookieChoice('accepted')" class="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors">
+            <button onclick="window.handleCookieChoice('accepted')" class="text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors">
                 Accept
             </button>
         </div>
@@ -175,7 +175,9 @@ function getAutoPagePrefix() {
 window.pageScriptPrefix = getAutoPagePrefix();
 
 const BASE_GLOBAL = JSON.parse(JSON.stringify(window.GLOBAL_I18N || {}));
-let currentLang = localStorage.getItem('liteAECOLang') || 'en';
+const LANGS = ['en', 'de', 'es', 'fr', 'pt', 'it', 'ko', 'ja', 'zh']; //more-here
+let currentLang = 'en';
+currentLang = readPreferredLanguage();
 
 const CATEGORIES = [
     { id: 'all', label: 'ALL' },
@@ -250,8 +252,7 @@ window.renderAppIcon = function (app, sizeClass = 'w-4 h-4', extraClass = '') {
 
 let activeCategory = 'all';
 
-// Language selector. Add/remove codes here to enable/disable languages.
-const LANGS = ['en', 'de', 'es', 'fr', 'pt', 'it', 'ko', 'ja', 'zh']; //more-here
+// Language selector. Supported codes are defined beside currentLang.
 const LANG_NAMES = {
     en: 'English', de: 'German', es: 'Spanish', fr: 'French',
     pt: 'Portuguese', it: 'Italian', ko: 'Korean', ja: 'Japanese', zh: 'Chinese'
@@ -261,6 +262,9 @@ const LANG_NAMES = {
 function setLangLabel(code) {
     const label = document.getElementById('langToggleLabel');
     if (label) label.textContent = (code || 'en').toUpperCase();
+    const select = document.getElementById('langToggle');
+    if (select && select.tagName === 'SELECT') select.value = code;
+    renderLangMenu();
 }
 
 // Build the floating option list: "English (EN)".
@@ -272,7 +276,7 @@ function renderLangMenu() {
         const name = LANG_NAMES[code] || upper;
         const selected = code === currentLang;
         return `<li role="option" data-value="${code}" aria-selected="${selected}"
-            class="px-3 py-1.5 text-[12px] font-semibold text-slate-700 cursor-pointer hover:bg-indigo-50 whitespace-nowrap flex items-center justify-between gap-4 ${selected ? 'bg-indigo-50 text-indigo-700' : ''}">
+            class="px-3 py-1.5 text-[12px] font-semibold text-slate-700 cursor-pointer hover:bg-blue-50 whitespace-nowrap flex items-center justify-between gap-4 ${selected ? 'bg-blue-50 text-blue-700' : ''}">
             <span><span class="text-slate-400">${upper}</span> - ${name}</span>
         </li>`;
     }).join('');
@@ -298,10 +302,10 @@ function closeLangMenu() {
 function selectLang(code) {
     if (!code || !LANGS.includes(code)) return;
     closeLangMenu();
+    savePreferredLanguage(code);
     if (code === currentLang) return;
     currentLang = code;
     setLangLabel(code);
-    localStorage.setItem('liteAECOLang', code);
     window.loadLanguage(code, window.pageScriptPrefix);
 }
 
@@ -378,11 +382,8 @@ window.loadLanguage = function (lang, pageScriptPrefix) {
             activePageSnapshot = window.PAGE_I18N;
             applyLanguage();
         } else {
-            console.warn(`No translation files found for ${lang}. Reverting fully to English.`);
+            console.warn(`No translation files found for ${lang}. Using English without changing the saved preference.`);
             if (lang !== 'en') {
-                currentLang = 'en';
-                localStorage.setItem('liteAECOLang', 'en');
-                setLangLabel('en');
                 window.loadLanguage('en', pageScriptPrefix);
             } else {
                 activeGlobalSnapshot = window.GLOBAL_I18N;
@@ -393,16 +394,53 @@ window.loadLanguage = function (lang, pageScriptPrefix) {
     });
 };
 
-function autoDetectLanguage() {
-    if (!localStorage.getItem('liteAECOLang')) {
-        const browserLangFull = navigator.language || 'en';
-        const browserLang = browserLangFull.split('-')[0].toLowerCase();
-
-        currentLang = LANGS.includes(browserLang) ? browserLang : 'en';
-        localStorage.setItem('liteAECOLang', currentLang);
+// Read again on activation: another page may have changed the preference.
+function readPreferredLanguage() {
+    try {
+        const saved = localStorage.getItem('liteAECOLang');
+        if (LANGS.includes(saved)) return saved;
+    } catch (_) {
+        return currentLang;
     }
+    const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
+    return LANGS.includes(browserLang) ? browserLang : 'en';
+}
+
+function savePreferredLanguage(code) {
+    try {
+        if (localStorage.getItem('liteAECOLang') !== code) {
+            localStorage.setItem('liteAECOLang', code);
+        }
+    } catch (_) { /* Keep the current page usable when storage is unavailable. */ }
+}
+
+function autoDetectLanguage() {
+    currentLang = readPreferredLanguage();
+    savePreferredLanguage(currentLang);
     setLangLabel(currentLang);
 }
+
+function syncPreferredLanguage() {
+    // Each page's boot loads its own dictionary after its UI is ready.
+    if (document.readyState === 'loading') return;
+    const code = readPreferredLanguage();
+    if (code === currentLang) return;
+    currentLang = code;
+    setLangLabel(code);
+    window.loadLanguage(code, window.pageScriptPrefix);
+}
+
+window.addEventListener('storage', event => {
+    if (event.key !== 'liteAECOLang' && event.key !== null) return;
+    if (event.storageArea && event.storageArea !== window.localStorage) return;
+    syncPreferredLanguage();
+});
+// Cover restored history entries and tabs that were suspended while hidden.
+window.addEventListener('pageshow', syncPreferredLanguage);
+window.addEventListener('focus', syncPreferredLanguage);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncPreferredLanguage();
+});
 
 function getTranslations() {
     const curGlobal = window.GLOBAL_I18N || {};
@@ -677,12 +715,12 @@ window.injectUI = function (options = {}) {
                 <div class="hidden md:flex items-center gap-3 h-full">
     
                     ${showNews ? `
-                    <a href="https://liteaeco.com/news/" target="_blank" rel="noopener noreferrer" class="text-[12px] font-bold uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors px-2" id="ui-link-news">
+                    <a href="https://liteaeco.com/news/" target="_blank" rel="noopener noreferrer" class="text-[12px] font-bold uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors px-2" id="ui-link-news">
                         News
                     </a>` : ''}
                     <div id="langToggleWrap" class="relative">
                         <button id="langToggle" type="button" aria-haspopup="listbox" aria-expanded="false"
-                            class="flex items-center gap-1 bg-white/50 backdrop-blur-sm border border-slate-200 text-slate-700 text-[12px] rounded focus:outline-none focus:ring-2 focus:ring-indigo-500/50 py-1 px-2 cursor-pointer font-semibold uppercase tracking-wide transition-colors hover:bg-white/80">
+                            class="flex items-center gap-1 bg-white/50 backdrop-blur-sm border border-slate-200 text-slate-700 text-[12px] rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50 py-1 px-2 cursor-pointer font-semibold uppercase tracking-wide transition-colors hover:bg-white/80">
                             <span id="langToggleLabel">EN</span>
                             <svg class="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                         </button>
@@ -763,6 +801,9 @@ window.injectUI = function (options = {}) {
             setupHelpButton();
         }
 
+        // Theme controls are available only on pages that load the shared theme.
+        if (window.LiteAECOTheme) window.LiteAECOTheme.installControls(nav);
+
         // ADD THIS LINE HERE: Render immediately with default labels
         if (typeof renderNav === 'function') renderNav();
         applyUiLinkTarget(nav);
@@ -810,19 +851,19 @@ window.injectUI = function (options = {}) {
                 <div>
                     <h4 id="ui-footer-legal" data-i18n="footerLegal" class="font-semibold text-slate-900 text-sm mb-4 uppercase tracking-widest">Legal</h4>
                     <ul class="space-y-3 text-sm text-slate-600">
-                        <li><a href="${window.SITE_ROOT}info/terms-of-service.html" id="ui-link-terms" data-i18n="linkTerms" class="hover:text-indigo-600 transition-colors">Terms of Service</a></li>
-                        <li><a href="${window.SITE_ROOT}info/privacy-policy.html" id="ui-link-privacy" data-i18n="linkPrivacy" class="hover:text-indigo-600 transition-colors">Privacy Policy</a></li>
-                        <li><a href="${window.SITE_ROOT}info/data-processing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-indigo-600 transition-colors">Data Processing</a></li>
-                        <li><a href="${window.SITE_ROOT}info/fund.html" id="ui-link-media" data-i18n="linkDonate" class="hover:text-indigo-600 transition-colors">Donate</a></li>
+                        <li><a href="${window.SITE_ROOT}info/terms-of-service.html" id="ui-link-terms" data-i18n="linkTerms" class="hover:text-blue-600 transition-colors">Terms of Service</a></li>
+                        <li><a href="${window.SITE_ROOT}info/privacy-policy.html" id="ui-link-privacy" data-i18n="linkPrivacy" class="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+                        <li><a href="${window.SITE_ROOT}info/data-processing.html" id="ui-link-data" data-i18n="linkData" class="hover:text-blue-600 transition-colors">Data Processing</a></li>
+                        <li><a href="${window.SITE_ROOT}info/fund.html" id="ui-link-media" data-i18n="linkDonate" class="hover:text-blue-600 transition-colors">Donate</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 id="ui-footer-info" data-i18n="footerInfo" class="font-semibold text-slate-900 text-sm mb-4 uppercase tracking-widest">Information</h4>
                     <ul class="space-y-3 text-sm text-slate-600">
-                        <li><a href="${window.SITE_ROOT}info/contact.html" id="ui-link-contact" data-i18n="linkContact" class="hover:text-indigo-600 transition-colors">Contact</a></li>
-                        <li><a href="${window.SITE_ROOT}info/about.html" id="ui-link-about" data-i18n="linkAbout" class="hover:text-indigo-600 transition-colors">About</a></li>
-                        <li><a href="${window.SITE_ROOT}info/faqs.html" id="ui-link-faqs" data-i18n="linkFAQs" class="hover:text-indigo-600 transition-colors">FaQs</a></li>
-                        <li><a href="${window.SITE_ROOT}info/pricing.html" id="ui-link-pricing" data-i18n="linkPricing" class="hover:text-indigo-600 transition-colors">Pricing</a></li>
+                        <li><a href="${window.SITE_ROOT}info/contact.html" id="ui-link-contact" data-i18n="linkContact" class="hover:text-blue-600 transition-colors">Contact</a></li>
+                        <li><a href="${window.SITE_ROOT}info/about.html" id="ui-link-about" data-i18n="linkAbout" class="hover:text-blue-600 transition-colors">About</a></li>
+                        <li><a href="${window.SITE_ROOT}info/faqs.html" id="ui-link-faqs" data-i18n="linkFAQs" class="hover:text-blue-600 transition-colors">FaQs</a></li>
+                        <li><a href="${window.SITE_ROOT}info/pricing.html" id="ui-link-pricing" data-i18n="linkPricing" class="hover:text-blue-600 transition-colors">Pricing</a></li>
                     </ul>
                 </div>
             </div>`;
@@ -873,7 +914,7 @@ function renderNav() {
         if (cat.id === 'all') {
             return `
             <div class="relative group h-full flex items-center">
-                <a href="${cdeAllHref()}"${cdeTarget()} class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
+                <a href="${cdeAllHref()}"${cdeTarget()} class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
                     ${catLabel}
                 </a>
             </div>`;
@@ -883,7 +924,7 @@ function renderNav() {
         const appsInCat = APPS.filter(app => app.categories && app.categories.includes(cat.id));
         return `
             <div class="relative group h-full flex items-center">
-                <button onclick="setCategory('${cat.id}')" class="h-full px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
+                <button onclick="setCategory('${cat.id}')" class="h-full px-6 text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-300 focus:outline-none ${activeCategory === cat.id ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white'}">
                     ${catLabel}
                 </button>
                 <div class="absolute top-12 left-0 w-64 bg-white border border-slate-200 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 z-50">
@@ -898,11 +939,11 @@ function renderNav() {
             const isCurrentApp = window.location.pathname.includes(appFileName);
 
             return `
-                                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 p-2 hover:bg-indigo-50 rounded-none transition-colors group/item block ${isCurrentApp ? 'bg-indigo-50/50' : ''}">
-                                    <div class="w-8 h-8 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-indigo-300 text-indigo-600 shadow-sm' : 'border-slate-100 text-slate-500 group-hover/item:text-indigo-600'}">
+                                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-none transition-colors group/item block ${isCurrentApp ? 'bg-blue-50/50' : ''}">
+                                    <div class="w-8 h-8 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-blue-300 text-blue-600 shadow-sm' : 'border-slate-100 text-slate-500 group-hover/item:text-blue-600'}">
                                         ${window.renderAppIcon(app, 'w-4 h-4', 'transition-transform')}
                                     </div>
-                                    <span class="text-sm ${isCurrentApp ? 'font-bold text-indigo-700' : 'font-medium text-slate-700 group-hover/item:text-indigo-700'}">${appTitle}</span>
+                                    <span class="text-sm ${isCurrentApp ? 'font-bold text-blue-700' : 'font-medium text-slate-700 group-hover/item:text-blue-700'}">${appTitle}</span>
                                 </a>`
         }).join('')}
                     </div>
@@ -916,7 +957,7 @@ function renderNav() {
         desktopNav.innerHTML += `
             <div class="h-full flex items-center">
                 <a href="${window.SITE_ROOT}info/fund.html" id="ui-link-donate"
-                    class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent text-indigo-600 hover:text-indigo-700 hover:bg-white transition-all duration-300 focus:outline-none">
+                    class="h-full flex items-center px-6 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent text-blue-600 hover:text-blue-700 hover:bg-white transition-all duration-300 focus:outline-none">
                     ${donateLabel}
                 </a>
             </div>`;
@@ -929,7 +970,7 @@ function renderNav() {
 
         if (cat.id === 'all') {
             return `
-            <a href="${cdeAllHref()}"${cdeTarget()} class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 transition-colors focus:outline-none ${activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
+            <a href="${cdeAllHref()}"${cdeTarget()} class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 transition-colors focus:outline-none ${activeCategory === cat.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}">
                 ${catLabel}
             </a>`;
         }
@@ -943,17 +984,17 @@ function renderNav() {
             const isCurrentApp = window.location.pathname.includes(appFileName);
 
             return `
-                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 px-6 py-3 border-b border-slate-100 last:border-b-0 transition-colors ${isCurrentApp ? 'bg-indigo-50/70' : 'hover:bg-white'}">
-                    <div class="w-7 h-7 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-indigo-300 text-indigo-600 shadow-sm' : 'border-slate-100 text-slate-500'}">
+                <a href="${app.url}"${cdeTarget()} class="flex items-center gap-3 px-6 py-3 border-b border-slate-100 last:border-b-0 transition-colors ${isCurrentApp ? 'bg-blue-50/70' : 'hover:bg-white'}">
+                    <div class="w-7 h-7 bg-white border flex items-center justify-center shrink-0 ${isCurrentApp ? 'border-blue-300 text-blue-600 shadow-sm' : 'border-slate-100 text-slate-500'}">
                         ${window.renderAppIcon(app, 'w-4 h-4')}
                     </div>
-                    <span class="text-sm ${isCurrentApp ? 'font-bold text-indigo-700' : 'font-medium text-slate-700'}">${appTitle}</span>
+                    <span class="text-sm ${isCurrentApp ? 'font-bold text-blue-700' : 'font-medium text-slate-700'}">${appTitle}</span>
                 </a>`;
         }).join('');
 
         return `
             <div class="border-b border-slate-100">
-                <button onclick="toggleMobileCat('${cat.id}')" aria-expanded="${isOpen}" class="w-full flex items-center justify-between gap-3 text-left px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors focus:outline-none ${isOpen || activeCategory === cat.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}">
+                <button onclick="toggleMobileCat('${cat.id}')" aria-expanded="${isOpen}" class="w-full flex items-center justify-between gap-3 text-left px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors focus:outline-none ${isOpen || activeCategory === cat.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}">
                     <span>${catLabel}</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}"></i>
                 </button>
@@ -1022,7 +1063,7 @@ function setupHelpButton() {
     helpBtn.href = `${window.SITE_ROOT}info/help.html#${helpId}`;
 
     // Styling: Added 'mr-3' (margin-right) so it spaces nicely before the language toggle
-    helpBtn.className = "mr-3 p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors flex items-center justify-center";
+    helpBtn.className = "mr-3 p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors flex items-center justify-center";
     helpBtn.title = "Help & Documentation";
     helpBtn.target = "_blank";
     helpBtn.innerHTML = '<i data-lucide="circle-help" class="w-[18px] h-[18px]"></i>';

@@ -89,8 +89,8 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        // Mapping the old 'accent' to the new indigo palette to minimize JS changes
-                        accent: { DEFAULT: '#4f46e5', hover: '#4338ca', light: '#e0e7ff', lighthov: '#c7d2fe', lighter: '#eef2ff', }
+                        // Mapping the old 'accent' to the new blue palette to minimize JS changes
+                        accent: { DEFAULT: '#2563eb', hover: '#1d4ed8', light: '#e0e7ff', lighthov: '#bfdbfe', lighter: '#eff6ff', }
                     }
                 }
             }
@@ -110,13 +110,13 @@
         }
         .tab-btn:hover:not(:disabled) { background-color: #f1f5f9; color: #0f172a; }
         .tab-btn.active {
-            background-color: #e2e8f0; color: #4f46e5; font-weight: 600;
-            box-shadow: inset 3px 0 0 #4f46e5;
+            background-color: #e2e8f0; color: #2563eb; font-weight: 600;
+            box-shadow: inset 3px 0 0 #2563eb;
         }
         .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .tab-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; }
 
-        .dragover, .drop-zone.dragover { border-color: #4f46e5 !important; background-color: rgba(238, 242, 255, 0.5) !important; }
+        .dragover, .drop-zone.dragover { border-color: #2563eb !important; background-color: rgba(238, 242, 255, 0.5) !important; }
 
         /* Classifier-inspired CAD layer controls */
         .settings-help-icon{
@@ -140,7 +140,7 @@
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'><line x1='4' y1='8' x2='12' y2='8'/></svg>");
             background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
         }
-        .layer-checkbox:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        .layer-checkbox:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
         #inspector-resize-handle {
             position: absolute; left: -3px; top: 0; bottom: 0; width: 7px;
             cursor: ew-resize; z-index: 30;
@@ -166,9 +166,9 @@
             font-size: 10px; font-weight: 700; color: #334155;
         }
         .dxf-layer-lt-option svg { width: 48px; height: 14px; flex-shrink: 0; color: #475569; }
-        .dxf-layer-lt-option:hover { background: #eef2ff; }
-        .dxf-layer-lt-option.selected { background: #e0e7ff; color: #4f46e5; }
-        .dxf-layer-lt-option.selected svg { color: #4f46e5; }
+        .dxf-layer-lt-option:hover { background: #eff6ff; }
+        .dxf-layer-lt-option.selected { background: #e0e7ff; color: #2563eb; }
+        .dxf-layer-lt-option.selected svg { color: #2563eb; }
         .dxf-layer-weight-select {
             font-size: 10px; font-weight: 700; color: #475569; width: 100%;
             border: 1px solid transparent; border-radius: 4px; padding: 1px 2px;
@@ -201,7 +201,7 @@
             box-shadow: 0 0 0 1px #cbd5e1; cursor: pointer; display: inline-flex;
             align-items: center; justify-content: center; padding: 0;
         }
-        .dxf-layer-color-trigger:hover, .dxf-layer-color-option:hover { box-shadow: 0 0 0 2px #c7d2fe; }
+        .dxf-layer-color-trigger:hover, .dxf-layer-color-option:hover { box-shadow: 0 0 0 2px #bfdbfe; }
         .dxf-layer-color-option.is-original {
             background: linear-gradient(135deg, #ffffff 0 44%, #94a3b8 45% 55%, #ffffff 56% 100%);
         }
@@ -237,7 +237,7 @@
         }
         #selection-box-rect {
             position: absolute; display: none;
-            border: 1.5px dashed #4f46e5;
+            border: 1.5px dashed #2563eb;
             background: rgba(79, 70, 229, 0.07);
             pointer-events: none; box-sizing: border-box;
         }
@@ -260,7 +260,7 @@
         #text-edit-input {
             position: absolute; display: none; z-index: 40;
             margin: 0; padding: 2px 4px; resize: none; overflow: hidden;
-            border: 1.5px solid #4f46e5; border-radius: 3px;
+            border: 1.5px solid #2563eb; border-radius: 3px;
             background: #ffffff; color: #111827;
             box-shadow: 0 4px 16px rgba(79,70,229,0.25);
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -313,7 +313,7 @@
             color: #94a3b8; cursor: pointer; padding: 0; align-items: center; justify-content: center;
         }
         .space-tab-wrap:hover .space-tab-act { display: inline-flex; }
-        .space-tab-act:hover { color: #4f46e5; }
+        .space-tab-act:hover { color: #2563eb; }
         .space-tab-act.danger:hover { color: #dc2626; }
         .space-tab-act svg { width: 11px; height: 11px; }
         /* One-line CAD console above the space bar */
@@ -336,7 +336,7 @@
             font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
         }
         .viewer-btn:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; border-color: transparent; }
-        .viewer-btn.active { background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; font-weight: 600; }
+        .viewer-btn.active { background: #e0e7ff; color: #2563eb; border-color: #bfdbfe; font-weight: 600; }
         .viewer-toolbar-sep { width: 1px; height: 18px; background: #e2e8f0; margin: 0 2px; align-self: center; }
         .draw-layer-select {
             font-size: 10px; font-weight: 700; color: #334155; min-width: 110px; max-width: 110px;
@@ -362,7 +362,7 @@
             cursor: pointer; white-space: nowrap; transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
         }
         .space-switch-btn:hover, .layout-export-btn:hover { background: #f1f5f9; color: #1e293b; }
-        .space-switch-btn.active { background: #e0e7ff; border-color: #c7d2fe; color: #4f46e5; }
+        .space-switch-btn.active { background: #e0e7ff; border-color: #bfdbfe; color: #2563eb; }
         .layout-export-btn { background: #111827; color: #ffffff; border-color: #111827; }
         .layout-export-btn:hover:not(:disabled) { background: #1f2937; color: #ffffff; border-color: #1f2937; }
         .layout-export-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #334155; border-color: #334155; }
@@ -391,7 +391,7 @@
         .paper-size-field { display: flex; flex-direction: column; gap: 5px; }
         .paper-size-field label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
         .paper-size-control { width: 100%; font-size: 12px; font-weight: 600; color: #1e293b; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 7px 8px; }
-        .paper-size-control:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px #e0e7ff; }
+        .paper-size-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px #e0e7ff; }
         .paper-size-grid { display: grid; grid-template-columns: 1fr 1fr 96px; gap: 8px; }
         .paper-size-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
         .paper-size-action { border: 1px solid #e2e8f0; background: #ffffff; color: #334155; border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 800; cursor: pointer; }
@@ -408,8 +408,8 @@
             background: #f1f5f9; color: #1e293b; font-size: 12px; font-weight: 700;
             cursor: pointer; letter-spacing: 0.02em;
         }
-        .settings-tab:hover { border-color: #c7d2fe; color: #4f46e5; }
-        .settings-tab.active { background: #e0e7ff; border-color: #c7d2fe; color: #4f46e5; }
+        .settings-tab:hover { border-color: #bfdbfe; color: #2563eb; }
+        .settings-tab.active { background: #e0e7ff; border-color: #bfdbfe; color: #2563eb; }
         .settings-tab-panel { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 4px 0 8px; }
         .settings-section-title {
             font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
@@ -432,12 +432,12 @@
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
             background-repeat: no-repeat; background-position: center; background-size: 14px 14px;
         }
-        .settings-check input[type="checkbox"]:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+        .settings-check input[type="checkbox"]:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
         .settings-select {
             font-size: 12px; font-weight: 600; color: #1e293b; background: #ffffff;
             border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; cursor: pointer;
         }
-        .settings-select:focus { outline: none; border-color: #4f46e5; }
+        .settings-select:focus { outline: none; border-color: #2563eb; }
         .settings-swatches { display: inline-flex; gap: 6px; }
         .settings-swatch {
             width: 24px; height: 24px; border-radius: 6px; border: 1.5px solid #cbd5e1;
@@ -456,7 +456,7 @@
             color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
             cursor: pointer; transition: background 0.15s, border-color 0.15s;
         }
-        .settings-help-reset:hover { background: #eef2ff; border-color: #c7d2fe; }
+        .settings-help-reset:hover { background: #eff6ff; border-color: #bfdbfe; }
         .settings-help-reset i { width: 16px; height: 16px; }
 
         /* CAD measurement tool */
@@ -490,7 +490,7 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 10px; font-weight: 800; color: #111827; white-space: nowrap; pointer-events: none;
         }
-        .measure-snap-label { transform: translate(10px, -12px); color: #4f46e5; }
+        .measure-snap-label { transform: translate(10px, -12px); color: #2563eb; }
         .osnap-modes { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; }
         .measure-distance-label { transform: translateY(-14px); }
         #three-container.measure-active canvas { cursor: crosshair; }
@@ -512,7 +512,7 @@
         .sc-card h3 { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.5rem; }
         /* Hatch pattern picker */
         .hp-btn { display:flex; align-items:center; gap:8px; flex:1; min-width:0; border:1px solid #cbd5e1; border-radius:6px; background:#fff; padding:3px 6px; font-size:12px; color:#334155; cursor:pointer; text-align:left; }
-        .hp-btn:hover, .hp-btn:focus { border-color:#818cf8; outline:none; }
+        .hp-btn:hover, .hp-btn:focus { border-color:#60a5fa; outline:none; }
         .hp-btn .hp-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,monospace; }
         .hp-sw { width:28px; height:28px; flex:none; border:1px solid #e2e8f0; border-radius:4px; background:#fff; overflow:hidden; display:flex; }
         .hp-sw svg { width:100%; height:100%; }
@@ -521,14 +521,14 @@
         .viewer-btn.hidden { display: none !important; }
         .hp-head { padding:8px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:6px; }
         .hp-search { width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:12px; outline:none; }
-        .hp-search:focus { border-color:#818cf8; }
+        .hp-search:focus { border-color:#60a5fa; }
         .hp-tabs { display:flex; flex-wrap:wrap; gap:4px; }
         .hp-tab { border:1px solid #e2e8f0; border-radius:999px; padding:1px 8px; font-size:11px; background:#f8fafc; color:#475569; cursor:pointer; }
-        .hp-tab.on { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+        .hp-tab.on { background:#2563eb; border-color:#2563eb; color:#fff; }
         .hp-grid { padding:8px; overflow-y:auto; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
         .hp-tile { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px; border:1px solid transparent; border-radius:6px; cursor:pointer; background:none; min-width:0; }
         .hp-tile:hover { background:#f1f5f9; }
-        .hp-tile.on { border-color:#6366f1; background:#eef2ff; }
+        .hp-tile.on { border-color:#3b82f6; background:#eff6ff; }
         .hp-tile .hp-sw { width:52px; height:52px; }
         .hp-tile span { font-size:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,monospace; color:#475569; }
         .hp-empty { grid-column:1/-1; color:#94a3b8; text-align:center; padding:16px 0; }
@@ -548,7 +548,7 @@
         <!-- Sidebar -->
         <aside id="app-sidebar" class="z-[80] w-[72px] bg-white border-r border-white shadow-lg flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex flex-col h-full relative">
             <div class="h-16 flex items-center px-6 border-b border-slate-200 shrink-0 w-64 cursor-pointer">
-                <i data-lucide="drafting-compass" class="text-indigo-600 w-6 h-6 shrink-0 -ml-0"></i>
+                <i data-lucide="drafting-compass" class="text-blue-600 w-6 h-6 shrink-0 -ml-0"></i>
                 <h1 class="text-lg font-bold text-slate-900 ml-4 whitespace-nowrap opacity-0 transition-opacity duration-300 sidebar-text sb-text" data-i18n="appName">
                     DXF Viewer
                 </h1>
@@ -600,13 +600,13 @@
                                 </div>
                                 <div>
                                     <h1 class="text-2xl font-bold text-slate-900 tracking-tight leading-tight" data-i18n="appName">DXF Viewer</h1>
-                                    <p class="text-sm font-medium text-indigo-500 uppercase tracking-widest mt-0.5" data-i18n="viewerSubtitle">High-Performance 2D CAD Editor</p>
+                                    <p class="text-sm font-medium text-blue-500 uppercase tracking-widest mt-0.5" data-i18n="viewerSubtitle">High-Performance 2D CAD Editor</p>
                                 </div>
                             </div>
                         </div>
                         <details class="text-sm text-slate-600 leading-relaxed group border-b border-slate-300 pb-4">
                             <summary class="cursor-pointer list-none flex items-center gap-2 font-semibold text-slate-900 select-none">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-500 transition-transform group-open:rotate-90"></i>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500 transition-transform group-open:rotate-90"></i>
                                 <span id="ui-rule-title">What this tool does</span>
                             </summary>
 
@@ -626,17 +626,17 @@
 
                         <div class="bg-white p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex flex-col h-full">
-                                <div id="drop-zone" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 bg-slate-50/50 cursor-pointer transition-all">
+                                <div id="drop-zone" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-500 hover:bg-blue-50/30 bg-slate-50/50 cursor-pointer transition-all">
                                     <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
-                                        <i data-lucide="file-input" class="w-8 h-8 text-slate-400 mb-1 group-hover:text-indigo-500 transition-colors"></i>
+                                        <i data-lucide="file-input" class="w-8 h-8 text-slate-400 mb-1 group-hover:text-blue-500 transition-colors"></i>
                                         <div class="flex text-sm text-slate-600 justify-center font-medium">
-                                            <button type="button" class="text-indigo-600 hover:text-indigo-700 pointer-events-auto cursor-pointer font-semibold" id="file-picker-btn" data-i18n="loadDxfFile">Load .dxf file</button>
+                                            <button type="button" class="text-blue-600 hover:text-blue-700 pointer-events-auto cursor-pointer font-semibold" id="file-picker-btn" data-i18n="loadDxfFile">Load .dxf file</button>
                                             <p class="pl-1" data-i18n="orDragAndDrop">or drag and drop</p>
                                         </div>
                                         <p class="text-xs text-slate-500 font-medium mt-1 truncate max-w-[300px]" id="fileNameDisplay" data-i18n="noFileSelected">No file selected</p>
                                         <p id="dxf-loader-status" class="text-[10px] text-emerald-600 mt-1" data-i18n="dxfReadyStatus">Ready, drag a DXF file or click to browse</p>
                                     </div>
-                                    <input type="file" id="fileInput" accept=".dxf,.dwg,.pdf" title="DXF, DWG or PDF" data-i18n-title="fileInputTitle" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700">
+                                    <input type="file" id="fileInput" accept=".dxf,.dwg,.pdf" title="DXF, DWG or PDF" data-i18n-title="fileInputTitle" class="mt-4 block w-full max-w-[320px] cursor-pointer text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700">
                                 </div>
                                 <button type="button" id="btn-new-drawing-landing" class="mt-4 w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-[13px] font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all duration-300 rounded">
                                     <i data-lucide="file-plus-2" class="w-4 h-4"></i><span data-i18n="newDrawingBtn">New empty drawing</span>
@@ -656,10 +656,10 @@
                                     <div id="info-version" class="col-span-3 text-slate-800 font-semibold truncate">-</div>
 
                                     <div class="text-slate-500 font-medium" data-i18n="entitiesLabel">Entities:</div>
-                                    <div id="info-entities" class="col-span-3 text-indigo-600 font-bold truncate">-</div>
+                                    <div id="info-entities" class="col-span-3 text-blue-600 font-bold truncate">-</div>
 
                                     <div class="text-slate-500 font-medium" data-i18n="layersLabel">Layers:</div>
-                                    <div id="info-layers" class="col-span-3 text-indigo-600 font-bold truncate">-</div>
+                                    <div id="info-layers" class="col-span-3 text-blue-600 font-bold truncate">-</div>
                                 </div>
 
                                 <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-start gap-2">
@@ -687,7 +687,7 @@
                         <p class="text-sm text-slate-600" data-i18n="scHowToBody">With a drawing open, just start typing, the console at the bottom picks up the letters. Confirm with Enter or Space to run the command, Esc to cancel. Example: type L then Enter to start a line, TR to trim.</p>
                     </div>
                     <input id="shortcuts-search" type="text" spellcheck="false" autocomplete="off"
-                           class="w-full md:w-80 mb-5 px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-indigo-500"
+                           class="w-full md:w-80 mb-5 px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-blue-500"
                            placeholder="Filter shortcuts..." data-i18n-placeholder="scSearchPlaceholder" />
                     <div id="shortcuts-sections" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     <p id="shortcuts-no-results" class="hidden text-sm text-slate-400 mt-4" data-i18n="scNoResults">No shortcuts match your filter.</p>
@@ -712,29 +712,29 @@
                             </div>
                             <label class="flex flex-col gap-1 text-xs">
                                 <span class="font-semibold text-slate-600" data-i18n="pdfPageLabel">Page</span>
-                                <select id="pdf-import-page" class="border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-indigo-400"></select>
+                                <select id="pdf-import-page" class="border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-400"></select>
                             </label>
                             <label class="flex flex-col gap-1 text-xs">
                                 <span class="font-semibold text-slate-600" data-i18n="pdfLayerLabel">Import onto layer</span>
-                                <input id="pdf-import-layer" value="PDF-IMPORT" class="border border-slate-300 rounded px-2 py-1.5 text-xs font-mono outline-none focus:border-indigo-400" />
+                                <input id="pdf-import-layer" value="PDF-IMPORT" class="border border-slate-300 rounded px-2 py-1.5 text-xs font-mono outline-none focus:border-blue-400" />
                             </label>
                             <label class="flex flex-col gap-1 text-xs">
                                 <span class="font-semibold text-slate-600" data-i18n="pdfFillsLabel">Filled areas</span>
-                                <select id="pdf-import-fills" class="border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-indigo-400">
+                                <select id="pdf-import-fills" class="border border-slate-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-400">
                                     <option value="hatch" data-i18n="pdfFillsHatch">Solid hatches</option>
                                     <option value="outline" data-i18n="pdfFillsOutline">Outlines only</option>
                                     <option value="skip" data-i18n="pdfFillsSkip">Ignore</option>
                                 </select>
                             </label>
                             <label class="flex items-start gap-2 text-xs cursor-pointer">
-                                <input id="pdf-import-text" type="checkbox" checked class="mt-0.5 accent-indigo-600" />
+                                <input id="pdf-import-text" type="checkbox" checked class="mt-0.5 accent-blue-600" />
                                 <span>
                                     <span class="font-semibold text-slate-600" data-i18n="pdfTextLabel">Import text</span>
                                     <span class="block text-[11px] text-slate-400 leading-snug" data-i18n="pdfTextNote">Onto its own layer, so it can be frozen separately. Text the exporter converted to outlines arrives as linework instead, nothing can recover it.</span>
                                 </span>
                             </label>
                             <label class="flex items-start gap-2 text-xs cursor-pointer">
-                                <input id="pdf-import-tidy" type="checkbox" checked class="mt-0.5 accent-indigo-600" />
+                                <input id="pdf-import-tidy" type="checkbox" checked class="mt-0.5 accent-blue-600" />
                                 <span>
                                     <span class="font-semibold text-slate-600" data-i18n="pdfTidyLabel">Reassemble linework</span>
                                     <span class="block text-[11px] text-slate-400 leading-snug" data-i18n="pdfTidyNote">Recovers arcs, drops duplicated paths and welds touching segments into polylines. Turn off to keep the PDF's exact structure.</span>
@@ -753,16 +753,16 @@
                         <!-- Same shape as the Properties / CAD Layers header: one full-width
                              tab in the active style, with the close button floated over it. -->
                         <div class="flex border-b border-slate-200 bg-slate-50 shrink-0 relative">
-                            <span class="flex-1 py-3 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 text-center" data-i18n="blockLibrary">Block Library</span>
+                            <span class="flex-1 py-3 text-xs font-bold text-blue-600 border-b-2 border-blue-600 text-center" data-i18n="blockLibrary">Block Library</span>
                             <button id="block-library-close" class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded" title="Close" data-i18n-title="closeBtn">
                                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
                         <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-2 text-xs">
                             <label class="flex items-center gap-1"><span class="text-slate-500" data-i18n="insertScaleLabel">Scale</span>
-                                <input id="lib-insert-scale" type="number" step="any" min="0.0001" value="1" class="w-14 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-indigo-400" /></label>
+                                <input id="lib-insert-scale" type="number" step="any" min="0.0001" value="1" class="w-14 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-blue-400" /></label>
                             <label class="flex items-center gap-1"><span class="text-slate-500" data-i18n="insertRotLabel">Rotation</span>
-                                <input id="lib-insert-rotation" type="number" step="any" value="0" class="w-14 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-indigo-400" /><span class="text-slate-400">°</span></label>
+                                <input id="lib-insert-rotation" type="number" step="any" value="0" class="w-14 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-blue-400" /><span class="text-slate-400">°</span></label>
                         </div>
                         <div id="block-library-list" class="flex-1 overflow-y-auto scroller p-3 flex flex-col gap-2"></div>
                         <p id="block-library-empty" class="text-slate-400 italic text-center px-4 py-8 text-xs hidden" data-i18n="blocksEmpty">No blocks in this drawing yet. Select objects and use “Create block”.</p>
@@ -824,7 +824,7 @@
                             <div id="purge-section" class="border-t border-slate-200 pt-4">
                                 <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2" data-i18n="healthPurgeTitle">Purge</h3>
                                 <p class="text-[11px] text-slate-500 mb-2" data-i18n="healthPurgeHint">Remove unused layers, blocks, linetypes, text styles and dimension styles. Pending edits are kept.</p>
-                                <button id="btn-purge-find" class="w-full flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors">
+                                <button id="btn-purge-find" class="w-full flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors">
                                     <i data-lucide="search" class="w-3.5 h-3.5"></i><span data-i18n="purgeFindBtn">Find unused items</span>
                                 </button>
                                 <div id="purge-list" class="hidden mt-2 flex-col gap-1 max-h-56 overflow-y-auto scroller border border-slate-200 rounded px-2 py-1 text-[11px]"></div>
@@ -846,7 +846,7 @@
                                         </label>
                                         <span class="text-slate-500" data-i18n="healthTinyMaxSize">Max size</span>
                                         <input id="tiny-threshold" type="number" step="any" min="0" value="0.1"
-                                            class="w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-400 bg-white text-slate-700" />
+                                            class="w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-blue-400 bg-white text-slate-700" />
                                         <span class="text-slate-400" id="tiny-units"></span>
                                     </div>
                                     <label class="flex items-center gap-2 cursor-pointer">
@@ -865,7 +865,7 @@
                                         <div class="flex items-center gap-2">
                                             <span class="text-slate-500 w-36 shrink-0" data-i18n="cleanTolerance">Match tolerance</span>
                                             <input id="clean-tolerance" type="number" step="any" min="0" value="0.000001"
-                                                class="w-28 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-400 bg-white text-slate-700" />
+                                                class="w-28 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-blue-400 bg-white text-slate-700" />
                                             <span class="text-slate-400" id="clean-tol-units"></span>
                                         </div>
                                         <div class="flex items-center gap-x-3 gap-y-1 flex-wrap">
@@ -882,7 +882,7 @@
                                 </label>
                                 <div id="tiny-layers" class="hidden flex-col gap-0.5 max-h-32 overflow-y-auto scroller border border-slate-200 rounded px-2 py-1 mb-2"></div>
                                 <div class="grid grid-cols-2 gap-2 mt-2">
-                                    <button id="btn-clean-find" class="flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors">
+                                    <button id="btn-clean-find" class="flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors">
                                         <i data-lucide="scan-search" class="w-3.5 h-3.5"></i><span data-i18n="cleanFindBtn">Find</span>
                                     </button>
                                     <button id="btn-clean-apply" class="flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
@@ -902,9 +902,9 @@
                             <div class="settings-content flex-1 bg-white" style="padding: 12px 14px 14px; overflow-y:auto;">
                                 <div class="flex items-center gap-2 mb-3 text-xs">
                                     <label class="flex items-center gap-1"><span class="text-slate-500" data-i18n="insertScaleLabel">Scale</span>
-                                        <input id="insert-scale" type="number" step="any" min="0.0001" value="1" class="w-16 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-indigo-400" /></label>
+                                        <input id="insert-scale" type="number" step="any" min="0.0001" value="1" class="w-16 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-blue-400" /></label>
                                     <label class="flex items-center gap-1"><span class="text-slate-500" data-i18n="insertRotLabel">Rotation</span>
-                                        <input id="insert-rotation" type="number" step="any" value="0" class="w-16 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-indigo-400" /><span class="text-slate-400">°</span></label>
+                                        <input id="insert-rotation" type="number" step="any" value="0" class="w-16 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-blue-400" /><span class="text-slate-400">°</span></label>
                                 </div>
                                 <div id="blocks-list" class="flex flex-col gap-1 max-h-72 overflow-y-auto scroller"></div>
                                 <p id="blocks-empty" class="text-slate-400 italic text-center py-6 text-xs hidden" data-i18n="blocksEmpty">No blocks in this drawing yet. Select objects and use “Create block”.</p>
@@ -924,19 +924,19 @@
                                 <div class="flex flex-col gap-2 text-xs">
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="tableRowsLabel">Rows</span>
-                                        <input id="table-rows" type="number" step="1" min="1" value="4" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="table-rows" type="number" step="1" min="1" value="4" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="tableColsLabel">Columns</span>
-                                        <input id="table-cols" type="number" step="1" min="1" value="3" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="table-cols" type="number" step="1" min="1" value="3" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="tableColWidthLabel">Column width</span>
-                                        <input id="table-col-width" type="number" step="any" min="0.5" value="30" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="table-col-width" type="number" step="any" min="0.5" value="30" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="tableRowHeightLabel">Row height</span>
-                                        <input id="table-row-height" type="number" step="any" min="0.5" value="8" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="table-row-height" type="number" step="any" min="0.5" value="8" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <button id="table-popup-ok" class="viewer-btn mt-2" style="font-weight:700;" data-i18n="tablePopupPlace">Place table</button>
                                     <p class="text-[11px] text-slate-400" data-i18n="tablePopupHint">After confirming, click in the drawing to place the top-left corner. Double-click cells to fill them in.</p>
@@ -953,40 +953,40 @@
                             </div>
                             <div class="settings-content flex-1 bg-white" style="padding: 14px 16px 16px; overflow-y: auto;">
                                 <div class="grid grid-cols-2 gap-2 mb-3">
-                                    <button type="button" id="array-tab-rect" class="array-tab text-xs font-bold border border-indigo-500 bg-indigo-50 text-indigo-700 rounded-lg py-1.5" data-i18n="arrayTabRect">Rectangular</button>
-                                    <button type="button" id="array-tab-polar" class="array-tab text-xs font-bold border border-slate-200 text-slate-600 rounded-lg py-1.5 hover:border-indigo-400" data-i18n="arrayTabPolar">Polar</button>
+                                    <button type="button" id="array-tab-rect" class="array-tab text-xs font-bold border border-blue-500 bg-blue-50 text-blue-700 rounded-lg py-1.5" data-i18n="arrayTabRect">Rectangular</button>
+                                    <button type="button" id="array-tab-polar" class="array-tab text-xs font-bold border border-slate-200 text-slate-600 rounded-lg py-1.5 hover:border-blue-400" data-i18n="arrayTabPolar">Polar</button>
                                 </div>
                                 <div id="array-rect-fields" class="flex flex-col gap-2 text-xs">
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayColsLabel">Columns</span>
-                                        <input id="array-cols" type="number" step="1" min="1" value="3" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-cols" type="number" step="1" min="1" value="3" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayColSpacingLabel">Column spacing</span>
-                                        <input id="array-col-spacing" type="number" step="any" value="10" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-col-spacing" type="number" step="any" value="10" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayRowsLabel">Rows</span>
-                                        <input id="array-rows" type="number" step="1" min="1" value="2" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-rows" type="number" step="1" min="1" value="2" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayRowSpacingLabel">Row spacing</span>
-                                        <input id="array-row-spacing" type="number" step="any" value="10" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-row-spacing" type="number" step="any" value="10" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <p class="text-[11px] text-slate-400" data-i18n="arrayRectHint">Columns advance along +X, rows along +Y. Negative spacing flips the direction.</p>
                                 </div>
                                 <div id="array-polar-fields" class="flex flex-col gap-2 text-xs hidden">
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayCountLabel">Total items</span>
-                                        <input id="array-count" type="number" step="1" min="2" value="6" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-count" type="number" step="1" min="2" value="6" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-24" data-i18n="arrayAngleLabel">Fill angle</span>
-                                        <input id="array-total-angle" type="number" step="any" value="360" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="array-total-angle" type="number" step="any" value="360" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                         <span class="text-slate-400">&deg;</span>
                                     </label>
                                     <label class="flex items-center gap-2">
-                                        <input id="array-rotate-items" type="checkbox" checked class="accent-indigo-600" />
+                                        <input id="array-rotate-items" type="checkbox" checked class="accent-blue-600" />
                                         <span class="text-slate-500" data-i18n="arrayRotateItemsLabel">Rotate items as they are copied</span>
                                     </label>
                                     <p class="text-[11px] text-slate-400" data-i18n="arrayPolarHint">After Apply, click the array center on the drawing.</p>
@@ -1009,15 +1009,15 @@
                                 <div class="flex flex-col gap-2 text-xs">
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-14" data-i18n="hatchPatternLabel">Pattern</span>
-                                        <select id="hatch-pattern" class="border border-slate-300 rounded px-2 py-1 text-xs flex-1 bg-white text-slate-700 outline-none focus:border-indigo-400"></select>
+                                        <select id="hatch-pattern" class="border border-slate-300 rounded px-2 py-1 text-xs flex-1 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span id="hatch-scale-label" class="text-slate-500 w-14" data-i18n="hatchScaleLabel">Scale</span>
-                                        <input id="hatch-scale" type="number" step="any" min="0.0001" value="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="hatch-scale" type="number" step="any" min="0.0001" value="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                     </label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-14" data-i18n="hatchAngleLabel">Angle</span>
-                                        <input id="hatch-angle" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                        <input id="hatch-angle" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                         <span class="text-slate-400">°</span>
                                     </label>
                                     <div id="hatch-gradient-rows" class="flex flex-col gap-2 hidden">
@@ -1025,20 +1025,20 @@
                                             <span class="text-slate-500 w-14" data-i18n="hatchColorsLabel">Colours</span>
                                             <input id="hatch-color1" type="color" value="#0000ff" class="hp-color" title="Colour 1" data-i18n-title="hatchColor1Title" />
                                             <input id="hatch-color2" type="color" value="#ffff00" class="hp-color" title="Colour 2" data-i18n-title="hatchColor2Title" />
-                                            <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><input id="hatch-onecolor" type="checkbox" class="accent-indigo-600" /><span data-i18n="hatchOneColor">One colour</span></label>
+                                            <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><input id="hatch-onecolor" type="checkbox" class="accent-blue-600" /><span data-i18n="hatchOneColor">One colour</span></label>
                                         </div>
                                         <div id="hatch-tint-row" class="flex items-center gap-2 hidden">
                                             <span class="text-slate-500 w-14" data-i18n="hatchTintLabel">Shade</span>
                                             <span class="text-[10px] text-slate-400" data-i18n="hatchTintDark">Dark</span>
-                                            <input id="hatch-tint" type="range" min="0" max="1" step="0.05" value="0.5" class="flex-1 accent-indigo-600" />
+                                            <input id="hatch-tint" type="range" min="0" max="1" step="0.05" value="0.5" class="flex-1 accent-blue-600" />
                                             <span class="text-[10px] text-slate-400" data-i18n="hatchTintLight">Light</span>
                                         </div>
-                                        <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><span class="w-14"></span><input id="hatch-centered" type="checkbox" checked class="accent-indigo-600" /><span data-i18n="hatchCentered">Centred</span></label>
+                                        <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><span class="w-14"></span><input id="hatch-centered" type="checkbox" checked class="accent-blue-600" /><span data-i18n="hatchCentered">Centred</span></label>
                                     </div>
-                                    <label id="hatch-double-row" class="flex items-center gap-1 text-slate-600 cursor-pointer hidden"><span class="w-14"></span><input id="hatch-double" type="checkbox" class="accent-indigo-600" /><span data-i18n="hatchDouble">Double (crosshatch)</span></label>
+                                    <label id="hatch-double-row" class="flex items-center gap-1 text-slate-600 cursor-pointer hidden"><span class="w-14"></span><input id="hatch-double" type="checkbox" class="accent-blue-600" /><span data-i18n="hatchDouble">Double (crosshatch)</span></label>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-14" data-i18n="hatchStyleLabel">Islands</span>
-                                        <select id="hatch-style" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white text-slate-700 outline-none focus:border-indigo-400">
+                                        <select id="hatch-style" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white text-slate-700 outline-none focus:border-blue-400">
                                             <option value="0" data-i18n="hatchStyleNormal">Normal (alternate)</option>
                                             <option value="1" data-i18n="hatchStyleOuter">Outer only</option>
                                             <option value="2" data-i18n="hatchStyleIgnore">Ignore islands</option>
@@ -1046,27 +1046,27 @@
                                     </label>
                                     <div id="hatch-origin-row" class="flex items-center gap-1">
                                         <span class="text-slate-500 w-14 shrink-0" data-i18n="hatchOriginLabel">Origin</span>
-                                        <input id="hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-indigo-400 w-16 min-w-0" title="Origin X" />
-                                        <input id="hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-indigo-400 w-16 min-w-0" title="Origin Y" />
+                                        <input id="hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" />
+                                        <input id="hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" />
                                         <button type="button" id="hatch-origin-pick" class="viewer-btn" title="Pick the origin point" data-i18n-title="hatchOriginPickTitle"><i data-lucide="crosshair" class="w-3.5 h-3.5"></i></button>
                                         <button type="button" id="hatch-origin-bl" class="viewer-btn" title="Bottom-left corner of the boundary" data-i18n-title="hatchOriginBlTitle"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i></button>
                                         <button type="button" id="hatch-origin-c" class="viewer-btn" title="Centre of the boundary" data-i18n-title="hatchOriginCTitle"><i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i></button>
                                     </div>
                                     <label class="flex items-center gap-2">
                                         <span class="text-slate-500 w-14" data-i18n="hatchGapLabel">Gap</span>
-                                        <input id="hatch-gap" type="number" step="any" min="0" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" title="Gaps up to this size count as closed (pick points)" data-i18n-title="hatchGapTitle" />
+                                        <input id="hatch-gap" type="number" step="any" min="0" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" title="Gaps up to this size count as closed (pick points)" data-i18n-title="hatchGapTitle" />
                                         <label class="flex items-center gap-1 ml-2 text-slate-600 cursor-pointer">
-                                            <input id="hatch-islands" type="checkbox" checked class="accent-indigo-600" />
+                                            <input id="hatch-islands" type="checkbox" checked class="accent-blue-600" />
                                             <span data-i18n="hatchIslandsLabel">Islands</span>
                                         </label>
                                     </label>
                                     <label class="flex items-center gap-1 text-slate-600 cursor-pointer" title="Linked hatches follow their boundary objects when these are edited" data-i18n-title="hatchAssocTitle">
-                                        <span class="w-14"></span><input id="hatch-assoc" type="checkbox" checked class="accent-indigo-600" /><span data-i18n="hatchAssocLabel">Linked to boundary</span>
+                                        <span class="w-14"></span><input id="hatch-assoc" type="checkbox" checked class="accent-blue-600" /><span data-i18n="hatchAssocLabel">Linked to boundary</span>
                                     </label>
                                     <div id="hatch-warn" class="hp-warn hidden"></div>
                                 </div>
                                 <div id="hatch-status" class="text-[11px] text-slate-500 mt-3"></div>
-                                <button id="btn-hatch-pick" class="mt-3 w-full flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors" title="P" >
+                                <button id="btn-hatch-pick" class="mt-3 w-full flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors" title="P" >
                                     <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i><span data-i18n="hatchPickBtn">Pick points (P)</span>
                                 </button>
                                 <button id="btn-hatch-create" class="mt-2 w-full flex justify-center items-center gap-2 py-2 px-3 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
@@ -1283,7 +1283,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><line x1="13" x2="21" y1="3" y2="11"/></svg>
                             </button>
                             <input id="modify-param" type="number" step="any" title="Offset distance / fillet radius / chamfer distance" data-i18n-title="modifyParamTitle"
-                                class="hidden w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-400 bg-white text-slate-700" value="1" />
+                                class="hidden w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-blue-400 bg-white text-slate-700" value="1" />
                             <span class="viewer-toolbar-sep"></span>
                             <button class="viewer-btn" id="btn-blocks" title="Blocks, insert, explode, manage" data-i18n-title="blocksTitle">
                                 <i data-lucide="shapes" class="w-3.5 h-3.5"></i>
@@ -1309,7 +1309,7 @@
                             <div id="inspector-resize-handle" title="Drag to resize" data-i18n-title="dragToResizeTitle"></div>
                             
                             <div class="flex border-b border-slate-200 bg-slate-50 shrink-0 relative">
-                                <button id="panel-tab-props" class="flex-1 py-3 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 transition-colors" data-i18n="propertiesTab">Properties</button>
+                                <button id="panel-tab-props" class="flex-1 py-3 text-xs font-bold text-blue-600 border-b-2 border-blue-600 transition-colors" data-i18n="propertiesTab">Properties</button>
                                 <button id="panel-tab-layers" class="flex-1 py-3 text-xs font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition-colors" data-i18n="cadLayersTab">CAD Layers</button>
                                 
                                 <button id="btn-close-panel" class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded">
@@ -1334,7 +1334,7 @@
                                             <div id="val-type" class="text-slate-900 font-medium text-right">-</div>
                                             
                                             <div class="text-slate-500" data-i18n="layerLabel">Layer</div>
-                                            <select id="val-layer" class="text-indigo-600 font-semibold text-right truncate text-xs border border-transparent hover:border-slate-300 rounded px-1 py-0.5 bg-transparent cursor-pointer outline-none max-w-[150px]" style="justify-self:end;" title="Move selection to layer" data-i18n-title="moveToLayerTitle"><option>-</option></select>
+                                            <select id="val-layer" class="text-blue-600 font-semibold text-right truncate text-xs border border-transparent hover:border-slate-300 rounded px-1 py-0.5 bg-transparent cursor-pointer outline-none max-w-[150px]" style="justify-self:end;" title="Move selection to layer" data-i18n-title="moveToLayerTitle"><option>-</option></select>
                                             
                                             <div class="text-slate-500" data-i18n="colorLabel">Color</div>
                                             <div class="text-right flex items-center justify-end gap-2">
@@ -1354,15 +1354,15 @@
                                     <div id="prop-text-section" class="flex flex-col gap-2 hidden">
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="textContentSection">Text Content</h3>
                                         <textarea id="prop-text-input" rows="3" spellcheck="false"
-                                            class="w-full text-sm font-mono border border-slate-300 rounded p-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y bg-white text-slate-900"
+                                            class="w-full text-sm font-mono border border-slate-300 rounded p-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-y bg-white text-slate-900"
                                             placeholder="Edit text…"></textarea>
-                                        <button id="prop-text-apply" class="self-end text-xs font-semibold px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors" data-i18n="applyTextBtn">Apply</button>
+                                        <button id="prop-text-apply" class="self-end text-xs font-semibold px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors" data-i18n="applyTextBtn">Apply</button>
                                         <div class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-10" data-i18n="textSizeLabel">Size</span>
                                             <input id="prop-text-size" type="number" step="any" min="0.001"
-                                                class="w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-400 bg-white text-slate-700" />
+                                                class="w-20 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-blue-400 bg-white text-slate-700" />
                                             <span class="text-slate-500 ml-2" data-i18n="textFontLabel">Font</span>
-                                            <select id="prop-text-font" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-indigo-400"></select>
+                                            <select id="prop-text-font" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                         </div>
                                         <div class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-10" data-i18n="textAlignLabel">Align</span>
@@ -1378,7 +1378,7 @@
                                     <div id="prop-insert-section" class="flex flex-col gap-2 hidden">
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="blockSection">Block</h3>
                                         <div id="prop-insert-info" class="text-xs text-slate-600"></div>
-                                        <button id="btn-explode-insert" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors">
+                                        <button id="btn-explode-insert" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors">
                                             <i data-lucide="package-open" class="w-3.5 h-3.5"></i><span data-i18n="explodeBtn">Explode</span>
                                         </button>
                                     </div>
@@ -1386,15 +1386,15 @@
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="tableSection">Table</h3>
                                         <label class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-16" data-i18n="tableRowsLabel">Rows</span>
-                                            <input id="prop-table-rows" type="number" step="1" min="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-20 font-mono outline-none focus:border-indigo-400" />
+                                            <input id="prop-table-rows" type="number" step="1" min="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-20 font-mono outline-none focus:border-blue-400" />
                                         </label>
                                         <label class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-16" data-i18n="tableColsLabel">Columns</span>
-                                            <input id="prop-table-cols" type="number" step="1" min="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-20 font-mono outline-none focus:border-indigo-400" />
+                                            <input id="prop-table-cols" type="number" step="1" min="1" class="border border-slate-300 rounded px-2 py-1 text-xs w-20 font-mono outline-none focus:border-blue-400" />
                                         </label>
                                         <div class="flex gap-2">
-                                            <button id="prop-table-merge" class="flex-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors" data-i18n="tableMergeBtn">Merge cells…</button>
-                                            <button id="prop-table-unmerge" class="flex-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors" data-i18n="tableUnmergeBtn">Unmerge…</button>
+                                            <button id="prop-table-merge" class="flex-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors" data-i18n="tableMergeBtn">Merge cells…</button>
+                                            <button id="prop-table-unmerge" class="flex-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors" data-i18n="tableUnmergeBtn">Unmerge…</button>
                                         </div>
                                         <p class="text-[11px] text-slate-400" data-i18n="tableSectionHint">Drag the diamond grips under the table to resize columns. Double-click a cell to edit its text.</p>
                                     </div>
@@ -1403,15 +1403,15 @@
                                         <div id="prop-hatch-info" class="text-xs text-slate-600"></div>
                                         <label class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-12" data-i18n="hatchPatternLabel">Pattern</span>
-                                            <select id="prop-hatch-pattern" class="border border-slate-300 rounded px-2 py-1 text-xs flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-indigo-400"></select>
+                                            <select id="prop-hatch-pattern" class="border border-slate-300 rounded px-2 py-1 text-xs flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                         </label>
                                         <label class="flex items-center gap-2 text-xs">
                                             <span id="prop-hatch-scale-label" class="text-slate-500 w-12" data-i18n="hatchScaleLabel">Scale</span>
-                                            <input id="prop-hatch-scale" type="number" step="any" min="0.0001" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                            <input id="prop-hatch-scale" type="number" step="any" min="0.0001" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                         </label>
                                         <label class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500 w-12" data-i18n="hatchAngleLabel">Angle</span>
-                                            <input id="prop-hatch-angle" type="number" step="any" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-indigo-400" />
+                                            <input id="prop-hatch-angle" type="number" step="any" class="border border-slate-300 rounded px-2 py-1 text-xs w-24 font-mono outline-none focus:border-blue-400" />
                                             <span class="text-slate-400">°</span>
                                         </label>
                                         <div class="flex flex-col gap-2 text-xs">
@@ -1420,20 +1420,20 @@
                                                 <span class="text-slate-500 w-12" data-i18n="hatchColorsLabel">Colours</span>
                                                 <input id="prop-hatch-color1" type="color" value="#0000ff" class="hp-color" title="Colour 1" data-i18n-title="hatchColor1Title" />
                                                 <input id="prop-hatch-color2" type="color" value="#ffff00" class="hp-color" title="Colour 2" data-i18n-title="hatchColor2Title" />
-                                                <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><input id="prop-hatch-onecolor" type="checkbox" class="accent-indigo-600" /><span data-i18n="hatchOneColor">One colour</span></label>
+                                                <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><input id="prop-hatch-onecolor" type="checkbox" class="accent-blue-600" /><span data-i18n="hatchOneColor">One colour</span></label>
                                             </div>
                                             <div id="prop-hatch-tint-row" class="flex items-center gap-2 hidden">
                                                 <span class="text-slate-500 w-12" data-i18n="hatchTintLabel">Shade</span>
                                                 <span class="text-[10px] text-slate-400" data-i18n="hatchTintDark">Dark</span>
-                                                <input id="prop-hatch-tint" type="range" min="0" max="1" step="0.05" value="0.5" class="flex-1 accent-indigo-600" />
+                                                <input id="prop-hatch-tint" type="range" min="0" max="1" step="0.05" value="0.5" class="flex-1 accent-blue-600" />
                                                 <span class="text-[10px] text-slate-400" data-i18n="hatchTintLight">Light</span>
                                             </div>
-                                            <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><span class="w-12"></span><input id="prop-hatch-centered" type="checkbox" checked class="accent-indigo-600" /><span data-i18n="hatchCentered">Centred</span></label>
+                                            <label class="flex items-center gap-1 text-slate-600 cursor-pointer"><span class="w-12"></span><input id="prop-hatch-centered" type="checkbox" checked class="accent-blue-600" /><span data-i18n="hatchCentered">Centred</span></label>
                                         </div>
-                                        <label id="prop-hatch-double-row" class="flex items-center gap-1 text-slate-600 cursor-pointer hidden"><span class="w-12"></span><input id="prop-hatch-double" type="checkbox" class="accent-indigo-600" /><span data-i18n="hatchDouble">Double (crosshatch)</span></label>
+                                        <label id="prop-hatch-double-row" class="flex items-center gap-1 text-slate-600 cursor-pointer hidden"><span class="w-12"></span><input id="prop-hatch-double" type="checkbox" class="accent-blue-600" /><span data-i18n="hatchDouble">Double (crosshatch)</span></label>
                                         <label class="flex items-center gap-2">
                                             <span class="text-slate-500 w-12" data-i18n="hatchStyleLabel">Islands</span>
-                                            <select id="prop-hatch-style" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white text-slate-700 outline-none focus:border-indigo-400">
+                                            <select id="prop-hatch-style" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white text-slate-700 outline-none focus:border-blue-400">
                                                 <option value="0" data-i18n="hatchStyleNormal">Normal (alternate)</option>
                                                 <option value="1" data-i18n="hatchStyleOuter">Outer only</option>
                                                 <option value="2" data-i18n="hatchStyleIgnore">Ignore islands</option>
@@ -1441,8 +1441,8 @@
                                         </label>
                                         <div id="prop-hatch-origin-row" class="flex items-center gap-1">
                                             <span class="text-slate-500 w-12 shrink-0" data-i18n="hatchOriginLabel">Origin</span>
-                                            <input id="prop-hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-indigo-400 w-16 min-w-0" title="Origin X" />
-                                            <input id="prop-hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-indigo-400 w-16 min-w-0" title="Origin Y" />
+                                            <input id="prop-hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" />
+                                            <input id="prop-hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" />
                                             <button type="button" id="prop-hatch-origin-pick" class="viewer-btn" title="Pick the origin point" data-i18n-title="hatchOriginPickTitle"><i data-lucide="crosshair" class="w-3.5 h-3.5"></i></button>
                                             <button type="button" id="prop-hatch-origin-bl" class="viewer-btn" title="Bottom-left corner of the boundary" data-i18n-title="hatchOriginBlTitle"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i></button>
                                             <button type="button" id="prop-hatch-origin-c" class="viewer-btn" title="Centre of the boundary" data-i18n-title="hatchOriginCTitle"><i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i></button>
@@ -1450,26 +1450,26 @@
                                         </div>
                                         <div id="prop-hatch-warn" class="hp-warn hidden"></div>
                                         <div class="flex gap-2">
-                                            <button type="button" id="prop-hatch-add" class="flex-1 flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors" title="Pick points to add areas to this hatch" data-i18n-title="hatchAddAreaTitle"><i data-lucide="square-plus" class="w-3.5 h-3.5"></i><span data-i18n="hatchAddArea">Add area</span></button>
-                                            <button type="button" id="prop-hatch-remove" class="flex-1 flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors" title="Click inside a boundary to remove it from this hatch" data-i18n-title="hatchRemoveAreaTitle"><i data-lucide="square-minus" class="w-3.5 h-3.5"></i><span data-i18n="hatchRemoveArea">Remove area</span></button>
+                                            <button type="button" id="prop-hatch-add" class="flex-1 flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors" title="Pick points to add areas to this hatch" data-i18n-title="hatchAddAreaTitle"><i data-lucide="square-plus" class="w-3.5 h-3.5"></i><span data-i18n="hatchAddArea">Add area</span></button>
+                                            <button type="button" id="prop-hatch-remove" class="flex-1 flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors" title="Click inside a boundary to remove it from this hatch" data-i18n-title="hatchRemoveAreaTitle"><i data-lucide="square-minus" class="w-3.5 h-3.5"></i><span data-i18n="hatchRemoveArea">Remove area</span></button>
                                         </div>
                                         <div id="prop-hatch-link-row" class="flex items-center gap-2 text-xs">
                                             <span id="prop-hatch-link-state" class="flex-1 text-slate-600"></span>
-                                            <button type="button" id="prop-hatch-select-src" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg" title="Select the objects this hatch follows" data-i18n-title="hatchSelectSrcTitle" data-i18n="hatchSelectSrc">Select boundary</button>
-                                            <button type="button" id="prop-hatch-unlink" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg" data-i18n="hatchUnlink">Unlink</button>
-                                            <button type="button" id="prop-hatch-relink" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg" title="Link again to the objects that match its boundary" data-i18n-title="hatchRelinkTitle" data-i18n="hatchRelink">Link</button>
+                                            <button type="button" id="prop-hatch-select-src" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg" title="Select the objects this hatch follows" data-i18n-title="hatchSelectSrcTitle" data-i18n="hatchSelectSrc">Select boundary</button>
+                                            <button type="button" id="prop-hatch-unlink" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg" data-i18n="hatchUnlink">Unlink</button>
+                                            <button type="button" id="prop-hatch-relink" class="py-1 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg" title="Link again to the objects that match its boundary" data-i18n-title="hatchRelinkTitle" data-i18n="hatchRelink">Link</button>
                                         </div>
-                                        <button type="button" id="prop-hatch-match" class="w-full flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors" title="Copy this hatch's settings onto other hatches (MA)" data-i18n-title="hatchMatchTitle"><i data-lucide="paintbrush-vertical" class="w-3.5 h-3.5"></i><span data-i18n="hatchMatch">Match onto others (MA)</span></button>
+                                        <button type="button" id="prop-hatch-match" class="w-full flex justify-center items-center gap-1 py-1.5 px-2 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors" title="Copy this hatch's settings onto other hatches (MA)" data-i18n-title="hatchMatchTitle"><i data-lucide="paintbrush-vertical" class="w-3.5 h-3.5"></i><span data-i18n="hatchMatch">Match onto others (MA)</span></button>
                                     </div>
 
                                     <!-- Polyline controls (only shown for LWPOLYLINE entities) -->
                                     <div id="prop-poly-section" class="flex flex-col gap-2 hidden">
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="polylineSection">Polyline</h3>
                                         <div id="prop-poly-info" class="text-xs text-slate-600"></div>
-                                        <button id="btn-poly-close" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors">
+                                        <button id="btn-poly-close" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors">
                                             <i data-lucide="waypoints" class="w-3.5 h-3.5"></i><span id="prop-poly-close-label" data-i18n="polyCloseBtn">Close polyline</span>
                                         </button>
-                                        <button id="btn-poly-join" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded-lg transition-colors hidden">
+                                        <button id="btn-poly-join" class="w-full flex justify-center items-center gap-2 py-1.5 px-3 text-xs font-bold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-colors hidden">
                                             <i data-lucide="git-merge" class="w-3.5 h-3.5"></i><span id="prop-poly-join-label" data-i18n="polyJoinBtn">Join polylines</span>
                                         </button>
                                     </div>
@@ -1479,16 +1479,16 @@
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="dimensionSection">Dimension</h3>
                                         <div class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500" data-i18n="dimStyleLabel">Style</span>
-                                            <select id="prop-dim-style" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-indigo-400"></select>
+                                            <select id="prop-dim-style" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                         </div>
                                         <div class="flex gap-2">
-                                            <button id="prop-dim-flip" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors" data-i18n="dimFlipTextBtn">Flip text side</button>
-                                            <button id="prop-dim-rot180" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors" data-i18n="dimRot180Btn">Rotate text 180°</button>
-                                            <button id="prop-dim-swap-axis" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors hidden" data-i18n="dimSwapAxisBtn">Swap X/Y datum</button>
+                                            <button id="prop-dim-flip" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors" data-i18n="dimFlipTextBtn">Flip text side</button>
+                                            <button id="prop-dim-rot180" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors" data-i18n="dimRot180Btn">Rotate text 180°</button>
+                                            <button id="prop-dim-swap-axis" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors hidden" data-i18n="dimSwapAxisBtn">Swap X/Y datum</button>
                                         </div>
                                         <div class="flex items-center gap-2 mt-2">
                                             <span class="text-xs text-slate-500 whitespace-nowrap" data-i18n="dimTextLabel">Text</span>
-                                            <input id="prop-dim-text" type="text" placeholder="Measured, use <> for the value" data-i18n-placeholder="dimTextPlaceholder" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-indigo-400" />
+                                            <input id="prop-dim-text" type="text" placeholder="Measured, use <> for the value" data-i18n-placeholder="dimTextPlaceholder" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400" />
                                         </div>
                                         <div class="text-[10px] text-slate-400" data-i18n="dimStyleAssignHint">Assigning a style regenerates the dimension graphics at that size.</div>
                                     </div>
@@ -1498,13 +1498,13 @@
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="viewportSection">Viewport</h3>
                                         <div class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500" data-i18n="viewportScaleLabel">Scale</span>
-                                            <select id="prop-vp-scale" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-indigo-400"></select>
+                                            <select id="prop-vp-scale" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                         </div>
                                         <div id="prop-vp-custom-row" class="flex items-center gap-2 text-xs hidden">
                                             <span class="text-slate-500">1 :</span>
                                             <input id="prop-vp-custom" type="number" step="any" min="0.01"
-                                                class="w-24 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-400 bg-white text-slate-700" />
-                                            <button id="prop-vp-custom-apply" class="text-xs font-semibold px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700" data-i18n="applyBtn">Apply</button>
+                                                class="w-24 text-xs font-mono border border-slate-300 rounded px-2 py-1 outline-none focus:border-blue-400 bg-white text-slate-700" />
+                                            <button id="prop-vp-custom-apply" class="text-xs font-semibold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" data-i18n="applyBtn">Apply</button>
                                         </div>
                                         <div class="mt-1">
                                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1" data-i18n="vpLayersLabel">Layers in this frame</div>
@@ -1540,7 +1540,7 @@
                             <div id="panel-content-layers" class="flex-1 overflow-y-auto scroller p-4 hidden">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" data-i18n="layersTitle">Layers</span>
-                                    <button id="btn-add-layer" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 px-2 py-0.5 rounded hover:bg-indigo-50 transition-colors" title="Add layer" data-i18n-title="addLayerTitle" data-i18n="addLayerBtn">+ Add</button>
+                                    <button id="btn-add-layer" class="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-0.5 rounded hover:bg-blue-50 transition-colors" title="Add layer" data-i18n-title="addLayerTitle" data-i18n="addLayerBtn">+ Add</button>
                                 </div>
                                 <div id="layer-list" class="flex flex-col gap-1">
                                     </div>
@@ -1557,11 +1557,11 @@
                                 <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
                                     <h3 id="layer-name-title" class="text-base font-bold text-slate-900 mb-3">Layer name</h3>
                                     <input id="layer-name-input" type="text" spellcheck="false"
-                                        class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 mb-1" />
+                                        class="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-1" />
                                     <div id="layer-name-error" class="text-xs text-red-600 h-4 mb-2"></div>
                                     <div class="flex justify-end gap-2">
                                         <button id="layer-name-cancel" class="text-sm px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" data-i18n="cancelBtn">Cancel</button>
-                                        <button id="layer-name-confirm" class="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700" data-i18n="confirmBtn">OK</button>
+                                        <button id="layer-name-confirm" class="text-sm px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700" data-i18n="confirmBtn">OK</button>
                                     </div>
                                 </div>
                             </div>
@@ -1573,10 +1573,10 @@
                                     <p id="new-drawing-warn" class="hidden text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3" data-i18n="newDrawingUnsavedWarn">You have unsaved changes, they will be lost when the new drawing opens.</p>
                                     <p class="text-sm text-slate-500 mb-4" data-i18n="newDrawingModalMsg">Choose the drawing units:</p>
                                     <div class="grid grid-cols-4 gap-2 mb-4">
-                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-indigo-500 bg-indigo-50 text-indigo-700 rounded-lg py-2" data-insunits="4" data-i18n="unitMm">mm</button>
-                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-indigo-400" data-insunits="5" data-i18n="unitCm">cm</button>
-                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-indigo-400" data-insunits="6" data-i18n="unitM">m</button>
-                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-indigo-400" data-insunits="1" data-i18n="unitInch">inch</button>
+                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-blue-500 bg-blue-50 text-blue-700 rounded-lg py-2" data-insunits="4" data-i18n="unitMm">mm</button>
+                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-blue-400" data-insunits="5" data-i18n="unitCm">cm</button>
+                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-blue-400" data-insunits="6" data-i18n="unitM">m</button>
+                                        <button type="button" class="new-drawing-unit text-sm font-bold border border-slate-200 text-slate-600 rounded-lg py-2 hover:border-blue-400" data-insunits="1" data-i18n="unitInch">inch</button>
                                     </div>
                                     <div class="flex justify-end">
                                         <button id="new-drawing-cancel" class="text-sm px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" data-i18n="cancelBtn">Cancel</button>
@@ -1593,7 +1593,7 @@
                                             <span data-i18n="deleteLayoutEntitiesOption">Delete all entities on this paper space</span>
                                         </label>
                                         <label class="flex items-center gap-2 text-sm cursor-pointer" id="layout-delete-move-row">
-                                            <input type="radio" name="layout-delete-action" value="move" class="accent-indigo-600">
+                                            <input type="radio" name="layout-delete-action" value="move" class="accent-blue-600">
                                             <span data-i18n="moveLayoutEntitiesOption">Move entities to:</span>
                                             <select id="layout-delete-target" class="text-sm border border-slate-300 rounded px-2 py-1 ml-1 flex-1 min-w-0"></select>
                                         </label>
@@ -1614,7 +1614,7 @@
                                             <span data-i18n="deleteEntitiesOption">Delete all entities on this layer</span>
                                         </label>
                                         <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                            <input type="radio" name="layer-delete-action" value="move" class="accent-indigo-600">
+                                            <input type="radio" name="layer-delete-action" value="move" class="accent-blue-600">
                                             <span data-i18n="moveEntitiesOption">Move entities to:</span>
                                             <select id="layer-delete-target" class="text-sm border border-slate-300 rounded px-2 py-1 ml-1 flex-1 min-w-0"></select>
                                         </label>
@@ -1642,7 +1642,7 @@
                         <button id="btnZoomFit" class="hidden" aria-hidden="true" tabindex="-1"></button>
                     </div>
                     <div class="flex items-center gap-2 min-w-0 justify-end pl-3">
-                        <span class="bg-slate-50 border b-slate-200 text-indigo-700 w-5 h-5 rounded inline-flex items-center justify-center text-xs font-bold shrink-0"><i data-lucide="file" class="w-3 h-3"></i></span>
+                        <span class="bg-slate-50 border b-slate-200 text-blue-700 w-5 h-5 rounded inline-flex items-center justify-center text-xs font-bold shrink-0"><i data-lucide="file" class="w-3 h-3"></i></span>
                         <h2 class="text-xs font-bold text-slate-800 truncate max-w-[360px]" id="viewer-title" data-i18n="drawingSpaceTitle">Drawing Space</h2>
                         <span id="autosave-status" class="text-[10px] text-slate-400 whitespace-nowrap"></span>
                     </div>
@@ -4352,7 +4352,7 @@
                     inp.type = 'number';
                     inp.step = 'any';
                     inp.value = Number(val).toFixed(3);
-                    inp.className = 'w-[72px] text-[11px] font-mono border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-indigo-400 bg-white text-slate-700';
+                    inp.className = 'w-[72px] text-[11px] font-mono border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-blue-400 bg-white text-slate-700';
                     inp.addEventListener('keydown', (e) => {
                         e.stopPropagation();
                         if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
@@ -7275,8 +7275,8 @@
             arrayMode = mode;
             const rectTab = document.getElementById('array-tab-rect');
             const polarTab = document.getElementById('array-tab-polar');
-            const on = 'array-tab text-xs font-bold border border-indigo-500 bg-indigo-50 text-indigo-700 rounded-lg py-1.5';
-            const off = 'array-tab text-xs font-bold border border-slate-200 text-slate-600 rounded-lg py-1.5 hover:border-indigo-400';
+            const on = 'array-tab text-xs font-bold border border-blue-500 bg-blue-50 text-blue-700 rounded-lg py-1.5';
+            const off = 'array-tab text-xs font-bold border border-slate-200 text-slate-600 rounded-lg py-1.5 hover:border-blue-400';
             if (rectTab) rectTab.className = mode === 'rect' ? on : off;
             if (polarTab) polarTab.className = mode === 'polar' ? on : off;
             document.getElementById('array-rect-fields')?.classList.toggle('hidden', mode !== 'rect');
@@ -8740,7 +8740,7 @@
             if (!measurePreviewLine) {
                 measurePreviewLine = new THREE.Line(
                     new THREE.BufferGeometry(),
-                    new THREE.LineBasicMaterial({ color: 0x4f46e5, depthTest: false })
+                    new THREE.LineBasicMaterial({ color: 0x2563eb, depthTest: false })
                 );
                 measurePreviewLine.frustumCulled = false;
                 measurePreviewLine.renderOrder = 995;
@@ -9303,7 +9303,7 @@
                     new THREE.Vector3(start.x, start.y, 0.2),
                     new THREE.Vector3(end.x, end.y, 0.2),
                 ]),
-                new THREE.LineBasicMaterial({ color: 0x4f46e5, depthTest: false })
+                new THREE.LineBasicMaterial({ color: 0x2563eb, depthTest: false })
             );
             line.renderOrder = 996;
             group.add(line);
@@ -13107,7 +13107,7 @@
             const prevSize = document.getElementById('info-size').innerText;
             const prevTitle = document.getElementById('viewer-title').innerText;
             fileNameDisplay.textContent = fileName;
-            fileNameDisplay.classList.add('text-indigo-600', 'font-bold');
+            fileNameDisplay.classList.add('text-blue-600', 'font-bold');
             document.getElementById('info-name').innerText = fileName;
             document.getElementById('info-size').innerText = ((sizeBytes ?? rawText.length) / 1024 / 1024).toFixed(2) + ' MB';
             document.getElementById('viewer-title').innerText = fileName;
@@ -15242,14 +15242,14 @@
             const loops = region.rings;
             const shapes = hatchShapes(loops);
             const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shapes),
-                new THREE.MeshBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.28, depthTest: false, side: THREE.DoubleSide }));
+                new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.28, depthTest: false, side: THREE.DoubleSide }));
             mesh.position.z = 0.4;
             mesh.renderOrder = 900;
             const pts = [];
             for (const ring of loops) for (let i = 0; i < ring.length - 1; i++) pts.push(ring[i].x, ring[i].y, 0.45, ring[i + 1].x, ring[i + 1].y, 0.45);
             const g = new THREE.BufferGeometry();
             g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-            const outline = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x818cf8, depthTest: false }));
+            const outline = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x60a5fa, depthTest: false }));
             outline.renderOrder = 901;
             hatchPick.group.add(mesh, outline);
         }
@@ -15480,7 +15480,7 @@
             for (const name of names) {
                 const count = countInsertions(name);
                 const card = document.createElement('div');
-                card.className = 'flex items-center gap-3 p-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-slate-50 transition-colors';
+                card.className = 'flex items-center gap-3 p-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-slate-50 transition-colors';
 
                 const thumb = document.createElement('div');
                 thumb.className = 'w-[52px] h-[52px] shrink-0 rounded bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden';
@@ -15631,7 +15631,7 @@
             if (!el) {
                 el = document.createElement('div');
                 el.id = 'block-edit-banner';
-                el.className = 'absolute left-1/2 -translate-x-1/2 top-14 z-40 flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-600 text-white text-xs font-semibold shadow-lg';
+                el.className = 'absolute left-1/2 -translate-x-1/2 top-14 z-40 flex items-center gap-3 px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-semibold shadow-lg';
                 const container = document.getElementById('three-container');
                 container?.appendChild(el);
             }
@@ -15639,7 +15639,7 @@
             const label = document.createElement('span');
             label.textContent = tr('blockEditingLabel', 'Editing block: {name}', { name });
             const done = document.createElement('button');
-            done.className = 'ml-1 px-2 py-0.5 rounded-full bg-white text-indigo-700 hover:bg-indigo-50 transition-colors';
+            done.className = 'ml-1 px-2 py-0.5 rounded-full bg-white text-blue-700 hover:bg-blue-50 transition-colors';
             done.textContent = tr('blockEditDone', 'Done');
             done.onclick = exitBlockEdit;
             el.appendChild(label); el.appendChild(done);
@@ -19551,7 +19551,7 @@
             btn.title = tr('layerLinetypeTitle', 'Layer linetype: {lt}', { lt: (getLayerLinetype(layerName) || 'Continuous') });
             btn.innerHTML = LINE_STYLE_ICON;
             const currentLt = (getLayerLinetype(layerName) || 'CONTINUOUS').toUpperCase();
-            btn.style.color = currentLt !== 'CONTINUOUS' ? '#4f46e5' : '#64748b';
+            btn.style.color = currentLt !== 'CONTINUOUS' ? '#2563eb' : '#64748b';
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 layerLtOpenLayer = layerLtOpenLayer === layerName ? null : layerName;
@@ -20037,10 +20037,10 @@
         function switchPanelTab(target) {
             if (target === 'info') {
                 // 1. Update Tabs
-                btnTabProps.classList.replace('text-slate-500', 'text-indigo-600');
-                btnTabProps.classList.replace('border-transparent', 'border-indigo-600');
-                btnTabLayers.classList.replace('text-indigo-600', 'text-slate-500');
-                btnTabLayers.classList.replace('border-indigo-600', 'border-transparent');
+                btnTabProps.classList.replace('text-slate-500', 'text-blue-600');
+                btnTabProps.classList.replace('border-transparent', 'border-blue-600');
+                btnTabLayers.classList.replace('text-blue-600', 'text-slate-500');
+                btnTabLayers.classList.replace('border-blue-600', 'border-transparent');
                 // 2. Update Content Visibility
                 pnlProps.classList.remove('hidden'); 
                 pnlLayers.classList.add('hidden');
@@ -20049,10 +20049,10 @@
                 btnToggleInfo.classList.add('active');
             } else if (target === 'layers') {
                 // 1. Update Tabs
-                btnTabLayers.classList.replace('text-slate-500', 'text-indigo-600');
-                btnTabLayers.classList.replace('border-transparent', 'border-indigo-600');
-                btnTabProps.classList.replace('text-indigo-600', 'text-slate-500');
-                btnTabProps.classList.replace('border-indigo-600', 'border-transparent');
+                btnTabLayers.classList.replace('text-slate-500', 'text-blue-600');
+                btnTabLayers.classList.replace('border-transparent', 'border-blue-600');
+                btnTabProps.classList.replace('text-blue-600', 'text-slate-500');
+                btnTabProps.classList.replace('border-blue-600', 'border-transparent');
                 // 2. Update Content Visibility
                 pnlLayers.classList.remove('hidden'); 
                 pnlProps.classList.add('hidden');
@@ -20173,7 +20173,7 @@
                         <div style="font-size:11px;color:#64748b;">${esc(new Date(r.savedAt).toLocaleString())} · ${(r.size / 1024 / 1024).toFixed(2)} MB</div>
                     </div>
                     <button type="button" class="rec-discard" style="font-size:11px;font-weight:700;color:#64748b;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;">${esc(tr('recoveryDiscard', 'Discard'))}</button>
-                    <button type="button" class="rec-open" style="font-size:11px;font-weight:700;color:#fff;padding:4px 10px;border-radius:6px;background:#4f46e5;border:0;cursor:pointer;">${esc(tr('recoveryOpen', 'Recover'))}</button>
+                    <button type="button" class="rec-open" style="font-size:11px;font-weight:700;color:#fff;padding:4px 10px;border-radius:6px;background:#2563eb;border:0;cursor:pointer;">${esc(tr('recoveryOpen', 'Recover'))}</button>
                 </div>`).join('');
             wrap.innerHTML = `
                 <div style="background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(15,23,42,.25);width:440px;max-width:calc(100vw - 32px);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">

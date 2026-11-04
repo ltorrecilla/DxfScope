@@ -67,25 +67,25 @@
             const wrap = document.createElement("div");
             wrap.innerHTML = `
 <div id="${ns}-resume" class="fixed inset-0 modal-overlay hidden z-[80] items-center justify-center" style="background:rgba(15,23,42,.35)">
-  <div class="bg-white/95 backdrop-blur-xl border border-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] w-[380px] overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-      <h2 class="font-bold text-sm uppercase tracking-widest text-slate-900">${tt("resumeSession", "Continue where you left off?")}</h2>
+  <div class="bg-white/95 [html[data-theme-enabled=true].dark_&]:bg-neutral-800 backdrop-blur-xl border border-white [html[data-theme-enabled=true].dark_&]:border-neutral-700 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] w-[380px] overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 [html[data-theme-enabled=true].dark_&]:border-neutral-700 bg-slate-50/50 [html[data-theme-enabled=true].dark_&]:bg-neutral-800">
+      <h2 class="font-bold text-sm [html[data-theme-enabled=true].dark_&]:bg-neutral-800 uppercase tracking-widest text-slate-900 [html[data-theme-enabled=true].dark_&]:text-neutral-100">${tt("resumeSession", "Continue where you left off?")}</h2>
     </div>
     <div class="p-6">
-      <p class="text-xs text-slate-500 mb-1">${tt("resumeDetail", "A previous session was found:")}</p>
-      <p id="${ns}-resume-name" class="text-xs font-bold text-slate-700 truncate"></p>
+      <p class="text-xs text-slate-500 [html[data-theme-enabled=true].dark_&]:text-neutral-400 mb-1">${tt("resumeDetail", "A previous session was found:")}</p>
+      <p id="${ns}-resume-name" class="text-xs font-bold text-slate-700 [html[data-theme-enabled=true].dark_&]:text-neutral-200 truncate"></p>
     </div>
-    <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/50">
-      <button id="${ns}-fresh" class="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-800 transition">${tt("startFresh", "Start Fresh")}</button>
-      <button id="${ns}-continue" class="px-4 py-2 text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-700 transition">${tt("continueBtn", "Continue")}</button>
+    <div class="px-6 py-4 border-t border-slate-100 [html[data-theme-enabled=true].dark_&]:border-neutral-700 flex justify-end gap-2 bg-slate-50/50 [html[data-theme-enabled=true].dark_&]:bg-neutral-800">
+      <button id="${ns}-fresh" class="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 [html[data-theme-enabled=true].dark_&]:text-neutral-400 hover:text-slate-800 [html[data-theme-enabled=true].dark_&]:hover:text-neutral-200 transition">${tt("startFresh", "Start Fresh")}</button>
+      <button id="${ns}-continue" class="px-4 py-2 text-xs font-bold uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-700 transition">${tt("continueBtn", "Continue")}</button>
     </div>
   </div>
 </div>
 <div id="${ns}-history" class="fixed inset-0 modal-overlay hidden z-[80] items-center justify-center" style="background:rgba(15,23,42,.35)">
-  <div class="bg-white/95 backdrop-blur-xl border border-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] w-[440px] max-h-[80vh] flex flex-col overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-      <h2 class="font-bold text-sm uppercase tracking-widest text-slate-900">${tt("planHistory", "Plan History")}</h2>
-      <button id="${ns}-history-close" class="text-slate-400 hover:text-slate-700 transition-colors text-lg leading-none">&#10005;</button>
+  <div class="bg-white/95 [html[data-theme-enabled=true].dark_&]:bg-neutral-800 backdrop-blur-xl border border-white [html[data-theme-enabled=true].dark_&]:border-neutral-700 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] w-[440px] max-h-[80vh] flex flex-col overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 [html[data-theme-enabled=true].dark_&]:border-neutral-700 flex justify-between items-center bg-slate-50/50 [html[data-theme-enabled=true].dark_&]:bg-neutral-800">
+      <h2 class="font-bold text-sm [html[data-theme-enabled=true].dark_&]:bg-neutral-800 uppercase tracking-widest text-slate-900 [html[data-theme-enabled=true].dark_&]:text-neutral-100">${tt("planHistory", "Plan History")}</h2>
+      <button id="${ns}-history-close" class="text-slate-400 [html[data-theme-enabled=true].dark_&]:text-neutral-400 hover:text-slate-700 [html[data-theme-enabled=true].dark_&]:hover:text-neutral-200 transition-colors text-lg leading-none">&#10005;</button>
     </div>
     <div id="${ns}-history-list" class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-1.5"></div>
   </div>
@@ -278,19 +278,19 @@
             async openHistory() {
                 ensureModals();
                 const list = document.getElementById(ns + "-history-list");
-                list.innerHTML = `<p class="text-xs text-slate-400">${tt("loading", "Loading\u2026")}</p>`;
+                list.innerHTML = `<p class="text-xs text-slate-400 [html[data-theme-enabled=true].dark_&]:text-neutral-400">${tt("loading", "Loading\u2026")}</p>`;
                 show(ns + "-history");
                 const hist = (await kvGet("history")) || [];
                 if (hist.length === 0) {
-                    list.innerHTML = `<p class="text-xs text-slate-400">${tt("noHistory", "No snapshots yet \u2013 they are created automatically while autosave is active.")}</p>`;
+                    list.innerHTML = `<p class="text-xs text-slate-400 [html[data-theme-enabled=true].dark_&]:text-neutral-400">${tt("noHistory", "No snapshots yet \u2013 they are created automatically while autosave is active.")}</p>`;
                     return;
                 }
                 list.innerHTML = "";
                 hist.forEach((h, i) => {
                     const row = document.createElement("div");
-                    row.className = "flex items-center justify-between px-3 py-2 border border-slate-100 rounded-lg hover:bg-slate-50";
-                    row.innerHTML = `<span class="text-xs text-slate-600">${new Date(h.at).toLocaleString()} <span class="text-slate-400">${h.label ? "\u00B7 " + h.label : ""}</span></span>
-                        <button class="text-[10px] px-2 py-1 border border-slate-200 rounded hover:border-indigo-400 hover:text-indigo-600 transition uppercase font-bold">${tt("restore", "Restore")}</button>`;
+                    row.className = "flex items-center justify-between px-3 py-2 border border-slate-100 [html[data-theme-enabled=true].dark_&]:border-neutral-700 rounded-lg hover:bg-slate-50 [html[data-theme-enabled=true].dark_&]:hover:bg-neutral-700";
+                    row.innerHTML = `<span class="text-xs text-slate-600 [html[data-theme-enabled=true].dark_&]:text-neutral-300">${new Date(h.at).toLocaleString()} <span class="text-slate-400 [html[data-theme-enabled=true].dark_&]:text-neutral-400">${h.label ? "\u00B7 " + h.label : ""}</span></span>
+                        <button class="text-[10px] px-2 py-1 border border-slate-200 [html[data-theme-enabled=true].dark_&]:border-neutral-700 rounded hover:border-blue-400 hover:text-blue-600 [html[data-theme-enabled=true].dark_&]:hover:text-blue-400 transition uppercase font-bold">${tt("restore", "Restore")}</button>`;
                     row.querySelector("button").addEventListener("click", async () => {
                         try {
                             if (cfg.applyPayload(JSON.parse(hist[i].text))) {
@@ -331,7 +331,7 @@
                 }
                 if (!this._toastEl) {
                     const t = document.createElement("div");
-                    t.style.cssText = "display:flex;align-items:center;gap:.5rem;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 30px rgba(0,0,0,.08);border-radius:.5rem;padding:.6rem 1rem;font-size:13px;font-weight:600;color:#334155;transition:opacity .5s;";
+                    t.style.cssText = "display:flex;align-items:center;gap:.5rem;background:var(--las-surface,#fff);border:1px solid var(--las-border,#e2e8f0);box-shadow:0 8px 30px rgba(0,0,0,.08);border-radius:.5rem;padding:.6rem 1rem;font-size:13px;font-weight:600;color:var(--las-text,#334155);transition:opacity .5s;";
                     t.innerHTML = '<span data-ic style="display:inline-flex;width:16px;height:16px;flex-shrink:0"></span><span data-tx></span>';
                     wrap.appendChild(t);
                     this._toastEl = t;
@@ -341,7 +341,7 @@
                 const ic = el.querySelector("[data-ic]");
                 const tx = el.querySelector("[data-tx]");
                 el.style.opacity = "1";
-                const SPIN = '<svg style="animation:las-spin 1s linear infinite" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="3" opacity=".25"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#6366f1" stroke-width="3" stroke-linecap="round"></path></svg>';
+                const SPIN = '<svg style="animation:las-spin 1s linear infinite" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="3" opacity=".25"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"></path></svg>';
                 const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
                 const WARN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>';
                 if (!document.getElementById("las-spin-kf")) {
@@ -396,7 +396,7 @@
                 if (!offs.length || !ons.length) return;
                 // Every colour the module may have applied before - all of them
                 // have to come off, or an old class wins the cascade.
-                const COLORS = ["text-white", "text-green-600", "text-slate-600", "text-amber-500", "text-rose-500"];
+                const COLORS = ["text-white", "text-green-600", "text-slate-600", "[html[data-theme-enabled=true].dark_&]:text-neutral-300", "text-amber-500", "text-rose-500"];
                 const setTitle = (title) => {
                     offs.forEach((o) => { const b = o.closest("button"); if (b) b.title = title; });
                     ons.forEach((o) => { const b = o.closest("button"); if (b) b.title = title; });
@@ -406,14 +406,14 @@
                     ons.forEach((o) => {
                         o.classList.remove("hidden");
                         COLORS.forEach((c) => o.classList.remove(c));
-                        o.classList.add(color);
+                        o.classList.add(...color.split(' '));
                     });
                     setTitle(title);
                     if (disc) disc.classList.remove("hidden");
                 };
                 if (state === "saved") {
                     const t = this.lastSavedAt;
-                    setOn("text-slate-600", tt("autosaved", "Autosaved") + " " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"));
+                    setOn("text-slate-600 [html[data-theme-enabled=true].dark_&]:text-neutral-300", tt("autosaved", "Autosaved") + " " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"));
                 } else if (state === "dirty") {
                     setOn("text-amber-500", tt("autosaveDirty", "Autosave: unsaved changes\u2026"));
                 } else if (state === "error") {
