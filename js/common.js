@@ -220,7 +220,7 @@ const APPS = [
     { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-editor.html' },
     { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-compare.html' },
     { id: 27, skipModal: false, icon: 'file-diff', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdf-compare.html' },
-    { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' }, 
+    // { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' }, 
     // { id: 19, skipModal: false, icon: 'building', categories: ['ops'], url: window.SITE_ROOT + 'tools/COBIE_CMMS.html' },
     // { id: 14, skipModal: false, icon: 'arrow-down-up', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-schema-changer.html' },
 ];
@@ -355,7 +355,8 @@ window.loadLanguage = function (lang, pageScriptPrefix) {
     const rootPath = window.SITE_ROOT || './';
     const scriptsToLoad = [loadScript('dynamic-global-lang', `${rootPath}lang/${lang}/global.js`, 'GLOBAL_I18N')];
     if (pageScriptPrefix) {
-        scriptsToLoad.push(loadScript('dynamic-page-lang', `${rootPath}lang/${lang}/${pageScriptPrefix}.js`, 'PAGE_I18N'));
+        const pageVersion = window.PAGE_I18N_VERSION ? `?v=${encodeURIComponent(window.PAGE_I18N_VERSION)}` : '';
+        scriptsToLoad.push(loadScript('dynamic-page-lang', `${rootPath}lang/${lang}/${pageScriptPrefix}.js${pageVersion}`, 'PAGE_I18N'));
     }
     // -------------------------------------------------------------------------
 

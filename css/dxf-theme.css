@@ -1,0 +1,222 @@
+/* Shared DXF interface palette. Drawing colours, layer swatches, and paper backgrounds remain independent. */
+@media screen {
+    html.dark .dxf-ui {
+        --dxf-ui-bg-111827: #171717;
+        --dxf-ui-bg-1f2937: #404040;
+        --dxf-ui-bg-334155: #404040;
+        --dxf-ui-bg-94a3b8: #a3a3a3;
+        --dxf-ui-bg-bbf7d0: #14532d;
+        --dxf-ui-bg-cbd5e1: #525252;
+        --dxf-ui-bg-dcfce7: #052e16;
+        --dxf-ui-bg-e0e7ff: #172554;
+        --dxf-ui-bg-e2e8f0: #404040;
+        --dxf-ui-bg-eff6ff: #172554;
+        --dxf-ui-bg-f1f5f9: #404040;
+        --dxf-ui-bg-f8fafc: #262626;
+        --dxf-ui-bg-fee2e2: #450a0a;
+        --dxf-ui-bg-fff: #262626;
+        --dxf-ui-bg-ffffff: #262626;
+        --dxf-ui-border-111827: #525252;
+        --dxf-ui-border-1e293b: #525252;
+        --dxf-ui-border-1f2937: #404040;
+        --dxf-ui-border-2563eb: #60a5fa;
+        --dxf-ui-border-334155: #525252;
+        --dxf-ui-border-86efac: #166534;
+        --dxf-ui-border-a5b4fc: #60a5fa;
+        --dxf-ui-border-bfdbfe: #1e40af;
+        --dxf-ui-border-cbd5e1: #525252;
+        --dxf-ui-border-e2e8f0: #404040;
+        --dxf-ui-border-f1f5f9: #404040;
+        --dxf-ui-border-f3f3f3: #404040;
+        --dxf-ui-border-fff: #262626;
+        --dxf-ui-text-0f172a: #f5f5f5;
+        --dxf-ui-text-111827: #f5f5f5;
+        --dxf-ui-text-15803d: #86efac;
+        --dxf-ui-text-16a34a: #4ade80;
+        --dxf-ui-text-1e293b: #e5e5e5;
+        --dxf-ui-text-2563eb: #60a5fa;
+        --dxf-ui-text-334155: #e5e5e5;
+        --dxf-ui-text-475569: #d4d4d4;
+        --dxf-ui-text-64748b: #a3a3a3;
+        --dxf-ui-text-94a3b8: #a3a3a3;
+        --dxf-ui-text-b45309: #fbbf24;
+        --dxf-ui-text-dc2626: #f87171;
+    }
+}
+@media screen {
+    /* Keep clicks on the stable button while dynamic rows refresh Lucide SVGs. */
+    .dxf-ui .theme-toggle svg { pointer-events: none; }
+    html.dark .dxf-ui :where(input, select, textarea):not([class*="bg-"]) { background-color: #262626; color: #e5e5e5; }
+    html.dark .dxf-ui .bg-amber-50,
+    html.dark .dxf-ui .bg-amber-50\/80,
+    html.dark .dxf-ui .hover\:bg-amber-50:hover { background-color: #451a03; }
+    html.dark .dxf-ui .bg-blue-100\/30,
+    html.dark .dxf-ui .bg-blue-50,
+    html.dark .dxf-ui .bg-blue-50\/50,
+    html.dark .dxf-ui .hover\:bg-blue-100:hover,
+    html.dark .dxf-ui .hover\:bg-blue-50:hover,
+    html.dark .dxf-ui .hover\:bg-blue-50\/30:hover { background-color: #172554; }
+    html.dark .dxf-ui .bg-emerald-100\/30,
+    html.dark .dxf-ui .hover\:bg-emerald-50:hover { background-color: #022c22; }
+    html.dark .dxf-ui .bg-gray-50,
+    html.dark .dxf-ui .bg-slate-100,
+    html.dark .dxf-ui .bg-slate-50,
+    html.dark .dxf-ui .bg-slate-50\/50,
+    html.dark .dxf-ui .bg-white,
+    html.dark .dxf-ui .bg-white\/50,
+    html.dark .dxf-ui .bg-white\/60,
+    html.dark .dxf-ui .bg-white\/70 { background-color: #262626; }
+    html.dark .dxf-ui .bg-white\/80 { background-color: rgb(38 38 38 / 80%); }
+    html.dark .dxf-ui .bg-orange-50 { background-color: #431407; }
+    html.dark .dxf-ui .bg-red-50,
+    html.dark .dxf-ui .hover\:bg-red-50:hover { background-color: #450a0a; }
+    html.dark .dxf-ui .bg-rose-100,
+    html.dark .dxf-ui .bg-rose-50\/60,
+    html.dark .dxf-ui .bg-rose-50\/80,
+    html.dark .dxf-ui .hover\:bg-rose-100:hover,
+    html.dark .dxf-ui .hover\:bg-rose-50:hover { background-color: #4c0519; }
+    html.dark .dxf-ui .bg-slate-200,
+    html.dark .dxf-ui .bg-slate-300,
+    html.dark .dxf-ui .disabled\:bg-slate-100:disabled,
+    html.dark .dxf-ui .disabled\:bg-slate-300:disabled,
+    html.dark .dxf-ui .group:hover .group-hover\:bg-slate-200,
+    html.dark .dxf-ui .hover\:bg-slate-100:hover,
+    html.dark .dxf-ui .hover\:bg-slate-200:hover,
+    html.dark .dxf-ui .hover\:bg-slate-50:hover,
+    html.dark .dxf-ui .hover\:bg-white\/80:hover { background-color: #404040; }
+    html.dark .dxf-ui .bg-slate-800,
+    html.dark .dxf-ui .bg-slate-900 { background-color: #171717; }
+    html.dark .dxf-ui .bg-teal-50,
+    html.dark .dxf-ui .hover\:bg-teal-50:hover { background-color: #042f2e; }
+    html.dark .dxf-ui .bg-yellow-50 { background-color: #422006; }
+    html.dark .dxf-ui .border-amber-100,
+    html.dark .dxf-ui .border-amber-200,
+    html.dark .dxf-ui .border-amber-200\/60,
+    html.dark .dxf-ui .border-amber-300,
+    html.dark .dxf-ui .border-amber-400,
+    html.dark .dxf-ui .hover\:border-amber-300:hover,
+    html.dark .dxf-ui .hover\:border-amber-400:hover { border-color: #92400e; }
+    html.dark .dxf-ui .border-b-blue-300 { border-bottom-color: #1e40af; }
+    html.dark .dxf-ui .border-blue-100,
+    html.dark .dxf-ui .border-blue-200,
+    html.dark .dxf-ui .border-blue-200\/60,
+    html.dark .dxf-ui .border-blue-300,
+    html.dark .dxf-ui .hover\:border-blue-200:hover,
+    html.dark .dxf-ui .hover\:border-blue-300:hover { border-color: #1e40af; }
+    html.dark .dxf-ui .border-emerald-200,
+    html.dark .dxf-ui .border-emerald-300,
+    html.dark .dxf-ui .hover\:border-emerald-300:hover { border-color: #065f46; }
+    html.dark .dxf-ui .border-orange-300 { border-color: #9a3412; }
+    html.dark .dxf-ui .border-purple-200,
+    html.dark .dxf-ui .hover\:border-purple-300:hover { border-color: #6b21a8; }
+    html.dark .dxf-ui .border-red-300 { border-color: #991b1b; }
+    html.dark .dxf-ui .border-rose-100,
+    html.dark .dxf-ui .border-rose-200,
+    html.dark .dxf-ui .border-rose-200\/60,
+    html.dark .dxf-ui .border-rose-300,
+    html.dark .dxf-ui .hover\:border-rose-300:hover,
+    html.dark .dxf-ui .hover\:border-rose-400:hover { border-color: #9f1239; }
+    html.dark .dxf-ui .border-slate-100,
+    html.dark .dxf-ui .border-slate-200,
+    html.dark .dxf-ui .border-slate-200\/60,
+    html.dark .dxf-ui .border-slate-50,
+    html.dark .dxf-ui .disabled\:border-slate-200:disabled { border-color: #404040; }
+    html.dark .dxf-ui .border-slate-300,
+    html.dark .dxf-ui .border-slate-800,
+    html.dark .dxf-ui .hover\:border-slate-400:hover { border-color: #525252; }
+    html.dark .dxf-ui .border-teal-100,
+    html.dark .dxf-ui .border-teal-200,
+    html.dark .dxf-ui .border-teal-200\/60,
+    html.dark .dxf-ui .border-teal-300,
+    html.dark .dxf-ui .hover\:border-teal-300:hover,
+    html.dark .dxf-ui .hover\:border-teal-400:hover { border-color: #115e59; }
+    html.dark .dxf-ui .placeholder-amber-600::placeholder,
+    html.dark .dxf-ui .text-amber-700,
+    html.dark .dxf-ui .text-amber-800 { color: #fcd34d; }
+    html.dark .dxf-ui .text-amber-500,
+    html.dark .dxf-ui .text-amber-600,
+    html.dark .dxf-ui .group:hover .group-hover\:text-amber-600 { color: #fbbf24; }
+    html.dark .dxf-ui .text-blue-500,
+    html.dark .dxf-ui .text-blue-600,
+    html.dark .dxf-ui .group:hover .group-hover\:text-blue-500,
+    html.dark .dxf-ui .hover\:text-blue-600:hover { color: #60a5fa; }
+    html.dark .dxf-ui .text-blue-700,
+    html.dark .dxf-ui .text-blue-800,
+    html.dark .dxf-ui .text-blue-900,
+    html.dark .dxf-ui .hover\:text-blue-700:hover,
+    html.dark .dxf-ui .hover\:text-blue-900:hover { color: #93c5fd; }
+    html.dark .dxf-ui .text-emerald-500,
+    html.dark .dxf-ui .text-emerald-600 { color: #34d399; }
+    html.dark .dxf-ui .text-emerald-700 { color: #6ee7b7; }
+    html.dark .dxf-ui .text-green-600,
+    html.dark .dxf-ui .hover\:text-green-600:hover { color: #4ade80; }
+    html.dark .dxf-ui .text-purple-500,
+    html.dark .dxf-ui .text-purple-600 { color: #c084fc; }
+    html.dark .dxf-ui .text-purple-700 { color: #d8b4fe; }
+    html.dark .dxf-ui .text-red-500,
+    html.dark .dxf-ui .hover\:text-red-500:hover { color: #f87171; }
+    html.dark .dxf-ui .text-red-700 { color: #fca5a5; }
+    html.dark .dxf-ui .text-rose-600 { color: #fb7185; }
+    html.dark .dxf-ui .text-rose-700,
+    html.dark .dxf-ui .text-rose-800,
+    html.dark .dxf-ui .hover\:text-rose-700:hover { color: #fda4af; }
+    html.dark .dxf-ui .text-slate-200,
+    html.dark .dxf-ui .text-slate-700,
+    html.dark .dxf-ui .text-slate-800,
+    html.dark .dxf-ui .hover\:text-slate-800:hover { color: #e5e5e5; }
+    html.dark .dxf-ui .text-slate-400,
+    html.dark .dxf-ui .text-slate-500,
+    html.dark .dxf-ui .disabled\:text-slate-400:disabled,
+    html.dark .dxf-ui .disabled\:text-slate-500:disabled { color: #a3a3a3; }
+    html.dark .dxf-ui .text-slate-600 { color: #d4d4d4; }
+    html.dark .dxf-ui .text-slate-900 { color: #f5f5f5; }
+    html.dark .dxf-ui .text-teal-500,
+    html.dark .dxf-ui .group:hover .group-hover\:text-teal-600 { color: #2dd4bf; }
+    html.dark .dxf-ui .text-teal-700,
+    html.dark .dxf-ui .text-teal-800 { color: #5eead4; }
+    html.dark .dxf-ui .focus-within\:border-blue-500:focus-within,
+    html.dark .dxf-ui .focus\:border-blue-500:focus { border-color: #60a5fa; }
+    html.dark .dxf-ui .focus\:border-amber-500:focus,
+    html.dark .dxf-ui .focus\:border-amber-600:focus { border-color: #fbbf24; }
+    html.dark .dxf-ui .focus\:border-emerald-500:focus { border-color: #34d399; }
+    html.dark .dxf-ui .focus\:border-rose-500:focus { border-color: #fb7185; }
+    html.dark .dxf-ui .focus\:border-teal-500:focus { border-color: #2dd4bf; }
+    html.dark .dxf-ui .hover\:bg-green-50:hover { background-color: #052e16; }
+    html.dark .dxf-ui .hover\:bg-purple-50:hover { background-color: #3b0764; }
+    html.dark .dxf-ui .hover\:border-green-200:hover { border-color: #166534; }
+    html.dark body.dxf-ui { background: #171717; color: #f5f5f5; }
+    html.dark .dxf-ui button.bg-slate-800,
+    html.dark .dxf-ui button.bg-slate-900 { background-color: #2563eb; }
+    html.dark .dxf-ui button.bg-slate-800:hover,
+    html.dark .dxf-ui button.bg-slate-900:hover { background-color: #1d4ed8; }
+    html.dark .dxf-ui button.bg-slate-800:disabled,
+    html.dark .dxf-ui button.bg-slate-900:disabled { background-color: #404040; color: #a3a3a3; }
+}
+
+@media screen {
+    html.dark .dxf-ui #view-upload, html.dark .dxf-ui #view-shortcuts { background-color: #171717; }
+    html.dark .dxf-ui .dragover, html.dark .dxf-ui .drop-zone.dragover { background-color: #172554 !important; border-color: #60a5fa !important; }
+    html.dark .dxf-ui .dxf-layer-color-option.selected { box-shadow: 0 0 0 2px #60a5fa; }
+    html.dark .dxf-ui .settings-swatch.selected { border-color: #60a5fa; box-shadow: 0 0 0 2px #262626 inset, 0 0 0 1px #60a5fa; }
+    html.dark .dxf-ui .layer-checkbox:checked,
+    html.dark .dxf-ui .layer-checkbox:indeterminate,
+    html.dark .dxf-ui .settings-check input:checked,
+    html.dark .dxf-ui .measure-snap-option input:checked { background-color: #2563eb; border-color: #60a5fa; }
+    .dxf-ui .theme-toggle svg, .dxf-ui #btn-theme svg, .dxf-ui #btn-toggle-theme svg { pointer-events: none; }
+}
+
+@media screen {
+    html.dark .dxf-ui .border-white, html.dark .dxf-ui .border-slate-700 { border-color: #404040; }
+    html.dark .dxf-ui .text-slate-300 { color: #d4d4d4; }
+    html.dark .dxf-ui .text-red-600 { color: #f87171; }
+    html.dark .dxf-ui .text-orange-500 { color: #fb923c; }
+    html.dark .dxf-ui .border-red-200 { border-color: #991b1b; }
+    html.dark .dxf-ui .hover\:text-slate-600:hover { color: #d4d4d4; }
+    html.dark .dxf-ui .hover\:text-slate-900:hover,
+    html.dark .dxf-ui .group:hover .group-hover\:text-slate-800 { color: #f5f5f5; }
+    html.dark .dxf-ui .hover\:text-blue-800:hover { color: #93c5fd; }
+    html.dark .dxf-ui .hover\:border-slate-300:hover { border-color: #525252; }
+    html.dark .dxf-ui .hover\:border-blue-400:hover,
+    html.dark .dxf-ui .hover\:border-blue-500:hover,
+    html.dark .dxf-ui .focus\:border-blue-400:focus { border-color: #60a5fa; }
+}
