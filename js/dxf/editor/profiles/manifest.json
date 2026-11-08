@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "id": "en",
+      "name": "English",
+      "file": "en.json"
+    },
+    {
+      "id": "es",
+      "name": "Español",
+      "file": "es.json"
+    }
+  ]
+}

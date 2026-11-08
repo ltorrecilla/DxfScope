@@ -87,6 +87,8 @@
                 const a = { x: tip.x + dir.x * size * s + n.x * size * 0.17, y: tip.y + dir.y * size * s + n.y * size * 0.17 };
                 const b = { x: tip.x + dir.x * size * s - n.x * size * 0.17, y: tip.y + dir.y * size * s - n.y * size * 0.17 };
                 seg(tip, a); seg(a, b); seg(b, tip);
+                const marker = { tip: { x: tip.x, y: tip.y }, dirX: dir.x * s, dirY: dir.y * s, size };
+                for (const segment of segments.slice(-3)) segment.__arrowMarker = marker;
             }
         }
 
@@ -220,6 +222,21 @@
         decimals = Math.max(0, Math.min(8, Number.isFinite(decimals) ? decimals : 2));
         const g = synthesizeGeometry(entity, textHeight, decimals, tickLength, textGap, arrowSize);
         if (!g) return null;
+        if (style?.__arrowBlocks?.some(Boolean)) {
+            const markers = [...new Set(g.segments.filter(s => s.__arrowMarker).map(s => s.__arrowMarker)),
+                ...(g.polylines || []).filter(p => p.__arrowMarker).map(p => p.__arrowMarker)];
+            const replaced = new Set(); g.inserts = [];
+            markers.forEach((marker, i) => {
+                const name = style.__arrowBlocks[i % 2];
+                if (!name) return;
+                replaced.add(marker);
+                g.inserts.push({ type: 'INSERT', name, position: { ...marker.tip },
+                    xScale: marker.size, yScale: marker.size,
+                    rotation: Math.atan2(marker.dirY, marker.dirX) / DEG + 180 });
+            });
+            g.segments = g.segments.filter(s => !replaced.has(s.__arrowMarker));
+            g.polylines = (g.polylines || []).filter(p => !replaced.has(p.__arrowMarker));
+        }
         const bt = (Number(entity.dimensionType) || 0) & 15;
         if (style && bt !== 2 && bt !== 5) {
             const factor = Number.isFinite(style.DIMLFAC) ? style.DIMLFAC : 1;
@@ -340,6 +357,7 @@
         const nx = -dirY, ny = dirX;
         return {
             closed: true,
+            __arrowMarker: { tip: { ...tip }, dirX, dirY, size: len },
             vertices: [
                 { x: tip.x, y: tip.y },
                 { x: bx + nx * halfWidth, y: by + ny * halfWidth },

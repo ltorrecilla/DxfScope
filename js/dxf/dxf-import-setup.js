@@ -165,7 +165,10 @@
         const layouts = [];
         (preparedRecords || extractDxfSectionRecords(text, 'OBJECTS')).forEach(record => {
             if (String(record.type || '').toUpperCase() !== 'LAYOUT') return;
-            const rawName = firstRecordValue(record, ['1', '2']);
+            const subclass = record.pairs.findIndex(p => p.code === '100' && p.value === 'AcDbLayout');
+            const rawName = subclass >= 0
+                ? record.pairs.slice(subclass + 1).find(p => p.code === '1')?.value
+                : allRecordValues(record, '1').filter(Boolean).at(-1) || firstRecordValue(record, '2');
             const name = normalizeLayoutName(rawName);
             if (!name || name === 'Model') return;
             const mediaName = firstRecordValue(record, '4');
@@ -204,9 +207,16 @@
         return layouts.sort((a, b) => (a.tabOrder || 0) - (b.tabOrder || 0) || a.name.localeCompare(b.name));
     }
 
-    function parseRawDxfPaperViewports(text, preparedRecords = null) {
+    function parseRawDxfPaperViewports(text, preparedRecords = null, preparedBlocks = null) {
         const viewports = [];
-        (preparedRecords || extractDxfSectionRecords(text, 'ENTITIES')).forEach(record => {
+        const records = (preparedRecords || extractDxfSectionRecords(text, 'ENTITIES')).map(record => ({ record }));
+        let blockName = '';
+        for (const record of preparedBlocks || extractDxfSectionRecords(text, 'BLOCKS')) {
+            if (record.type === 'BLOCK') blockName = firstRecordValue(record, '2');
+            else if (record.type === 'ENDBLK') blockName = '';
+            else if (/^\*?paper_space\d*$/i.test(blockName)) records.push({ record, blockName });
+        }
+        records.forEach(({ record, blockName }) => {
             if (String(record.type || '').toUpperCase() !== 'VIEWPORT') return;
             const layoutName = normalizeLayoutName(firstRecordValue(record, '410')) || 'Paper Space';
             const center = {
@@ -225,6 +235,7 @@
                 __paperSpace: true,
                 __layoutName: layoutName,
                 __rawViewport: true,
+                __blockName: blockName || null,
                 centerPoint: center,
                 center,
                 width,
@@ -459,11 +470,40 @@
         return max + 1;
     }
     function prepareSpaces(rawText) {
-        const pairs = parseDxfPairs(rawText);
-        const entities = extractDxfSectionRecords(rawText, 'ENTITIES', pairs);
-        const objects = extractDxfSectionRecords(rawText, 'OBJECTS', pairs);
+        // Space setup only needs entity identity/ownership, layout records and
+        // viewport records. Do not materialize the entire drawing's geometry
+        // as another pair tree alongside the already parsed drawing.
+        const entities = [], objects = [], blocks = [];
+        const metadataCodes = new Set(['5', '8', '67', '410']);
+        const seenSections = new Set();
+        const pairPattern = /([^\r\n]*)(?:\r\n|\r|\n)([^\r\n]*)(?:\r\n|\r|\n|$)/g;
+        let section = '', pendingSection = false, record = null, fullRecord = false, match;
+        while ((match = pairPattern.exec(rawText || ''))) {
+            const code = match[1].trim();
+            if (code === '0') {
+                const type = match[2].trim();
+                record = null;
+                if (type === 'SECTION') { pendingSection = true; section = ''; continue; }
+                if (type === 'ENDSEC' || type === 'EOF') { section = ''; continue; }
+                const target = section === 'ENTITIES' ? entities
+                    : section === 'OBJECTS' && type === 'LAYOUT' ? objects
+                    : section === 'BLOCKS' && ['BLOCK', 'ENDBLK', 'VIEWPORT'].includes(type) ? blocks : null;
+                if (target) {
+                    record = { type, pairs: [] };
+                    fullRecord = section !== 'ENTITIES' || type === 'VIEWPORT';
+                    target.push(record);
+                }
+            } else if (pendingSection && code === '2') {
+                section = match[2].trim().toUpperCase();
+                if (seenSections.has(section)) section = '';
+                else seenSections.add(section);
+                pendingSection = false;
+            } else if (record && (fullRecord || metadataCodes.has(code))) {
+                record.pairs.push({ code, value: match[2].trim() });
+            }
+        }
         return { rawMap: parseRawDxfEntitySpaceMap(rawText, entities),
-            viewports: parseRawDxfPaperViewports(rawText, entities), layouts: parseRawDxfLayouts(rawText, objects) };
+            viewports: parseRawDxfPaperViewports(rawText, entities, blocks), layouts: parseRawDxfLayouts(rawText, objects) };
     }
     const api = { normalizeDxfHandle, normalizeLayoutName, parseDxfPairs, extractDxfSectionRecords, firstRecordValue, allRecordValues, parseRawDxfEntitySpaceMap, makePaperSize, orientPaperSize, parsePaperSizeFromMediaName, getPlotUnitName, normalizePaperDimensionPair, parseRawDxfLayouts, parseRawDxfPaperViewports, assignRawEntityIndices, normalizeMirroredEntities, parseRawLayerTableInfo, computeNextHandleSeed, prepareSpaces };
     root.DxfImportSetup = api;

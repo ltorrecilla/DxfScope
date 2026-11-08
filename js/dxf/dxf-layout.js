@@ -364,7 +364,55 @@
         return scanViewports(lines, entities, blocks, scanLayerHandles(lines, tables));
     }
 
-    var DxfLayout = { scan: scan, viewports: viewports };
+    // ENTITIES-only metadata; reactor 330 handles inside 102 groups are not owners.
+    function entityTags(text) {
+        const map = {};
+        const lines = splitLines(text);
+        let inEntities = false, pendingSection = false, cur = null, in102 = false;
+        const flush = () => {
+            if (cur?.handle) map[cur.handle] = { owner: cur.owner, name410: cur.name410 };
+            cur = null;
+        };
+        for (let i = 0; i + 1 < lines.length; i += 2) {
+            const code = parseInt(lines[i], 10);
+            if (Number.isNaN(code)) break;
+            const value = (lines[i + 1] || '').trim();
+            if (code === 0) {
+                flush(); in102 = false;
+                if (value === 'SECTION') { pendingSection = true; inEntities = false; continue; }
+                if (value === 'ENDSEC' || value === 'EOF') { inEntities = false; continue; }
+                if (inEntities) cur = { handle: '', owner: '', name410: '' };
+                continue;
+            }
+            if (pendingSection) {
+                if (code === 2) { inEntities = value === 'ENTITIES'; pendingSection = false; }
+                continue;
+            }
+            if (!cur) continue;
+            if (code === 102) { if (value.charAt(0) === '{') in102 = true; else if (value === '}') in102 = false; continue; }
+            if (in102) continue;
+            if (code === 5 && !cur.handle) cur.handle = value.toUpperCase();
+            else if (code === 330 && !cur.owner) cur.owner = value.toUpperCase();
+            else if (code === 410 && !cur.name410) cur.name410 = value;
+        }
+        flush();
+        return map;
+    }
+
+    // Resolve one ENTITIES paper item. A known owner takes precedence over 410;
+    // an unknown owner permits 410; only untagged items use the active layout.
+    function paperOwner(tag, layouts, active) {
+        const owner = String(tag?.owner || '').toUpperCase();
+        const named = String(tag?.name410 || '').toLowerCase();
+        const byOwner = owner && layouts.find(l => String(l.blockRecordHandle || '').toUpperCase() === owner);
+        if (byOwner) return byOwner.name;
+        const byName = named && layouts.find(l => String(l.name || '').toLowerCase() === named);
+        if (byName) return byName.name;
+        if (named) return null; // belongs to a layout absent from this drawing
+        return active?.name || null;
+    }
+
+    var DxfLayout = { scan: scan, viewports: viewports, entityTags: entityTags, paperOwner: paperOwner };
 
     if (typeof window !== 'undefined') {
         window.DxfLayout = DxfLayout;

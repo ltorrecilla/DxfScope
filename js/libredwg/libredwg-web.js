@@ -4481,7 +4481,7 @@ const _colorKeywords = {
   honeydew: 15794160,
   hotpink: 16738740,
   indianred: 13458524,
-  indigo: 4915330,
+  blue: 4915330,
   ivory: 16777200,
   khaki: 15787660,
   lavender: 15132410,
@@ -5645,6 +5645,66 @@ var DwgThumbnailImageType = /* @__PURE__ */ ((DwgThumbnailImageType2) => {
   DwgThumbnailImageType2[DwgThumbnailImageType2["PNG"] = 6] = "PNG";
   return DwgThumbnailImageType2;
 })(DwgThumbnailImageType || {});
+// LibreDWG synthesizes VIEWPORT IDs in object order on DWG export. The first
+// object need not be the overall paper viewport. Repair only an unambiguous
+// layout-limit match, so a real model frame is not discarded as reserved ID 1.
+function repairDwgViewportIds(bytes) {
+  const text = new TextDecoder().decode(bytes);
+  const records = [];
+  let record;
+  // Keep only layout metadata, not millions of line strings and pair objects
+  // for model geometry. Offsets let us patch IDs without rebuilding every line.
+  const wanted = new Set(["5", "10", "20", "11", "21", "12", "22", "40", "41", "69", "330"]);
+  for (let offset = 0; offset < text.length;) {
+    const codeEnd = text.indexOf("\n", offset);
+    if (codeEnd < 0) break;
+    const start = codeEnd + 1;
+    const newline = text.indexOf("\n", start);
+    const lineEnd = newline < 0 ? text.length : newline;
+    const end = text[lineEnd - 1] === "\r" ? lineEnd - 1 : lineEnd;
+    const code = text.slice(offset, codeEnd).trim();
+    offset = newline < 0 ? text.length : newline + 1;
+    if (code === "0") {
+      const type = text.slice(start, end).trim();
+      record = type === "BLOCK_RECORD" || type === "LAYOUT" || type === "VIEWPORT" ? { type, pairs: [] } : null;
+      if (record) records.push(record);
+    } else if (record && wanted.has(code)) {
+      record.pairs.push({ code, value: text.slice(start, end).trim(), start, end });
+    }
+  }
+  const value = (r, code) => r.pairs.find(p => p.code === code)?.value;
+  const number = (r, code) => Number(value(r, code));
+  const owners = new Set(records.filter(r => r.type === "BLOCK_RECORD").map(r => value(r, "5")));
+  const near = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 1e-7 * Math.max(1, Math.abs(a), Math.abs(b));
+  const patches = [];
+  for (const layout of records.filter(r => r.type === "LAYOUT")) {
+    const owner = layout.pairs.filter(p => p.code === "330" && owners.has(p.value)).at(-1)?.value;
+    if (!owner) continue;
+    const x = number(layout, "10"), y = number(layout, "20");
+    const w = number(layout, "11") - x, h = number(layout, "21") - y;
+    if (!(w > 0 && h > 0)) continue;
+    const vps = records.filter(r => r.type === "VIEWPORT" && value(r, "330") === owner);
+    const candidates = vps.filter(r => near(number(r, "40"), w) && near(number(r, "41"), h)
+      && near(number(r, "10"), x + w / 2) && near(number(r, "20"), y + h / 2)
+      && near(number(r, "12"), x + w / 2) && near(number(r, "22"), y + h / 2));
+    const reserved = vps.filter(r => number(r, "69") === 1);
+    if (candidates.length !== 1 || reserved.length !== 1 || candidates[0] === reserved[0]) continue;
+    const overall = candidates[0].pairs.find(p => p.code === "69");
+    const frame = reserved[0].pairs.find(p => p.code === "69");
+    if (!overall || Number(overall.value) <= 1) continue;
+    patches.push({ start: frame.start, end: frame.end, value: overall.value },
+      { start: overall.start, end: overall.end, value: "1" });
+  }
+  if (!patches.length) return bytes;
+  const parts = [];
+  let offset = 0;
+  for (const patch of patches.sort((a, b) => a.start - b.start)) {
+    parts.push(text.slice(offset, patch.start), patch.value);
+    offset = patch.end;
+  }
+  parts.push(text.slice(offset));
+  return new TextEncoder().encode(parts.join(""));
+}
 const _LibreDwg = class _LibreDwg {
   constructor(wasmInstance) {
     __publicField(this, "wasmInstance");
@@ -5706,7 +5766,7 @@ const _LibreDwg = class _LibreDwg {
         console.log("Convert dwg to dxf with error code: ", error);
         return null;
       }
-      return this.wasmInstance.FS.readFile(outputFileName);
+      return repairDwgViewportIds(this.wasmInstance.FS.readFile(outputFileName));
     } finally {
       if (this.wasmInstance.FS.analyzePath(inputFileName, false).exists) {
         this.wasmInstance.FS.unlink(inputFileName);

@@ -1,4 +1,4 @@
-/** Named visibility-only layer states stored in an app-owned DXF XRECORD. */
+/** Named layer states stored in an app-owned DXF XRECORD. */
 (function (root) {
     'use strict';
 
@@ -66,7 +66,19 @@
             for (const [layer, shown] of Object.entries(item.visibility || {})) {
                 if (layer && typeof shown === 'boolean') visibility[layer] = shown;
             }
-            states.push({ name, visibility });
+            const state = { name, visibility };
+            if (item.properties && typeof item.properties === 'object') {
+                state.properties = {};
+                for (const [layer, value] of Object.entries(item.properties)) {
+                    if (!layer || !value || typeof value !== 'object') continue;
+                    const properties = {};
+                    if (Number.isInteger(value.color) && value.color >= 0 && value.color <= 0xffffff) properties.color = value.color;
+                    if (Number.isInteger(value.weight) && value.weight >= -3 && value.weight <= 211) properties.weight = value.weight;
+                    if (typeof value.linetype === 'string' && value.linetype.trim()) properties.linetype = value.linetype;
+                    state.properties[layer] = properties;
+                }
+            }
+            states.push(state);
         }
         const current = {};
         for (const [layer, shown] of Object.entries(data?.current || {})) {
