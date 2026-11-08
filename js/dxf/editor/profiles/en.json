@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "id": "en",
+  "name": "English",
+  "commands": {
+    "line": [
+      "L",
+      "LINE"
+    ],
+    "polyline": [
+      "PL",
+      "PLINE",
+      "POLYLINE"
+    ],
+    "rect": [
+      "REC",
+      "RECTANG",
+      "RECTANGLE"
+    ],
+    "polygon": [
+      "POL",
+      "POLYGON"
+    ],
+    "donut": [
+      "DO",
+      "DONUT"
+    ],
+    "xline": [
+      "XL",
+      "XLINE"
+    ],
+    "ray": [
+      "RAY"
+    ],
+    "circle": [
+      "C",
+      "CIRCLE"
+    ],
+    "arc": [
+      "A",
+      "ARC"
+    ],
+    "ellipse": [
+      "EL",
+      "ELLIPSE"
+    ],
+    "spline": [
+      "SPL",
+      "SPLINE"
+    ],
+    "mtext": [
+      "MT",
+      "MTEXT"
+    ],
+    "text": [
+      "TEXT"
+    ],
+    "leader": [
+      "LE",
+      "LEADER",
+      "MLEADER"
+    ],
+    "wipeout": [
+      "WI",
+      "WIPEOUT"
+    ],
+    "viewport": [
+      "MV",
+      "MVIEW"
+    ],
+    "dim": [
+      "DLI",
+      "DIMLINEAR"
+    ],
+    "dim-aligned": [
+      "DAL",
+      "DIMALIGNED"
+    ],
+    "dim-radial": [
+      "DRA",
+      "DIMRADIUS"
+    ],
+    "dim-diameter": [
+      "DDI",
+      "DIMDIAMETER"
+    ],
+    "dim-angular": [
+      "DAN",
+      "DIMANGULAR"
+    ],
+    "dim-baseline": [
+      "DBA",
+      "DIMBASELINE"
+    ],
+    "dim-continue": [
+      "DCO",
+      "DIMCONTINUE"
+    ],
+    "dim-ordinate": [
+      "DOR",
+      "DIMORDINATE"
+    ],
+    "move": [
+      "M",
+      "MOVE"
+    ],
+    "copy": [
+      "CO",
+      "CP",
+      "COPY"
+    ],
+    "rotate": [
+      "RO",
+      "ROTATE"
+    ],
+    "scale": [
+      "SC",
+      "SCALE"
+    ],
+    "mirror": [
+      "MI",
+      "MIRROR"
+    ],
+    "stretch": [
+      "S",
+      "STRETCH"
+    ],
+    "array": [
+      "AR",
+      "ARRAY"
+    ],
+    "trim": [
+      "TR",
+      "TRIM"
+    ],
+    "extend": [
+      "EX",
+      "EXTEND"
+    ],
+    "offset": [
+      "O",
+      "OFFSET"
+    ],
+    "fillet": [
+      "F",
+      "FILLET"
+    ],
+    "chamfer": [
+      "CHA",
+      "CHAMFER"
+    ],
+    "break": [
+      "BR",
+      "BREAK"
+    ],
+    "lengthen": [
+      "LEN",
+      "LENGTHEN"
+    ],
+    "pedit": [
+      "PE",
+      "PEDIT"
+    ],
+    "join": [
+      "J",
+      "JOIN"
+    ],
+    "hatch": [
+      "H",
+      "HATCH"
+    ],
+    "table": [
+      "TB",
+      "TABLE"
+    ],
+    "create-block": [
+      "B",
+      "BLOCK"
+    ],
+    "insert-block": [
+      "I",
+      "INSERT"
+    ],
+    "explode": [
+      "X",
+      "EXPLODE"
+    ],
+    "attedit": [
+      "ATTEDIT"
+    ],
+    "clean": [
+      "OV",
+      "OVERKILL",
+      "CLEAN"
+    ],
+    "zoom": [
+      "Z",
+      "ZOOM"
+    ],
+    "plot": [
+      "PLOT",
+      "PRINT"
+    ],
+    "purge": [
+      "PU",
+      "PURGE"
+    ],
+    "matchprop": [
+      "MA",
+      "MATCHPROP"
+    ],
+    "select-similar": [
+      "SELECTSIMILAR"
+    ],
+    "select-previous": [
+      "P",
+      "PREVIOUS",
+      "SELECTPREVIOUS"
+    ],
+    "qselect": [
+      "QSELECT"
+    ],
+    "regen": [
+      "RE",
+      "RG",
+      "REGEN"
+    ]
+  }
+}

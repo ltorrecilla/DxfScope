@@ -308,6 +308,28 @@
         var blockDiff = diffBlockDefs(
             drawingA && drawingA.blocks, blocksB, tol);
 
+        function styleSignature(e, drawing, inheritedLayer, depth) {
+            if ((depth || 0) > 12) return '';
+            var layerName = e.layer && e.layer !== '0' ? e.layer : (inheritedLayer || e.layer || '0');
+            var layer = drawing.tables?.layer?.layers?.[layerName] || {};
+            var colorApi = typeof window !== 'undefined' ? window.DxfColor : require('./dxf-color.js');
+            var style = {
+                color: colorApi.resolve(e, { getLayer: name => drawing.tables?.layer?.layers?.[name], inheritedLayer }).rgb,
+                lineType: !e.lineType || String(e.lineType).toUpperCase() === 'BYLAYER' ? layer.lineType : e.lineType,
+                lineweight: e.lineweight == null || e.lineweight === -1 ? layer.lineweight : e.lineweight
+            };
+            var lineDefinition = drawing.tables?.lineType?.lineTypes?.[style.lineType];
+            if (lineDefinition) style.linePattern = lineDefinition.pattern;
+            var result = canon(style, tol);
+            if (e.type === 'INSERT') {
+                var block = drawing.blocks?.[insertBlockName(e)];
+                result += (block?.entities || []).map(child => styleSignature(child, drawing, layerName, (depth || 0) + 1)).sort().join('|');
+            }
+            return result;
+        }
+        function contentFingerprint(e, drawing, offset) {
+            return fingerprint(e, tol, offset) + '|' + styleSignature(e, drawing);
+        }
         var mode = opts.forceMode;
         if (mode !== 'handle' && mode !== 'fingerprint') {
             mode = handleModeViable(entsA, entsB) ? 'handle' : 'fingerprint';
@@ -317,20 +339,35 @@
         var i, e, fp;
 
         if (mode === 'handle') {
+            var exactB = new Map(), pairedA = new Set(), pairedB = new Set();
+            entsB.forEach(function (b) {
+                var key = contentFingerprint(b, drawingB, offsetB);
+                if (!exactB.has(key)) exactB.set(key, []);
+                exactB.get(key).push(b);
+            });
+            entsA.forEach(function (a) {
+                var candidates = exactB.get(contentFingerprint(a, drawingA));
+                if (!candidates?.length) return;
+                var b = candidates.pop(); pairedA.add(a); pairedB.add(b);
+                if (a.type === 'INSERT' && blockDiff.changed[insertBlockName(a)]) modified.push({ a, b, reason: 'block' });
+                else unchanged.push({ a, b });
+            });
             var byHandleA = {}, byHandleB = {};
             var restA = [], restB = []; // entities without real handles → fingerprint sub-pass
             for (i = 0; i < entsA.length; i++) {
                 e = entsA[i];
+                if (pairedA.has(e)) continue;
                 if (hasRealHandle(e)) byHandleA[e.handle] = e; else restA.push(e);
             }
             for (i = 0; i < entsB.length; i++) {
                 e = entsB[i];
+                if (pairedB.has(e)) continue;
                 if (hasRealHandle(e)) byHandleB[e.handle] = e; else restB.push(e);
             }
             for (var h in byHandleA) {
                 var a = byHandleA[h], b = byHandleB[h];
                 if (!b) { deleted.push({ a: a }); continue; }
-                var fa = fingerprint(a, tol), fb = fingerprint(b, tol, offsetB);
+                var fa = contentFingerprint(a, drawingA), fb = contentFingerprint(b, drawingB, offsetB);
                 if (fa === fb) {
                     // Content equal — but a changed block def modifies its INSERTs.
                     if (a.type === 'INSERT' && blockDiff.changed[insertBlockName(a)]) {
@@ -345,7 +382,11 @@
             for (var h2 in byHandleB) {
                 if (!byHandleA[h2]) added.push({ b: byHandleB[h2] });
             }
-            // Leftovers without handles: fingerprint them against each other.
+            // Exporters may regenerate handles. Reconcile unmatched objects by
+            // content before reporting them as removed and added.
+            restA.push(...deleted.map(p => p.a));
+            restB.push(...added.map(p => p.b));
+            deleted.length = 0; added.length = 0;
             fpPass(restA, restB);
         } else {
             fpPass(entsA, entsB);
@@ -354,11 +395,11 @@
         function fpPass(listA, listB) {
             var mapA = {}, mapB = {};
             for (var x = 0; x < listA.length; x++) {
-                fp = fingerprint(listA[x], tol);
+                fp = contentFingerprint(listA[x], drawingA);
                 (mapA[fp] || (mapA[fp] = [])).push(listA[x]);
             }
             for (var y = 0; y < listB.length; y++) {
-                fp = fingerprint(listB[y], tol, offsetB);
+                fp = contentFingerprint(listB[y], drawingB, offsetB);
                 (mapB[fp] || (mapB[fp] = [])).push(listB[y]);
             }
             for (var f in mapA) {

@@ -32,13 +32,13 @@ async function converter() {
     // Existing bundled LibreDWG (GPL-3), loaded lazily in this job's worker.
     const base = new URL('../libredwg/', import.meta.url);
     const fetchOk = async name => {
-        const response = await fetch(new URL(name, base));
+        const response = await fetch(new URL(name, base), { cache: 'no-cache' });
         if (!response.ok) throw new Error(`Converter ${name}: HTTP ${response.status}`);
         return response;
     };
     const [glue, dist, wasm] = await Promise.all([
         fetchOk('libredwg-web.glue.js').then(r => r.text()),
-        fetchOk('libredwg-web.js').then(r => r.text()),
+        fetchOk('libredwg-web.js?v=layout-frames-2').then(r => r.text()),
         fetchOk('libredwg-web.wasm').then(r => r.arrayBuffer()),
     ]);
     const wasmBinary = new Uint8Array(wasm);
@@ -83,12 +83,26 @@ self.onmessage = async ({ data }) => {
             } else rawText = input;
         } else rawText = String(data.rawText || '');
         rawText = normalizeText(rawText);
+        if (data.target === 'compare') {
+            self.window = self;
+            try {
+                await timed('modules', () => Promise.all(['dxf-parser', 'dxf-text', 'dxf-dim-style',
+                    'dxf-hatch', 'dxf-dim', 'dxf-mleader', 'dxf-ocs', 'dxf-color', 'dxf-attributes',
+                    'dxf-sanitize', 'dxf-layout', 'compare/dxf-compare-context'].map(name => import(`./${name}.js?v=compare-import-2`))));
+                const context = self.DxfCompareContext.create(data.sideKey);
+                await timed('recover', () => self.DxfCompareContext.prepare(context, rawText, name, self));
+                // Worker-local rendering caches cannot be structured-cloned.
+                delete context.hatchLoopCache;
+                self.postMessage({ version: VERSION, id: activeId, type: 'result', result: { context } });
+                return;
+            } finally { delete self.window; }
+        }
         // These existing UMD readers expose browser globals. Alias only during
         // module registration; converter environment detection sees a real worker.
         self.window = self;
         try {
             await timed('modules', () => Promise.all(['dxf-parser','dxf-text','dxf-dim-style','dxf-dim-assoc',
-                'dxf-hatch','dxf-dim','dxf-xline','dxf-mleader','dxf-layer-states','dxf-ocs','dxf-import-setup'].map(name => import(`./${name}.js?v=import-2`))));
+                'dxf-hatch','dxf-dim','dxf-xline','dxf-mleader','dxf-layer-states','dxf-ocs','dxf-import-setup'].map(name => import(`./${name}.js?v=import-4`))));
         } finally { delete self.window; }
         const parsed = await timed('parse', () => new self.DxfParser().parseSync(rawText));
         const recovery = await timed('recover', () => {

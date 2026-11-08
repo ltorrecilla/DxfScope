@@ -21,8 +21,8 @@
  *   normalizeDrawing(dxf, rawText) → { normalized, unsupported:{TYPE:n} }
  *       read-only callers (DXF Compare): normalize by handle, no patches kept.
  *
- * Handled: CIRCLE, ARC, LWPOLYLINE, ELLIPSE with a normal of exactly (0,0,-1).
- * Reported as unsupported: TEXT, ATTRIB, ATTDEF, INSERT, HATCH, SOLID, TRACE,
+ * Handled: CIRCLE, ARC, LWPOLYLINE, ELLIPSE, INSERT with a normal of exactly (0,0,-1).
+ * Reported as unsupported: TEXT, ATTRIB, ATTDEF, HATCH, SOLID, TRACE,
  * POLYLINE (2D), and any tilted normal on an OCS type. LINE, POINT, SPLINE,
  * MTEXT and DIMENSION store world coordinates and need nothing.
  */
@@ -32,9 +32,9 @@
     const TAU = Math.PI * 2;
     const AXIS_EPS = 1e-9;
 
-    const HANDLED = new Set(['CIRCLE', 'ARC', 'LWPOLYLINE', 'ELLIPSE']);
+    const HANDLED = new Set(['CIRCLE', 'ARC', 'LWPOLYLINE', 'ELLIPSE', 'INSERT']);
     // OCS types this module does not rewrite yet; counted so the UI can say so.
-    const OCS_UNSUPPORTED = new Set(['TEXT', 'ATTRIB', 'ATTDEF', 'INSERT', 'HATCH', 'SOLID', 'TRACE', 'POLYLINE', 'SHAPE']);
+    const OCS_UNSUPPORTED = new Set(['TEXT', 'ATTRIB', 'ATTDEF', 'HATCH', 'SOLID', 'TRACE', 'POLYLINE', 'SHAPE']);
 
     const typeOf = (e) => String(e && e.type || '').toUpperCase();
     const fin = Number.isFinite;
@@ -138,6 +138,22 @@
         const t = typeOf(e);
         if (!HANDLED.has(t) || !isFlippedZ(normal)) return null;
         const up = { '230': 1 };
+
+        if (t === 'INSERT') {
+            const p = e.position;
+            if (!p || !fin(p.x) || !fin(p.y)) return null;
+            // Reflect the entire INSERT transform, including its origin:
+            // F * T(p) * R(a) * S = T(Fp) * R(-a) * F * S.
+            // Keep the block definition/base point in its own coordinates.
+            p.x = round(-p.x);
+            e.rotation = round(-(Number(e.rotation) || 0));
+            e.xScale = -(e.xScale ?? 1);
+            e.zScale = -(e.zScale ?? 1);
+            const patch = { '10': p.x, '41': e.xScale, '43': e.zScale, '50': e.rotation, ...up };
+            if (fin(p.z) && p.z !== 0) { p.z = round(-p.z); patch['30'] = p.z; }
+            setNormalUp(e);
+            return { ops: [patch] };
+        }
 
         if (t === 'CIRCLE' || t === 'ARC') {
             const c = e.center;

@@ -2,7 +2,7 @@
 (function (root) {
     'use strict';
     const codes = { 3:'DIMPOST',40:'DIMSCALE',41:'DIMASZ',42:'DIMEXO',44:'DIMEXE',45:'DIMRND',
-        140:'DIMTXT',142:'DIMTSZ',144:'DIMLFAC',147:'DIMGAP',75:'DIMSE1',76:'DIMSE2',77:'DIMTAD',78:'DIMZIN',79:'DIMAZIN',
+        71:'DIMTOL',72:'DIMLIM',173:'DIMALT',172:'DIMTOFL',174:'DIMTIX',175:'DIMSOXD',176:'DIMCLRD',177:'DIMCLRE',178:'DIMCLRT',278:'DIMDSEP',281:'DIMSD1',282:'DIMSD2',283:'DIMTOLJ',284:'DIMTZIN',285:'DIMALTZ',286:'DIMALTTZ',289:'DIMATFIT',290:'DIMFXLON',49:'DIMFXL', 140:'DIMTXT',142:'DIMTSZ',144:'DIMLFAC',147:'DIMGAP',75:'DIMSE1',76:'DIMSE2',77:'DIMTAD',78:'DIMZIN',79:'DIMAZIN',
         179:'DIMADEC',271:'DIMDEC',275:'DIMAUNIT',277:'DIMLUNIT',280:'DIMJUST',
         340:'DIMTXSTY',342:'DIMBLK',343:'DIMBLK1',344:'DIMBLK2' };
     function recover(drawing, raw, preparedLines = null) {
@@ -52,14 +52,65 @@
                 if (Number.isFinite(o.DIMTAD) && o.DIMTAD !== inherited.DIMTAD) e.__dimLocalStyle.textPosition = o.DIMTAD === 0 ? 'center' : o.DIMTAD === 4 ? 'below' : 'above';
                 if (Number.isFinite(o.DIMTSZ) && o.DIMTSZ !== inherited.DIMTSZ) {
                     e.__dimLocalStyle.markerType = o.DIMTSZ > 0 ? 'tick' : 'arrow';
-                    if (o.DIMTSZ > 0) e.__dimLocalStyle.tickSize = o.DIMTSZ;
+                    if (o.DIMTSZ > 0) e.__dimLocalStyle.tickSize = o.DIMTSZ * (Number(e.__resolvedDimStyle.DIMSCALE) > 0 ? Number(e.__resolvedDimStyle.DIMSCALE) : 1);
                 }
             }
         };
-        (drawing.entities || []).forEach(apply);
-        Object.values(drawing.blocks || {}).forEach(b => (b.entities || []).forEach(apply));
+        const capture = e => {
+            apply(e);
+            if (e?.type === 'DIMENSION') e.__dimAcceptedState = captureDefinition(e);
+        };
+        (drawing.entities || []).forEach(capture);
+        Object.values(drawing.blocks || {}).forEach(b => (b.entities || []).forEach(capture));
         return styles;
     }
+    function captureDefinition(entity) {
+        const out = {};
+        for (const [key, value] of Object.entries(entity)) {
+            if (!key.startsWith('__') || ['__dimStyleOverrides','__dimLocalStyle','__dimStyleAssigned','__dimStyleChanged','__dimStyleIndex','__dimTextFlip','__dimTextRot180'].includes(key)) out[key] = value;
+        }
+        return JSON.parse(JSON.stringify(out));
+    }
+    function restoreDefinition(entity) {
+        const saved = entity.__dimAcceptedState;
+        if (!saved) return;
+        for (const key of Object.keys(captureDefinition(entity))) delete entity[key];
+        Object.assign(entity, JSON.parse(JSON.stringify(saved)));
+    }
+    function unsupportedFeatures(style, blockNames, drawing) {
+        const reasons = [];
+        if (style.DIMALT) reasons.push('alternate units');
+        if (style.DIMTOL || style.DIMLIM) reasons.push('tolerances or limits');
+        if (style.DIMLUNIT != null && style.DIMLUNIT !== 2) reasons.push('non-decimal linear units');
+        if (style.DIMJUST) reasons.push('non-centered automatic text');
+        if (style.DIMFXLON) reasons.push('fixed-length extension lines');
+        if (style.DIMSD1 || style.DIMSD2) reasons.push('suppressed dimension lines');
+        if ([style.DIMCLRD, style.DIMCLRE, style.DIMCLRT].some(v => v != null && v !== 0 && v !== 256)) reasons.push('component color overrides');
+        if (!(style.DIMTSZ > 0)) for (const handle of [style.DIMBLK1 || style.DIMBLK, style.DIMBLK2 || style.DIMBLK]) {
+            if (!handle || String(handle) === '0') continue;
+            const name = blockNames?.get(String(handle).toUpperCase()) || handle;
+            if (!drawing?.blocks?.[name]?.entities?.length) { reasons.push('unresolved custom arrowhead'); break; }
+        }
+        return reasons;
+    }
+
+    // Resolve file values before converting lengths to drawing units. Keep the
+    // original DIMSTYLE and override records untouched for round-trip export.
+    function effectiveStyle(entity, drawing, textStyles) {
+        const raw = { ...(entity.__baseDimStyle || entity.__resolvedDimStyle || {}), ...(entity.__dimStyleOverrides || {}) };
+        const scale = Number(raw.DIMSCALE) > 0 ? Number(raw.DIMSCALE) : 1;
+        const style = { ...raw, DIMSCALE: 1 };
+        for (const key of ['DIMTXT','DIMASZ','DIMTSZ','DIMGAP','DIMEXO','DIMEXE'])
+            if (Number.isFinite(raw[key])) style[key] = raw[key] * scale;
+        const catalog = textStyles || {};
+        const original = drawing?.blocks?.[entity.block]?.entities?.find(e => e.type === 'TEXT' || e.type === 'MTEXT');
+        const textStyle = Object.values(catalog).find(s => s.handle && s.handle.toUpperCase() === String(raw.DIMTXSTY || '').toUpperCase())
+            || catalog[String(original?.styleName || original?.textStyle || '').toUpperCase()];
+        if (!(style.DIMTXT > 0) && textStyle?.fixedHeight > 0) style.DIMTXT = textStyle.fixedHeight * scale;
+        return { raw, style, textStyle: textStyle?.name || original?.styleName || original?.textStyle || 'STANDARD',
+            fontFile: textStyle?.fontFile, originalText: original };
+    }
+
     function styleCodes(style) {
         const values = {
             3: style.dimPost || `${style.prefix || ''}<>${style.suffix || ''}`,
@@ -237,7 +288,7 @@
         return kind === 'overview' ? dimensions
             : Object.hasOwn(types, kind) ? dimensions.filter(entity => (entity.dimensionType & 15) === types[kind]) : [];
     }
-    const api = { recover, styleCodes, patchDimensionPairs, patchDimensionStyleReference,
+    const api = { recover, effectiveStyle, captureDefinition, restoreDefinition, unsupportedFeatures, styleCodes, patchDimensionPairs, patchDimensionStyleReference,
         upsertStyleTable, removeStylesFromTable, previewDimensions };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     root.DxfDimStyle = api;

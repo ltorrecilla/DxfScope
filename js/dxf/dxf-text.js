@@ -40,6 +40,7 @@
             if (code === '0' && value === 'STYLE') { save(); record = {}; continue; }
             if (!record) continue;
             if (code === '2') record.name = value;
+            else if (code === '5') record.handle = value.toUpperCase();
             else if (code === '3') record.fontFile = value;
             else if (code === '4') record.bigFontFile = value;
             else if (code === '40') record.fixedHeight = Number(value) || 0;
