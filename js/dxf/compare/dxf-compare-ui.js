@@ -469,6 +469,7 @@
             function setFile(f) {
                 selectFile(slot, f);
                 nameEl.textContent = f.name;
+                nameEl.removeAttribute('data-i18n'); // Selected filenames are data, not translated labels.
                 nameEl.classList.remove('text-slate-500');
                 nameEl.classList.add('text-blue-600');
                 updateOpenButton();
@@ -491,23 +492,7 @@
         wireDropZone('drop-a', 'input-a', 'file-a-name', 'a');
         wireDropZone('drop-b', 'input-b', 'file-b-name', 'b');
 
-        const appSidebar = document.getElementById('app-sidebar');
-        const sidebarTexts = document.querySelectorAll('.sidebar-text');
-        let isSidebarExpanded = false;
-        document.getElementById('sidebar-toggle').addEventListener('click', () => {
-            isSidebarExpanded = !isSidebarExpanded;
-            const toggleWrapper = document.getElementById('sidebar-toggle-icon-wrapper');
-            if (isSidebarExpanded) {
-                appSidebar.classList.replace('w-[72px]', 'w-64');
-                toggleWrapper.style.transform = 'rotate(180deg)';
-                sidebarTexts.forEach(t => t.classList.replace('opacity-0', 'opacity-100'));
-            } else {
-                appSidebar.classList.replace('w-64', 'w-[72px]');
-                toggleWrapper.style.transform = 'rotate(0deg)';
-                sidebarTexts.forEach(t => t.classList.replace('opacity-100', 'opacity-0'));
-            }
-            window.setTimeout(onResize, 300);
-        });
+        window.DxfSidebar.connect('compare', document.body, onResize);
         const tabs = document.querySelectorAll('.tab-btn[data-target]');
         const panels = document.querySelectorAll('.view-panel');
         function switchTab(targetId) {

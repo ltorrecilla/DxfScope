@@ -1,0 +1,8 @@
+/* One native page; only the active retained root is attached. */
+#workspace-stage { display: flex; flex: 1; min-height: 0; }
+.dxf-mode-root { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+[hidden] { display: none !important; }
+.dxf-mode-notice { position: fixed; z-index: 200; bottom: 12px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 24px); display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px #0002; }
+#workspace-status { margin: 0; font-size: 13px; }
+#workspace-retry { font: inherit; cursor: pointer; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: transparent; color: inherit; }
+.dark .dxf-mode-notice { background: #262626; border-color: #525252; }

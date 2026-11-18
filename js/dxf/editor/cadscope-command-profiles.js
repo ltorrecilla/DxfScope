@@ -19,7 +19,8 @@
         }
         return value.profiles.map(entry => ({ ...entry }));
     }
-    function create({ registry, loadJson, storage, isIdle, changed = () => {} }) {
+    function create({ registry, loadJson, storage, isIdle, changed = () => {}, translate = (key, fallback) => fallback }) {
+        const tr = translate;
         let entries = [{ id: 'en', name: 'English', file: 'en.json' }], loading = false, message = '', request = 0;
         const english = { schemaVersion: 1, id: 'en', name: 'English',
             commands: Object.fromEntries(registry.canonicalCommands.map(c => [c.tool, [...c.aliases]])) };
@@ -28,24 +29,24 @@
         async function select(id, { startup = false } = {}) {
             const token = ++request;
             loading = false;
-            if (!isIdle()) { message = 'Finish the current tool or input before changing command language.'; notify(); return false; }
-            loading = true; message = 'Loading command profile…'; notify();
+            if (!isIdle()) { message = tr("uiFinishTheCurrentToolOrInputBeforeChangingCommand", "Finish the current tool or input before changing command language."); notify(); return false; }
+            loading = true; message = tr("uiLoadingCommandProfile", "Loading command profile…"); notify();
             try {
                 const entry = entries.find(e => e.id === id);
-                if (!entry) throw Error('Command profile is not registered.');
+                if (!entry) throw Error(tr("uiCommandProfileIsNotRegistered", "Command profile is not registered."));
                 const profile = id === 'en' ? english : await loadJson(entry.file);
                 if (token !== request) return false;
-                if (!isIdle()) throw Error('Drawing is busy; command language was not changed.');
-                if (profile.name !== entry.name) throw Error('Command profile name does not match the manifest.');
+                if (!isIdle()) throw Error(tr("uiDrawingIsBusyCommandLanguageWasNotChanged", "Drawing is busy; command language was not changed."));
+                if (profile.name !== entry.name) throw Error(tr("uiCommandProfileNameDoesNotMatchTheManifest", "Command profile name does not match the manifest."));
                 const result = registry.activateProfile(profile, { expectedId: id });
                 if (!result.ok) throw Error(result.errors.map(e => [e.code, e.commandId, e.normalized, e.conflictingOwner].filter(Boolean).join(': ')).join('; '));
                 message = '';
-                try { storage.setItem(KEY, id); } catch (_) { message = 'Command language changed for this session; preference could not be saved.'; }
+                try { storage.setItem(KEY, id); } catch (_) { message = tr("uiCommandLanguageChangedForThisSessionPreferenceCouldNot", "Command language changed for this session; preference could not be saved."); }
                 return true;
             } catch (error) {
                 if (token !== request) return false;
-                message = error.message || 'Command profile could not be loaded.';
-                if (startup) message += ' Using built-in English.';
+                message = error.message || tr("uiCommandProfileCouldNotBeLoaded", "Command profile could not be loaded.");
+                if (startup) message += tr("uiUsingBuiltInEnglish", " Using built-in English.");
                 return false;
             } finally {
                 if (token === request) { loading = false; notify(); }
@@ -60,7 +61,7 @@
                 entries = manifest;
             } catch (_) {
                 if (token !== request) return;
-                loading = false; message = 'Profile list unavailable. Using built-in English.'; notify(); return;
+                loading = false; message = tr("uiProfileListUnavailableUsingBuiltInEnglish", "Profile list unavailable. Using built-in English."); notify(); return;
             }
             let saved = 'en';
             try { saved = storage.getItem(KEY) || 'en'; } catch (_) { /* English works without storage. */ }

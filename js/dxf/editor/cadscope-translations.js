@@ -12,6 +12,13 @@
         let previousRefresh;
 
         function refresh() {
+            // Generated panels may be rebuilt below. Retain in-progress values
+            // and focus; translating labels must not commit or discard edits.
+            const drafts = Array.from(document.querySelectorAll('input[id], textarea[id], select[id]'))
+                .filter(element => element.type !== 'file')
+                .map(element => ({ id: element.id, value: element.value, checked: element.checked,
+                    focused: element === document.activeElement,
+                    start: element.selectionStart, end: element.selectionEnd }));
             // Only annotated attributes are translated here, never filenames or draft values.
             for (const [marker, attribute] of [
                 ['data-i18n-title', 'title'],
@@ -24,6 +31,18 @@
                 });
             }
             refreshDynamic();
+            for (const draft of drafts) {
+                const element = document.getElementById(draft.id);
+                if (!element) continue;
+                element.value = draft.value;
+                if (typeof draft.checked === 'boolean') element.checked = draft.checked;
+                if (draft.focused) {
+                    element.focus({ preventScroll: true });
+                    if (typeof draft.start === 'number' && typeof element.setSelectionRange === 'function') {
+                        element.setSelectionRange(draft.start, draft.end);
+                    }
+                }
+            }
         }
 
         function connect() {

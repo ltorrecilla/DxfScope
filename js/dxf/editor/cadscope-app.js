@@ -1,6 +1,9 @@
 
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const document = window.DxfModeDOM?.documentFor('editor') || window.document;
+        const activity = window.DxfWorkspaceActivity.create({ window, document });
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
         lucide.createIcons();
@@ -16,9 +19,12 @@
 
         function refreshDynamicDxfTranslations() {
             syncThemeForActiveSpace();
+            if (drawTools?.isActive()) drawTools.refreshHint();
+            else if (opsTools?.isActive()) opsTools.refreshHint();
             updatePaperExportButton();
             if (settingsPopup && !settingsPopup.classList.contains('closed')) renderSettingsPanel();
             if (paperSizePopup && !paperSizePopup.classList.contains('closed')) renderPaperSizePanel();
+            if (textStyleModal && !textStyleModal.classList.contains('closed')) previewTextStyleDraft();
             if (measureMode && !measureFirstPoint) setMeasureHint(tr('measureHintFirstPoint', 'Click first point'));
             buildLayerUI();
             if (typeof renderShortcutsPage === 'function'
@@ -38,9 +44,6 @@
         translationLifecycle.connect();
 
         // UI Variables
-        const appSidebar = document.getElementById('app-sidebar');
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebarTexts = document.querySelectorAll('.sidebar-text');
         const tabs = document.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('.view-panel');
         
@@ -59,7 +62,7 @@
         importCancel.addEventListener('click', () => cancelDxfWorkerImport(true));
         // The open drawing stays untouched until commit, including keyboard edits
         // behind the progress overlay. Browser navigation shortcuts keep defaults.
-        window.addEventListener('keydown', event => {
+        activity.listen(window, 'keydown', event => {
             if (dxfSceneSetupBusy) { event.stopImmediatePropagation(); event.preventDefault(); return; }
             if (importCancel.classList.contains('hidden')) return;
             event.stopImmediatePropagation();
@@ -84,12 +87,12 @@
                 document.documentElement.style.setProperty('--draw-toolbar-h', `${h}px`);
             };
             apply();
-            if (typeof ResizeObserver === 'function') new ResizeObserver(apply).observe(bar);
-            window.addEventListener('resize', apply);
+            activity.observe(apply, bar);
+            activity.listen(window, 'resize', apply);
             // Icons and translations arrive after first paint and change the height.
-            document.addEventListener('languageLoaded', () => setTimeout(apply, 0));
-            setTimeout(apply, 0);
-            setTimeout(apply, 300);
+            activity.listen(document, 'languageLoaded', () => activity.setTimeout(apply, 0));
+            activity.setTimeout(apply, 0);
+            activity.setTimeout(apply, 300);
         })();
 
         const btnToggleInfo = document.getElementById('btn-toggle-info');
@@ -142,7 +145,6 @@
         const valCoords = document.getElementById('val-coords');
 
         // State
-        let isSidebarExpanded = false;
         let isDarkMode = false;
         let currentDxf = null;
         let currentTextStyles = {};
@@ -410,10 +412,14 @@
         let __hatchLoopCache = new WeakMap();
 
         let nextNewHandle = 0x10000;
+        // Synchronous snapshot emission owns a private allocator/cache. Nested
+        // entity emitters use allocateHandle too; live edits keep their own seed.
+        let snapshotEmission = null;
         function computeNextHandleSeed() {
             nextNewHandle = window.DxfImportSetup.computeNextHandleSeed(currentDxfRawText, rawHandleToKeyMap);
         }
         function allocateHandle() {
+            if (snapshotEmission) return (snapshotEmission.nextHandle++).toString(16).toUpperCase();
             return (nextNewHandle++).toString(16).toUpperCase();
         }
 
@@ -536,7 +542,7 @@
                 hideOtrackRay();
                 requestRender();
             });
-            window.addEventListener('resize', onWindowResize);
+            activity.listen(window, 'resize', onWindowResize);
 
             animate();
         }
@@ -552,8 +558,8 @@
                 interacting = true;
                 if (renderer.getPixelRatio() !== 1) renderer.setPixelRatio(1);
             }
-            if (interactionEndTimer) clearTimeout(interactionEndTimer);
-            interactionEndTimer = setTimeout(endInteraction, 160);
+            if (interactionEndTimer) activity.clearTimeout(interactionEndTimer);
+            interactionEndTimer = activity.setTimeout(endInteraction, 160);
             requestRender();
         }
 
@@ -565,7 +571,7 @@
         }
 
         function animate() {
-            requestAnimationFrame(animate);
+            activity.requestAnimationFrame(animate);
             // Keep the last complete canvas while import setup yields to the UI.
             if (dxfSceneSetupBusy) return;
             // The block library and other sections keep the WebGL scene in memory,
@@ -1472,16 +1478,16 @@
             if (grip.kind === 'vpan') {
                 // Pan the model view inside a viewport: remember the start point.
                 grip.__startPos = { x: grip.mesh.position.x, y: grip.mesh.position.y };
-                showAreaSelectHint('Drag to pan the model view inside the frame  •  click to apply  •  Esc to cancel');
+                showAreaSelectHint(tr("uiDragToPanTheModelViewInsideTheFrame", "Drag to pan the model view inside the frame  •  click to apply  •  Esc to cancel"));
             } else if (grip.kind === 'tableCol' || grip.kind === 'tableRow') {
-                showAreaSelectHint('Drag to resize  •  Esc to cancel');
+                showAreaSelectHint(tr("uiDragToResizeEscToCancel", "Drag to resize  •  Esc to cancel"));
             } else if (grip.kind === 'radius') {
                 // Radius grip: dragging resizes the circle around its fixed center.
                 const c = getCircleCenter(gripLineEntity) || gripLineEntity.center;
                 grip.__center = c ? { x: c.x, y: c.y } : null;
-                showAreaSelectHint('Click to set radius  •  snaps to points  •  Esc to cancel');
+                showAreaSelectHint(tr("uiClickToSetRadiusSnapsToPointsEscTo", "Click to set radius  •  snaps to points  •  Esc to cancel"));
             } else if (grip.kind === 'mlarrow') {
-                showAreaSelectHint('Click the new arrow point  •  snaps to points  •  Esc to cancel');
+                showAreaSelectHint(tr("uiClickTheNewArrowPointSnapsToPointsEsc", "Click the new arrow point  •  snaps to points  •  Esc to cancel"));
             } else if (grip.kind === 'center') {
                 // Center grip: free translation of the whole entity (snap-assisted).
                 grip.__startPos = { x: grip.mesh.position.x, y: grip.mesh.position.y };
@@ -1505,7 +1511,7 @@
                     const c = b ? textBoundsCorners(b) : null;
                     grip.__previewBase = c ? [...c.map(p => ({ x: p.x, y: p.y })), { x: c[0].x, y: c[0].y }] : [];
                 }
-                showAreaSelectHint('Click to place  •  snaps to points  •  Esc to cancel');
+                showAreaSelectHint(tr("uiClickToPlaceSnapsToPointsEscToCancel", "Click to place  •  snaps to points  •  Esc to cancel"));
             } else if (grip.kind === 'mid') {
                 // Midpoint grip: dragging translates the whole segment, constrained to
                 // the segment's PERPENDICULAR so the move never distorts the geometry.
@@ -1527,7 +1533,7 @@
                             origin: { x: grip.__startMid.x, y: grip.__startMid.y } }]); // normal movement axis
                     }
                 }
-                showAreaSelectHint('Click to place segment  •  moves perpendicular to the segment  •  Esc to cancel');
+                showAreaSelectHint(tr("uiClickToPlaceSegmentMovesPerpendicularToTheSegment", "Click to place segment  •  moves perpendicular to the segment  •  Esc to cancel"));
             } else if (grip.kind === 'hvertex' || grip.kind === 'hmid'
                     || grip.kind === 'hmove' || grip.kind === 'hradius') {
                 // Hatch grips edit a trial copy of the boundary paths; the entity
@@ -1538,7 +1544,7 @@
                 if (grip.kind === 'hvertex') {
                     const a = hatchGripAnchors[grip.anchorIndex];
                     grip.__ref = a ? { pathIndex: a.pathIndex, slots: a.slots } : null;
-                    showAreaSelectHint('Click to place the boundary point  •  snaps to points  •  Esc to cancel');
+                    showAreaSelectHint(tr("uiClickToPlaceTheBoundaryPointSnapsToPoints", "Click to place the boundary point  •  snaps to points  •  Esc to cancel"));
                 } else if (grip.kind === 'hmid' && grip.seg) {
                     const a = hatchGripAnchors[grip.seg.a], b = hatchGripAnchors[grip.seg.b];
                     grip.__refA = a ? { pathIndex: a.pathIndex, slots: a.slots } : null;
@@ -1553,11 +1559,11 @@
                         setGripExtensionGuides([{ vector: { dx: -sdy / len, dy: sdx / len },
                             origin: { x: grip.__startPos.x, y: grip.__startPos.y } }]);
                     }
-                    showAreaSelectHint('Click to place the edge  •  moves perpendicular to it  •  Esc to cancel');
+                    showAreaSelectHint(tr("uiClickToPlaceTheEdgeMovesPerpendicularToIt", "Click to place the edge  •  moves perpendicular to it  •  Esc to cancel"));
                 } else if (grip.kind === 'hradius') {
-                    showAreaSelectHint('Click to set radius  •  snaps to points  •  Esc to cancel');
+                    showAreaSelectHint(tr("uiClickToSetRadiusSnapsToPointsEscTo", "Click to set radius  •  snaps to points  •  Esc to cancel"));
                 } else {
-                    showAreaSelectHint('Click to place the hatch  •  snaps to points  •  Esc to cancel');
+                    showAreaSelectHint(tr("uiClickToPlaceTheHatchSnapsToPointsEsc", "Click to place the hatch  •  snaps to points  •  Esc to cancel"));
                 }
             } else if (grip.kind === 'dimtext') {
                 showAreaSelectHint(tr('dimTextGripHint', 'Move the dimension text independently. Esc to cancel.'));
@@ -1577,7 +1583,7 @@
                     computeExtensionVector(grip.endIndex);
                     if (gripExtensionVector) drawExtensionGuide();
                 }
-                showAreaSelectHint('Click to place  •  snaps to points  •  Esc to cancel');
+                showAreaSelectHint(tr("uiClickToPlaceSnapsToPointsEscToCancel", "Click to place  •  snaps to points  •  Esc to cancel"));
             }
             container.classList.add('area-selecting');
         }
@@ -2833,6 +2839,7 @@
         }
 
         const drawTools = window.DxfDrawTools ? window.DxfDrawTools.create({
+            translate: tr,
             onPreview(points) {
                 ensureDrawPreviewLine();
                 ensureDimPreviewSegs();
@@ -3127,7 +3134,7 @@
             if (dimPreviewDrawing || dimPreviewLoad) return;
             const url = new URL('../js/dxf/dimension-preview.dxf', document.baseURI);
             dimPreviewLoad = fetch(url, { cache: 'no-store' }).then(response => {
-                if (!response.ok) throw new Error(`Preview drawing: ${response.status}`);
+                if (!response.ok) throw new Error(tr('uiPreviewDrawingStatus', 'Preview drawing: {status}', {status: response.status}));
                 return response.text();
             }).then(raw => {
                 dimPreviewDrawing = new window.DxfParser().parseSync(raw);
@@ -3136,7 +3143,7 @@
             }).catch(error => {
                 console.warn('Dimension preview could not load', error);
                 const svg = document.getElementById('dim-style-preview');
-                if (svg) svg.innerHTML = '<text x="310" y="240" text-anchor="middle" fill="#64748b" font-size="14">Preview drawing unavailable</text>';
+                if (svg) svg.innerHTML = '<text x="310" y="240" text-anchor="middle" fill="#64748b" font-size="14"></text>'; if(svg) svg.firstElementChild.textContent = tr('uiPreviewDrawingUnavailable', 'Preview drawing unavailable');
             });
         }
         function refreshDimStylePreview(s) {
@@ -3145,7 +3152,7 @@
             const D = window.DxfDim;
             if (!D) return;
             if (!dimPreviewDrawing) {
-                svg.innerHTML = '<text x="310" y="240" text-anchor="middle" fill="#64748b" font-size="14">Loading drawing preview…</text>';
+                svg.innerHTML = '<text x="310" y="240" text-anchor="middle" fill="#64748b" font-size="14"></text>'; svg.firstElementChild.textContent = tr('uiLoadingDrawingPreview', 'Loading drawing preview…');
                 loadDimStylePreview();
                 return;
             }
@@ -3534,7 +3541,7 @@
             const unsupported = entity.__baseDimStyle && window.DxfDimStyle.unsupportedFeatures(opts.style, mleaderBlockNames, currentDxf);
             if (unsupported?.length) {
                 window.DxfDimStyle.restoreDefinition(entity);
-                setConsoleMessage('Dimension unchanged: editing ' + unsupported.join(', ') + ' is not supported without changing its appearance.', true);
+                setConsoleMessage(tr("uiDimensionUnchangedEditingValue1IsNotSupportedWithoutChanging", "Dimension unchanged: editing {value1} is not supported without changing its appearance.", {value1: unsupported.join(', ')}), true);
                 return false;
             }
             // Geometry edits use the resolved style for rendering only. They must
@@ -3667,12 +3674,12 @@
         function beginDimensionReassociation(dim) {
             if (!dim || ![0, 1].includes((Number(dim.dimensionType) || 0) & 15)) return;
             if (Number(currentDxf?.header?.$DIMASSOC ?? 2) !== 2) {
-                setConsoleMessage('Associative dimensions are disabled in this drawing.', true);
+                setConsoleMessage(tr("uiAssociativeDimensionsAreDisabledInThisDrawing", "Associative dimensions are disabled in this drawing."), true);
                 return;
             }
             dimReassociate = { dim, refs: [] };
             clearLineGrips();
-            setConsoleMessage('Click the first LINE or polyline endpoint for this dimension (Esc cancels).', true);
+            setConsoleMessage(tr("uiClickTheFirstLINEOrPolylineEndpointForThis", "Click the first LINE or polyline endpoint for this dimension (Esc cancels)."), true);
         }
 
         function directAssociationEndpoint(wx, wy) {
@@ -3691,22 +3698,22 @@
             const endpoint = directAssociationEndpoint(target.x, target.y);
             const ref = endpoint ? window.DxfDimAssoc?.endpointRef(endpoint.source, endpoint.vertexIndex) : null;
             if (!ref) {
-                setConsoleMessage('Choose a LINE or polyline endpoint with End snap enabled (Esc cancels).', true);
+                setConsoleMessage(tr("uiChooseALINEOrPolylineEndpointWithEndSnap", "Choose a LINE or polyline endpoint with End snap enabled (Esc cancels)."), true);
                 return;
             }
             dimReassociate.refs.push(ref);
             if (dimReassociate.refs.length < 2) {
-                setConsoleMessage('Click the second LINE or polyline endpoint for this dimension.', true);
+                setConsoleMessage(tr("uiClickTheSecondLINEOrPolylineEndpointForThis", "Click the second LINE or polyline endpoint for this dimension."), true);
                 return;
             }
             const { dim, refs } = dimReassociate;
             if (Math.hypot(refs[1].point.x - refs[0].point.x, refs[1].point.y - refs[0].point.y) < 1e-9) {
                 dimReassociate.refs.pop();
-                setConsoleMessage('Choose a different second endpoint.', true);
+                setConsoleMessage(tr("uiChooseADifferentSecondEndpoint", "Choose a different second endpoint."), true);
                 return;
             }
             dimReassociate = null;
-            pushUndo('Reassociate dimension', [dim]);
+            pushUndo(tr("uiReassociateDimension", "Reassociate dimension"), [dim]);
             dim.__dimAssoc = { handle: dim.__dimAssoc?.handle || allocateHandle(), refs };
             window.DxfDimAssoc.updateDimension(dim, currentDxf.entities);
             regenerateDimension(dim);
@@ -3714,7 +3721,7 @@
             invalidateMeasureSnapCache();
             buildWebGLScene();
             selectEntity(dim);
-            setConsoleMessage('Dimension endpoints reassociated.', false);
+            setConsoleMessage(tr("uiDimensionEndpointsReassociated", "Dimension endpoints reassociated."), false);
             requestRender();
         }
 
@@ -3902,7 +3909,7 @@
             if (!preview) return;
             preview.replaceChildren();
             const sample = document.createElement('span');
-            sample.textContent = 'Sample text 123';
+            sample.textContent = tr("uiSampleText123", "Sample text 123");
             sample.style.display = 'inline-block';
             sample.style.transformOrigin = 'left center';
             sample.style.transform = `skewX(${-draft.oblique}deg) scaleX(${draft.widthFactor})`;
@@ -4113,15 +4120,15 @@
                 assocStatus.classList.toggle('hidden', !singleLinear);
                 if (singleLinear) {
                     const count = dims[0].__dimAssoc?.refs?.filter(Boolean).length || 0;
-                    assocStatus.textContent = count === 2 ? 'Association: Associative'
-                        : count === 1 ? 'Association: Partially associative' : 'Association: Detached';
+                    assocStatus.textContent = count === 2 ? tr("uiAssociationAssociative", "Association: Associative")
+                        : count === 1 ? tr("uiAssociationPartiallyAssociative", "Association: Partially associative") : tr("uiAssociationDetached", "Association: Detached");
                 }
             }
             if (reassociate) {
                 reassociate.classList.toggle('hidden', !singleLinear);
                 reassociate.disabled = Number(currentDxf?.header?.$DIMASSOC ?? 2) !== 2;
-                reassociate.title = reassociate.disabled ? 'Associative dimensions are disabled in this drawing.'
-                    : 'Pick both measured endpoints to link this dimension';
+                reassociate.title = reassociate.disabled ? tr("uiAssociativeDimensionsAreDisabledInThisDrawing", "Associative dimensions are disabled in this drawing.")
+                    : tr("uiPickBothMeasuredEndpointsToLinkThisDimension", "Pick both measured endpoints to link this dimension");
                 reassociate.onclick = () => { if (singleLinear) beginDimensionReassociation(dims[0]); };
             }
 
@@ -4971,7 +4978,7 @@
                         if (first) first.click();
                     }
                 });
-                document.addEventListener('pointerdown', (e) => {
+                activity.listen(document, 'pointerdown', (e) => {
                     if (!hatchPickerEl || hatchPickerEl.classList.contains('hidden')) return;
                     if (hatchPickerEl.contains(e.target) || e.target.closest?.('.hp-btn')) return;
                     closeHatchPicker();
@@ -6038,7 +6045,7 @@
         function refreshDynamicInput() {
             const tool = dynamicTool();
             dynamicToggle?.setAttribute('aria-pressed', String(dynamicEnabled));
-            if (consoleInput) consoleInput.placeholder = tool ? 'x,y | @dx,dy | distance (dot decimals)' : '';
+            if (consoleInput) consoleInput.placeholder = tool ? tr("uiXYDxDyDistanceDotDecimals", "x,y | @dx,dy | distance (dot decimals)") : '';
             if (!dynamicInput) return;
             const context = tool ? dynamicContext() : null;
             const typing = document.activeElement === dynamicField;
@@ -6132,7 +6139,7 @@
         // If the helper scripts didn't load (wrong path after moving files), the
         // viewer still works, but say so instead of silently hiding the tools.
         if (!window.DxfEmit || !window.DxfDrawTools || !window.DxfOpsEdit || !window.DxfPaperFrames) {
-            setConsoleMessage('Drawing/ops tools unavailable, check that ../js/dxf/dxf-*.js files are present.', true);
+            setConsoleMessage(tr("uiDrawingOpsToolsUnavailableCheckThatJsDxfDxf", "Drawing/ops tools unavailable, check that ../js/dxf/dxf-*.js files are present."), true);
         }
 
         // ---- Numeric entry while drawing: type in the console instead of clicking ----
@@ -6379,6 +6386,7 @@
         }
 
         const opsTools = window.DxfOpsEdit ? window.DxfOpsEdit.create({
+            translate: tr,
             onHint(text) {
                 if (text) showAreaSelectHint(text);
                 else hideAreaSelectHint();
@@ -7427,7 +7435,7 @@
             textEditInput.style.display = 'block';
             textEditInput.dataset.__newText = '1';
             textEditInput.dataset.__newTextHeight = String(height);
-            setTimeout(() => textEditInput.focus(), 20);
+            activity.setTimeout(() => textEditInput.focus(), 20);
         }
 
         function commitNewTextEntry() {
@@ -8502,7 +8510,7 @@
             // CSS2DRenderer can retain an orphaned label node across a drawing
             // rebuild even after its group is detached.
             document.querySelectorAll('.measure-distance-label').forEach(label => label.remove());
-            setMeasureHint(measureMode ? 'Click first point' : 'Measure tool inactive');
+            setMeasureHint(measureMode ? tr("measureHintFirstPoint", "Click first point") : tr("uiMeasureToolInactive", "Measure tool inactive"));
             requestRender();
         }
 
@@ -8651,14 +8659,14 @@
 
             if (!measureFirstPoint) {
                 measureFirstPoint = { x: snap.x, y: snap.y, snapType: snap.type };
-                setMeasureHint('Click second point');
+                setMeasureHint(tr("uiClickSecondPoint", "Click second point"));
                 updateMeasurePreview(snap);
             } else {
                 const secondPoint = { x: snap.x, y: snap.y, snapType: snap.type };
                 addCompletedMeasurement(measureFirstPoint, secondPoint);
                 measureFirstPoint = null;
                 setMeasurePreviewVisible(false);
-                setMeasureHint('Measurement added - click first point');
+                setMeasureHint(tr("uiMeasurementAddedClickFirstPoint", "Measurement added - click first point"));
             }
         }
 
@@ -8766,7 +8774,7 @@
             return !!v && !v.classList.contains('hidden');
         }
 
-        window.addEventListener('keydown', (event) => {
+        activity.listen(window, 'keydown', (event) => {
             if (commandInput.isComposing(event)) return;
             const typing = commandInput.isTypingTarget(document.activeElement);
             const onViewer = viewerIsVisible();
@@ -8829,7 +8837,7 @@
                 const dim = dimReassociate.dim;
                 dimReassociate = null;
                 selectEntity(dim);
-                setConsoleMessage('Dimension reassociation cancelled.', false);
+                setConsoleMessage(tr("uiDimensionReassociationCancelled", "Dimension reassociation cancelled."), false);
                 return;
             }
 
@@ -9291,10 +9299,10 @@
             else if (action === 'delete') deleteSelectedEntities();
             else if (action === 'block') createBlockFromSelection();
         });
-        document.addEventListener('pointerdown', event => {
+        activity.listen(document, 'pointerdown', event => {
             if (!objectContextMenu.contains(event.target)) closeObjectContextMenu();
         });
-        window.addEventListener('blur', closeObjectContextMenu);
+        activity.listen(window, 'blur', closeObjectContextMenu);
 
         function worldPointFromScreen(clientX, clientY) {
             const rect = renderer.domElement.getBoundingClientRect();
@@ -9565,10 +9573,10 @@
                 controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
                 container.classList.add('area-selecting');
                 showAreaSelectHint(mode === 'add'
-                    ? 'Adding to the selection  •  click second corner  •  L→R window, R→L crossing  •  Esc to cancel'
+                    ? tr("uiAddingToTheSelectionClickSecondCornerLR", "Adding to the selection  •  click second corner  •  L→R window, R→L crossing  •  Esc to cancel")
                     : mode === 'subtract'
-                    ? 'Removing from the selection  •  click second corner  •  L→R window, R→L crossing  •  Esc to cancel'
-                    : 'Click second corner to complete selection  •  L→R window, R→L crossing  •  Ctrl adds, Shift removes  •  Esc to cancel');
+                    ? tr("uiRemovingFromTheSelectionClickSecondCornerLR", "Removing from the selection  •  click second corner  •  L→R window, R→L crossing  •  Esc to cancel")
+                    : tr("uiClickSecondCornerToCompleteSelectionLRWindow", "Click second corner to complete selection  •  L→R window, R→L crossing  •  Ctrl adds, Shift removes  •  Esc to cancel"));
             }
         }
 
@@ -10782,7 +10790,7 @@
         }
 
         function selectEntity(entity, options = {}) {
-            if (typeof refreshHatchStatus === 'function') setTimeout(refreshHatchStatus, 0);
+            if (typeof refreshHatchStatus === 'function') activity.setTimeout(refreshHatchStatus, 0);
             rememberPreviousSelection([entity]);
             // Any child of a dimension (line, tick or the measurement text) stands in
             // for the whole dimension: select the DIMENSION so the entire graphic
@@ -11271,7 +11279,7 @@
         }
 
         function selectMultipleEntities(entities, options = {}) {
-            if (typeof refreshHatchStatus === 'function') setTimeout(refreshHatchStatus, 0);
+            if (typeof refreshHatchStatus === 'function') activity.setTimeout(refreshHatchStatus, 0);
             rememberPreviousSelection(entities);
             // Normalize: every child of a dimension collapses to the DIMENSION itself,
             // so an area select that sweeps a dimension yields one object (with the
@@ -11305,7 +11313,7 @@
             if (propVpSection) propVpSection.classList.add('hidden');
 
             // Multi-select summary
-            valType.innerText = `${entities.length} objects`;
+            valType.innerText = tr('uiObjectsCount', '{count} objects', {count: entities.length});
             // Show layer if all same, else "Various" (still changeable, applies to all)
             const layers = [...new Set(entities.map(e => e.layer || '0'))];
             populateValLayerSelect(layers.length === 1 ? layers[0] : null);
@@ -11464,6 +11472,7 @@
                         }
                     }
                 } catch (err) {
+                    if (snapshotEmission) throw err;
                     console.error('emitCreatedEntities failed for', e.type, err);
                 }
             }
@@ -11473,6 +11482,14 @@
         // rawKey → live MULTILEADER (drawing and block definitions), per save.
         let __liveMLeaders = null;
         function liveMLeaderByKey() {
+            if (snapshotEmission) {
+                if (!snapshotEmission.mleaders) {
+                    snapshotEmission.mleaders = new Map();
+                    for (const list of [currentDxf?.entities, ...Object.values(currentDxf?.blocks || {}).map(b => b.entities)])
+                        for (const e of list || []) if (e?.type === 'MULTILEADER' && e.__rawKey) snapshotEmission.mleaders.set(e.__rawKey, e);
+                }
+                return snapshotEmission.mleaders;
+            }
             if (__liveMLeaders) return __liveMLeaders;
             __liveMLeaders = new Map();
             const add = (list) => { for (const e of list || []) if (e?.type === 'MULTILEADER' && e.__rawKey) __liveMLeaders.set(e.__rawKey, e); };
@@ -11482,12 +11499,12 @@
         }
 
         function serializeDxfWithEdits() {
-            __liveMLeaders = null;
+            if (!snapshotEmission) __liveMLeaders = null;
             const raw = currentDxfRawText;
             if (!raw) return raw;
             const emittedPlotAssignments = new Map();
             const allocateEmittedEntity = source => {
-                const handle = (nextNewHandle++).toString(16).toUpperCase();
+                const handle = allocateHandle();
                 if (usesNamedPlotStyles() && source) emittedPlotAssignments.set(handle, assignedNamedPlotStyle(source));
                 return handle;
             };
@@ -11514,16 +11531,16 @@
             const editedBlocks = editRegistry.editedBlocks || new Set();
             const createdBlockPlans = createdBlocks.map(b => ({
                 ...b,
-                blockRecHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                blockHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                endblkHandle: (nextNewHandle++).toString(16).toUpperCase(),
+                blockRecHandle: allocateHandle(),
+                blockHandle: allocateHandle(),
+                endblkHandle: allocateHandle(),
             }));
             const createdBlockDefs = editRegistry.createdBlockDefs || [];
             const userBlockPlans = createdBlockDefs.map(b => ({
                 ...b,
-                blockRecHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                blockHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                endblkHandle: (nextNewHandle++).toString(16).toUpperCase(),
+                blockRecHandle: allocateHandle(),
+                blockHandle: allocateHandle(),
+                endblkHandle: allocateHandle(),
             }));
             // Pre-allocate handles + paper-space block names for new layouts so all
             // sections (TABLES, BLOCKS, OBJECTS) reference the same values.
@@ -11539,10 +11556,10 @@
             };
             const layoutAddPlans = layoutAdditions.map((add, idx) => ({
                 name: add.name,
-                layoutHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                blockRecHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                blockHandle: (nextNewHandle++).toString(16).toUpperCase(),
-                endblkHandle: (nextNewHandle++).toString(16).toUpperCase(),
+                layoutHandle: allocateHandle(),
+                blockRecHandle: allocateHandle(),
+                blockHandle: allocateHandle(),
+                endblkHandle: allocateHandle(),
                 blockName: nextPaperBlockName(),
                 tabOrder: 100 + idx,
             }));
@@ -11645,7 +11662,7 @@
                                 '3', plan.name, '1', ''
                             );
                             for (const child of plan.entities || []) {
-                                const ch = (nextNewHandle++).toString(16).toUpperCase();
+                                const ch = allocateHandle();
                                 if (child.type === 'LINE' && E) {
                                     out.push(...E.emitLine(child.vertices[0], child.vertices[1], child.layer || '0', ch, null));
                                 } else if (child.type === 'ARC' && E) {
@@ -11814,7 +11831,7 @@
                 if (sectionName === 'HEADER' && code === '9' && value.toUpperCase() === '$HANDSEED') {
                     const next = pairAt(i + 2);
                     if (next.code === '5') {
-                        out.push(lines[i], lines[i + 1], lines[i + 2], nextNewHandle.toString(16).toUpperCase());
+                        out.push(lines[i], lines[i + 1], lines[i + 2], (snapshotEmission?.nextHandle ?? nextNewHandle).toString(16).toUpperCase());
                         i += 4;
                         continue;
                     }
@@ -11855,7 +11872,7 @@
                                 if (!L.isContinuousName(up) && !existing.has(up) && L.BUILTIN[up]) needed.add(up);
                             }
                             for (const name of needed) {
-                                const rec = L.emitLtypeRecord(name, (nextNewHandle++).toString(16).toUpperCase());
+                                const rec = L.emitLtypeRecord(name, allocateHandle());
                                 if (rec) out.push(...rec);
                             }
                         }
@@ -11982,7 +11999,7 @@
                             if (dimRewriteActive) {
                                 const E = window.DxfEmit;
                                 for (const child of dimRewriteActive.entities || []) {
-                                    const ch = (nextNewHandle++).toString(16).toUpperCase();
+                                    const ch = allocateHandle();
                                     if (child.type === 'LINE' && E) {
                                         out.push(...E.emitLine(child.vertices[0], child.vertices[1], child.layer || '0', ch, null));
                                     } else if (child.type === 'TEXT' && E) {
@@ -12724,7 +12741,7 @@
         });
 
         // Ctrl/Cmd+S to save
-        window.addEventListener('keydown', (e) => {
+        activity.listen(window, 'keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
                 if (!currentDxf) return;
                 // Always swallow it: the browser's own "Save page" dialog is
@@ -12836,7 +12853,7 @@
         let pdfCalibrate = null;        // { entities, p1 } while picking two points
 
         // Use the shipped JavaScript module and its same-origin worker.
-        const PDFJS_URL = '../js/pdf/pdf-6.1.200.min.js';
+        const PDFJS_URL = '../js/pdf/pdf-6.5.438.min.js';
         let pdfLibPromise = null;
 
         // Share first-use loading; a failed request must allow the user to retry.
@@ -12848,7 +12865,7 @@
                     throw new Error(`${PDFJS_URL}: ${err?.message || err}`);
                 })
                 .then(lib => {
-                    lib.GlobalWorkerOptions.workerSrc = '../js/pdf/pdf-worker-6.1.200.min.js';
+                    lib.GlobalWorkerOptions.workerSrc = '../js/pdf/pdf-worker-6.5.438.min.js';
                     return lib;
                 })
                 .catch(err => {
@@ -13256,7 +13273,7 @@
             loader.classList.remove('hidden');
 
             {
-                setTimeout(async () => { 
+                activity.setTimeout(async () => { 
                     if (loadOpts?.isCurrent && !loadOpts.isCurrent()) return;
                     try {
                         loadOpts?.onCommit?.();
@@ -13345,7 +13362,7 @@
                             if (bareTables) {
                                 // libredwg's release build cannot decode 2010+ DWG tables:
                                 // its writer emits a bare ACAD_TABLE marker with no data.
-                                setTimeout(() => setConsoleMessage(tr('tableDwgUnsupported',
+                                activity.setTimeout(() => setConsoleMessage(tr('tableDwgUnsupported',
                                     '{count} table(s) in this file use the 2010+ DWG format and could not be converted. Re-save the DWG as 2007 or older, or as DXF.',
                                     { count: bareTables }), true), 0);
                             }
@@ -13366,7 +13383,7 @@
                             if (index >= 0) e.__dimStyleIndex = index;
                             if (e.type === 'DIMENSION') e.__dimAcceptedState = window.DxfDimStyle.captureDefinition(e);
                         }
-                        setTimeout(refreshDimStyleSelect, 0);
+                        activity.setTimeout(refreshDimStyleSelect, 0);
                         layerLocked = {};
                         for (const [n, info] of Object.entries(layerRawInfo)) layerLocked[n] = info.locked;
                         if (viewportEditContext) {
@@ -13415,7 +13432,7 @@
                         const mirrorLeft = Object.entries(mirrorFix.unsupported);
                         if (mirrorLeft.length) {
                             const list = mirrorLeft.map(([t, n]) => `${n} ${t}`).join(', ');
-                            setTimeout(() => setConsoleMessage(tr('mirrorUnsupported', '{list} mirrored in the file may display unmirrored.', { list }), true), 0);
+                            activity.setTimeout(() => setConsoleMessage(tr('mirrorUnsupported', '{list} mirrored in the file may display unmirrored.', { list }), true), 0);
                         }
                         cancelTextEdit();
                         stopDrawTool();
@@ -13977,7 +13994,7 @@
                 layoutPaperOverrides[layout.key] = { ...chooseClosestPaperPresetForBounds(bounds), hideViewportFrames };
                 renderPaperSizePanel();
                 buildWebGLScene();
-                setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
+                activity.setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
             });
             document.getElementById('paper-size-apply')?.addEventListener('click', () => {
                 const preset = getPaperPresetById(presetSelect?.value);
@@ -13992,7 +14009,7 @@
                 layoutPaperOverrides[layout.key] = record;
                 renderPaperSizePanel();
                 buildWebGLScene();
-                setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
+                activity.setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
             });
         }
 
@@ -14083,7 +14100,7 @@
                 spaceSwitcher.appendChild(wrap);
             });
             updateSpaceSwitcherState();
-            requestAnimationFrame(() => { updateSpaceTabsOverflow(); revealActiveSpaceTab(); });
+            activity.requestAnimationFrame(() => { updateSpaceTabsOverflow(); revealActiveSpaceTab(); });
         }
 
         function updateSpaceTabsOverflow() {
@@ -14124,8 +14141,8 @@
         spaceSwitcher?.addEventListener('scroll', updateSpaceScrollButtons, { passive: true });
         spaceScrollPrev?.addEventListener('click', () => spaceSwitcher.scrollBy({ left: -spaceTabScrollStep, behavior: 'smooth' }));
         spaceScrollNext?.addEventListener('click', () => spaceSwitcher.scrollBy({ left: spaceTabScrollStep, behavior: 'smooth' }));
-        if (typeof ResizeObserver !== 'undefined' && spaceTabsControl) new ResizeObserver(updateSpaceTabsOverflow).observe(spaceTabsControl);
-        window.addEventListener('resize', updateSpaceTabsOverflow);
+        activity.observe(updateSpaceTabsOverflow, spaceTabsControl);
+        activity.listen(window, 'resize', updateSpaceTabsOverflow);
 
         // ===== Paper space (layout) management =====
 
@@ -15037,7 +15054,7 @@
                         : assocNotice === 'moved' ? tr('hatchUnlinkedMoved', 'Hatch link removed: the hatch was edited on its own.')
                         : tr('hatchUnlinkedOpen', 'Hatch link removed: the boundary is no longer closed.');
                     assocNotice = null;
-                    setTimeout(() => setConsoleMessage(msg, true), 0);
+                    activity.setTimeout(() => setConsoleMessage(msg, true), 0);
                 }
             } catch (err) {
                 console.warn('associative hatch refresh:', err);
@@ -15672,8 +15689,8 @@
                     preview.innerHTML = blockThumbnailSVG(name, 240) || '<i data-lucide="box" class="w-12 h-12"></i>';
                     if (window.lucide) lucide.createIcons();
                 };
-                if (window.requestIdleCallback) requestIdleCallback(renderPreview, { timeout: 120 });
-                else setTimeout(renderPreview, 0);
+                if (window.requestIdleCallback) activity.requestIdleCallback(renderPreview, { timeout: 120 });
+                else activity.setTimeout(renderPreview, 0);
             }
         }
 
@@ -15761,13 +15778,13 @@
                 if (blockLibraryThumbCache.size > 80) blockLibraryThumbCache.delete(blockLibraryThumbCache.keys().next().value);
                 if (window.lucide && svg.startsWith('<i')) lucide.createIcons();
                 if (pending.length) {
-                    if (window.requestIdleCallback) requestIdleCallback(renderNext, { timeout: 120 });
-                    else setTimeout(renderNext, 0);
+                    if (window.requestIdleCallback) activity.requestIdleCallback(renderNext, { timeout: 120 });
+                    else activity.setTimeout(renderNext, 0);
                 }
             };
             if (pending.length) {
-                if (window.requestIdleCallback) requestIdleCallback(renderNext, { timeout: 120 });
-                else setTimeout(renderNext, 0);
+                if (window.requestIdleCallback) activity.requestIdleCallback(renderNext, { timeout: 120 });
+                else activity.setTimeout(renderNext, 0);
             }
         }
 
@@ -15785,10 +15802,10 @@
             list.onscroll = renderBlockLibraryWindow;
             filterBlockLibrary();
         }
-        if (window.ResizeObserver) new ResizeObserver(() => {
+        activity.observe(() => {
             blockLibraryWindowKey = '';
             renderBlockLibraryWindow();
-        }).observe(document.getElementById('block-library-list'));
+        }, document.getElementById('block-library-list'));
 
         // Insert from the library uses the library's own scale/rotation fields.
         function startInsertPlacementFromLibrary(name) {
@@ -16076,7 +16093,7 @@
         }
         function zoomToFitActive() {
             const btn = document.getElementById('btnZoomFit');
-            if (btn) setTimeout(() => btn.click(), 30);
+            if (btn) activity.setTimeout(() => btn.click(), 30);
         }
 
         function deleteBlockFlow(name) {
@@ -17594,7 +17611,7 @@
                 spaceSwitcher.querySelectorAll('.space-switch-btn').forEach(button => {
                     button.classList.toggle('active', button.dataset.spaceKey === activeSpaceKey);
                 });
-                requestAnimationFrame(revealActiveSpaceTab);
+                activity.requestAnimationFrame(revealActiveSpaceTab);
             }
             if (btnSpaceModel) btnSpaceModel.classList.toggle('active', activeSpaceKey === 'model');
             if (btnPaperSize) {
@@ -17703,7 +17720,7 @@
             buildLayerUI();
             updateSpaceSwitcherState();
             if (!opts.skipZoomFit) {
-                setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
+                activity.setTimeout(() => document.getElementById('btnZoomFit')?.click(), 30);
             }
         }
 
@@ -17720,7 +17737,7 @@
         function schedulePortalRebuild() {
             if (portalRebuildQueued) return;
             portalRebuildQueued = true;
-            requestAnimationFrame(() => {
+            activity.requestAnimationFrame(() => {
                 portalRebuildQueued = false;
                 buildWebGLScene();
                 drawPortalOutline();
@@ -17897,6 +17914,16 @@
         let namedPlotCache = { raw: null, data: null };
         let collectingPlotTable = null;
         function namedPlotData() {
+            if (snapshotEmission) {
+                if (!snapshotEmission.namedPlot) snapshotEmission.namedPlot = namedPlotCache.raw === currentDxfRawText
+                    ? namedPlotCache.data : window.DxfPlotStyleNames.read(currentDxfRawText);
+                return snapshotEmission.namedPlot;
+            }
+            if (snapshotEmission) {
+                if (!snapshotEmission.namedPlot) snapshotEmission.namedPlot = namedPlotCache.raw === currentDxfRawText
+                    ? namedPlotCache.data : window.DxfPlotStyleNames.read(currentDxfRawText);
+                return snapshotEmission.namedPlot;
+            }
             if (namedPlotCache.raw !== currentDxfRawText) namedPlotCache = { raw: currentDxfRawText,
                 data: window.DxfPlotStyleNames.read(currentDxfRawText) };
             return namedPlotCache.data;
@@ -18307,7 +18334,7 @@
         /** Plot job → jsPDF document. */
         function writePlotPdf(job) {
             const jspdf = window.jspdf?.jsPDF;
-            if (!jspdf) throw new Error('jsPDF unavailable');
+            if (!jspdf) throw new Error(tr("uiJsPDFUnavailable", "jsPDF unavailable"));
             const { page } = job;
             const orientation = page.width >= page.height ? 'landscape' : 'portrait';
             const pdf = new jspdf({ orientation, unit: 'mm', format: [page.width, page.height], compress: true });
@@ -18336,7 +18363,7 @@
             const a = document.createElement('a');
             a.href = url; a.download = name;
             document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            window.setTimeout(() => URL.revokeObjectURL(url), 4000);
         }
 
         /** Print through the browser: the SVG at true size on an @page of the paper size. */
@@ -18354,7 +18381,7 @@
             doc.close();
             const go = () => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) { console.warn(e); } };
             if (window.__dxfPlotNoPrint) { window.__dxfLastPrintDoc = doc.documentElement.outerHTML; return; }
-            setTimeout(go, 150);
+            activity.setTimeout(go, 150);
         }
 
         async function plotJobToPng(job, dpi) {
@@ -18381,7 +18408,7 @@
 
         function exportActivePaperSpaceVectorPdf() {
             const jspdf = window.jspdf?.jsPDF;
-            if (!jspdf) throw new Error('jsPDF unavailable');
+            if (!jspdf) throw new Error(tr("uiJsPDFUnavailable", "jsPDF unavailable"));
             const bounds = getPaperSheetExportBounds() || getMainGroupExportBounds();
             if (!bounds) {
                 alert(tr('noPaperGeometryExport', 'No paper-space geometry found to export.'));
@@ -20322,7 +20349,7 @@
         }
 
         function yieldDxfSetup() {
-            return new Promise(resolve => setTimeout(resolve, 0));
+            return new Promise(resolve => activity.setTimeout(resolve, 0));
         }
 
         async function buildWebGLSceneForImport() {
@@ -20606,12 +20633,12 @@
         }
 
         function formatRawLineweight(lineweight) {
-            if (lineweight === undefined || lineweight === null) return 'Default';
+            if (lineweight === undefined || lineweight === null) return tr("qselectDefault", "Default");
             const numeric = Number(lineweight);
             if (!Number.isFinite(numeric)) return String(lineweight);
             if (numeric === -1) return 'BYLAYER';
             if (numeric === -2) return 'BYBLOCK';
-            if (numeric === -3) return 'Default';
+            if (numeric === -3) return tr("qselectDefault", "Default");
             if (numeric < 0) return String(lineweight);
             return `${(numeric / 100).toFixed(2)} mm`;
         }
@@ -21226,10 +21253,10 @@
             ctxMenu.style.top = Math.max(8, Math.min(y, window.innerHeight - size.height - 8)) + 'px';
         }
         function closeLayerContextMenu() { ctxMenu.classList.add('hidden'); }
-        document.addEventListener('click', (e) => {
+        activity.listen(document, 'click', (e) => {
             if (!e.target.closest('#layer-ctx-menu')) closeLayerContextMenu();
         });
-        document.addEventListener('contextmenu', (e) => {
+        activity.listen(document, 'contextmenu', (e) => {
             if (!e.target.closest('#layer-ctx-menu') && !e.target.closest('.dxf-layer-row')) closeLayerContextMenu();
         });
 
@@ -21244,7 +21271,7 @@
             nameError.textContent = '';
             nameModalOnConfirm = { validate, onConfirm };
             nameModal.classList.remove('hidden');
-            setTimeout(() => { nameInput.focus(); nameInput.select(); }, 30);
+            activity.setTimeout(() => { nameInput.focus(); nameInput.select(); }, 30);
         }
         function closeNameModal() { nameModal.classList.add('hidden'); nameModalOnConfirm = null; }
 
@@ -21468,23 +21495,10 @@
         }
         // Capture also handles controls that stop propagation. Remove only the
         // popup so the clicked row/control survives to receive its own event.
-        document.addEventListener('pointerdown', closeLayerPopupsOutside, true);
-        document.addEventListener('click', closeLayerPopupsOutside, true);
+        activity.listen(document, 'pointerdown', closeLayerPopupsOutside, true);
+        activity.listen(document, 'click', closeLayerPopupsOutside, true);
 
-        sidebarToggle.addEventListener('click', () => {
-            isSidebarExpanded = !isSidebarExpanded;
-            const toggleWrapper = document.getElementById('sidebar-toggle-icon-wrapper');
-            if (isSidebarExpanded) {
-                appSidebar.classList.replace('w-[72px]', 'w-64');
-                toggleWrapper.style.transform = 'rotate(180deg)';
-                sidebarTexts.forEach(t => t.classList.replace('opacity-0', 'opacity-100'));
-            } else {
-                appSidebar.classList.replace('w-64', 'w-[72px]');
-                toggleWrapper.style.transform = 'rotate(0deg)';
-                sidebarTexts.forEach(t => t.classList.replace('opacity-100', 'opacity-0'));
-            }
-            setTimeout(onWindowResize, 300); 
-        });
+        DxfSidebar.connect('editor', document.body, onWindowResize);
 
         function switchTab(targetId) {
             if (targetId !== 'view-viewer' && isAreaSelecting) cancelAreaSelect();
@@ -21502,7 +21516,7 @@
             if (targetId === 'view-blocks') buildBlockLibrary();
 
             if (targetId === 'view-viewer') {
-                setTimeout(() => {
+                activity.setTimeout(() => {
                     onWindowResize();
                     // Fit once per drawing; coming back from Shortcuts/Load
                     // must not throw away the user's current view.
@@ -21564,7 +21578,7 @@
             isImportBusy: () => dxfSceneSetupBusy,
             snapshot: () => ({ name: document.getElementById('info-name')?.innerText || 'drawing.dxf', text: serializeDxfWithEdits() }),
             onStatus: autosaveStatus,
-            offerRecovery: () => openRecoveryDialog(false)
+            offerRecovery: () => activity.setTimeout(() => openRecoveryDialog(false), 0)
         });
         autosave = recoverySession.engine;
         recoverySession.connect();
@@ -21722,8 +21736,8 @@
         let plotDialogState = null;     // { wrap, layerDict, raf }
         function closePlotDialog() {
             if (!plotDialogState) return;
-            cancelAnimationFrame(plotDialogState.raf || 0);
-            document.removeEventListener('keydown', plotDialogState.onKey, true);
+            activity.cancelAnimationFrame(plotDialogState.raf || 0);
+            activity.unlisten(document, 'keydown', plotDialogState.onKey, true);
             plotDialogState.wrap.remove();
             plotDialogState = null;
         }
@@ -21845,7 +21859,7 @@
                 e.preventDefault(); e.stopPropagation();
                 closePlotDialog();
             };
-            document.addEventListener('keydown', onKey, true);
+            activity.listen(document, 'keydown', onKey, true);
             plotDialogState = { wrap, layerDict: collectPlotLayerDict(getActivePlotTable(st.table)), collectedTable: st.table, raf: 0, job: null, onKey };
             if (window.lucide) lucide.createIcons();
 
@@ -21940,8 +21954,8 @@
             };
             const refresh = () => {
                 read();
-                cancelAnimationFrame(plotDialogState?.raf || 0);
-                if (plotDialogState) plotDialogState.raf = requestAnimationFrame(render);
+                activity.cancelAnimationFrame(plotDialogState?.raf || 0);
+                if (plotDialogState) plotDialogState.raf = activity.requestAnimationFrame(render);
             };
             wrap.querySelectorAll('select, input').forEach(el => {
                 if (el.id === 'plot-table-file' || el.id === 'plot-drawing-mode') return;
@@ -21995,21 +22009,21 @@
                 // Plotting keeps these settings as the layout's page setup (like AutoCAD).
                 const tableBefore = getLayoutStyleSheet();
                 applyPlotSettingsToLayout(st);
-                if (layoutShowsPlotStyles() && String(tableBefore || '').toLowerCase() !== String(st.table || '').toLowerCase()) setTimeout(() => buildWebGLScene(), 0);
+                if (layoutShowsPlotStyles() && String(tableBefore || '').toLowerCase() !== String(st.table || '').toLowerCase()) activity.setTimeout(() => buildWebGLScene(), 0);
                 try {
                     if (act === 'pdf') writePlotPdf(job).save(base + '.pdf');
                     else if (act === 'svg') plotDownload(new Blob([writePlotSvg(job)], { type: 'image/svg+xml' }), base + '.svg');
                     else if (act === 'png') plotDownload(await plotJobToPng(job, st.dpi), base + '.png');
                     else if (act === 'print') printPlotJob(job);
                 } catch (err) {
-                    console.error('Plot failed', err);
+                    console.error(tr("uiPlotFailed", "Plot failed"), err);
                     if (act === 'pdf') { await exportActivePaperSpaceRasterPdf(); }
                     else alert(tr('plotFailed', 'Plot failed: {msg}', { msg: err.message || err }));
                 }
                 closePlotDialog();
             }));
             read();
-            requestAnimationFrame(render);
+            activity.requestAnimationFrame(render);
             wrap.tabIndex = -1;
             wrap.focus();
         }
@@ -22043,7 +22057,7 @@
                 },
                 end: () => {
                     if (rect) { gizmoGroup.remove(rect); rect.geometry.dispose(); rect = null; }
-                    setTimeout(() => openPlotDialog(), 0);
+                    activity.setTimeout(() => openPlotDialog(), 0);
                 },
             });
         }
@@ -22312,7 +22326,7 @@
                 for (let i = 0; i < items.length; i++) {
                     const it = items[i];
                     onProgress?.(i, items.length, it.name);
-                    await new Promise(r => setTimeout(r, 0));
+                    await new Promise(r => activity.setTimeout(r, 0));
                     if (activeSpaceKey !== it.key) switchDrawingSpace(it.key, { skipZoomFit: true });
                     const st = { ...plotSettings() };
                     if (st.area === 'display' && it.key !== startKey) st.area = activeSpaceKey === 'model' ? 'extents' : 'layout';
@@ -22328,7 +22342,7 @@
 
         function writePublishPdf(jobs) {
             const jspdf = window.jspdf?.jsPDF;
-            if (!jspdf) throw new Error('jsPDF unavailable');
+            if (!jspdf) throw new Error(tr("uiJsPDFUnavailable", "jsPDF unavailable"));
             let pdf = null;
             for (const job of jobs) {
                 const { width, height } = job.page;
@@ -22355,7 +22369,7 @@
             doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${plotEsc(plotFileBase())}</title><style>@page{size:${plotNum(first.width)}mm ${plotNum(first.height)}mm;margin:0}html,body{margin:0;padding:0;background:var(--dxf-ui-bg-ffffff, #fff)}.sheet{break-after:page;overflow:hidden}.sheet:last-child{break-after:auto}.sheet svg{display:block;width:100%;height:100%}${css}</style></head><body>${body}</body></html>`);
             doc.close();
             if (window.__dxfPlotNoPrint) { window.__dxfLastPrintDoc = doc.documentElement.outerHTML; return; }
-            setTimeout(() => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) { console.warn(e); } }, 150);
+            activity.setTimeout(() => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) { console.warn(e); } }, 150);
         }
 
         function openPublishDialog() {
@@ -22396,8 +22410,8 @@
             document.body.appendChild(wrap);
             const status = wrap.querySelector('#publish-status');
             const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } };
-            const close = () => { document.removeEventListener('keydown', onKey, true); wrap.remove(); };
-            document.addEventListener('keydown', onKey, true);
+            const close = () => { activity.unlisten(document, 'keydown', onKey, true); wrap.remove(); };
+            activity.listen(document, 'keydown', onKey, true);
             wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(); });
             let busy = false;
             wrap.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
@@ -22421,7 +22435,7 @@
                     setConsoleMessage(tr('publishDone', 'Plotted {n} layout(s).', { n: jobs.length }), true);
                     close();
                 } catch (err) {
-                    console.error('Publish failed', err);
+                    console.error(tr("uiPublishFailed", "Publish failed"), err);
                     status.textContent = tr('plotFailed', 'Plot failed: {msg}', { msg: err.message || err });
                 } finally {
                     busy = false;
@@ -22502,27 +22516,105 @@
             const state = commandProfiles?.state() || { entries: [{ id: 'en', name: 'English' }], activeId: 'en', loading: true, message: '' };
             const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
             const busy = !commandLanguageIdle();
-            const hint = state.message || (busy ? 'Finish the current tool or input before changing command language.'
-                : 'Typed commands only. English aliases remain available. Interface language is unchanged.');
-            return `<div class="settings-section-title settings-section-title--first">Commands</div><div class="settings-row">
+            const hint = state.message || (busy ? tr("uiFinishTheCurrentToolOrInputBeforeChangingCommand", "Finish the current tool or input before changing command language.")
+                : tr("uiTypedCommandsOnlyEnglishAliasesRemainAvailableInterfaceLanguage", "Typed commands only. English aliases remain available. Interface language is unchanged."));
+            return `<div class="settings-section-title settings-section-title--first">${esc(tr('uiCommands', 'Commands'))}</div><div class="settings-row">
                 <div>
-                    <label class="settings-row-label" for="setting-command-language">Command language</label>
+                    <label class="settings-row-label" for="setting-command-language">${esc(tr('uiCommandLanguage', 'Command language'))}</label>
                     <div id="command-language-status" role="status" class="settings-row-hint">${esc(hint)}</div>
                 </div>
                 <div class="settings-row-control"><select id="setting-command-language" class="settings-select" aria-describedby="command-language-status"
                 ${state.loading || busy || state.entries.length < 2 ? 'disabled' : ''}>
-                ${state.entries.map(entry => `<option value="${esc(entry.id)}" ${entry.id === state.activeId ? 'selected' : ''}>${esc(entry.name)}</option>`).join('')}
+                ${state.entries.map(entry => `<option value="${esc(entry.id)}" ${entry.id === state.activeId ? 'selected' : ''}>${esc(entry.id === 'en' ? tr('uiLanguageEnglish', 'English') : entry.name)}</option>`).join('')}
                 </select></div></div>`;
         }
         commandProfiles = window.DxfEditorCommandProfiles.create({
+            translate: tr,
             registry: commandRegistry,
             loadJson: async file => {
                 const response = await fetch(new URL('../js/dxf/editor/profiles/' + file, document.baseURI));
-                if (!response.ok) throw new Error('Command profile could not be loaded.');
+                if (!response.ok) throw new Error(tr("uiCommandProfileCouldNotBeLoaded", "Command profile could not be loaded."));
                 return response.json();
             },
             storage: { getItem: key => localStorage.getItem(key), setItem: (key, value) => localStorage.setItem(key, value) },
             isIdle: commandLanguageIdle,
-            changed: () => { if (settingsPopup && !settingsPopup.classList.contains('closed')) renderSettingsPanel(); },
+            changed: () => { if (activity.isActive() && settingsPopup && !settingsPopup.classList.contains('closed')) renderSettingsPanel(); },
         });
         commandProfiles.init();
+
+        // Each tool owns a retained DOM root. Keep recovery and beforeunload
+        // alive while its presentation resources are suspended.
+        let workspaceControlsEnabled = true;
+        function createComparisonSnapshot() {
+            if (snapshotEmission) throw new Error(tr("uiSnapshotAlreadyRunning", "Snapshot already running"));
+            snapshotEmission = { nextHandle: nextNewHandle, mleaders: null };
+            try {
+                let text = serializeDxfWithEdits();
+                if (!text) throw new Error(tr("uiTheDrawingCouldNotBeSerialized", "The drawing could not be serialized"));
+                // Nested emitters may allocate after HEADER was written. Set a
+                // final seed above every emitted handle without touching the model.
+                const lines = text.replace(/\r\n/g, '\n').split('\n');
+                let seed = snapshotEmission.nextHandle;
+                for (let i = 0; i + 1 < lines.length; i += 2)
+                    if (['5', '105'].includes(lines[i].trim())) {
+                        const value = parseInt(lines[i + 1].trim(), 16);
+                        if (Number.isFinite(value)) seed = Math.max(seed, value + 1);
+                    }
+                for (let i = 0; i + 3 < lines.length; i += 2)
+                    if (lines[i].trim() === '9' && lines[i + 1].trim() === '$HANDSEED' && lines[i + 2].trim() === '5')
+                        lines[i + 3] = seed.toString(16).toUpperCase();
+                text = lines.join('\n');
+                const name = (document.getElementById('info-name')?.textContent || 'drawing.dxf').replace(/\.(dxf|dwg)$/i, '') + '-editor-snapshot.dxf';
+                return { status: 'completed', snapshot: { name, text, createdAt: Date.now() } };
+            } finally { snapshotEmission = null; }
+        }
+        const workspace = window.DxfWorkspace.create({
+            mode: 'editor',
+            snapshot: createComparisonSnapshot,
+            readState: () => ({
+                hasDocument: !!currentDxf,
+                dirty: hasUnsavedChanges,
+                documentName: currentDxf ? document.getElementById('info-name')?.textContent : '',
+                busyReason: activity.isBusy() ? 'pending-task'
+                    : dxfSceneSetupBusy ? 'scene-setup'
+                    : !loader.classList.contains('hidden') ? 'loading'
+                    : dxfImportClient.job || !importCancel.classList.contains('hidden') ? 'import'
+                    : blockEditContext ? 'block-edit'
+                    : viewportEditContext ? 'viewport-edit'
+                    : editingTextEntity || editingInsertAttributes || editingTableCell ? 'property-edit'
+                    : plotDialogState ? 'plot-dialog'
+                    : pdfCalibrate || !document.getElementById('pdf-import-modal').classList.contains('hidden') ? 'pdf-import'
+                    : document.querySelector('body > div[id$="dialog"], #ctb-editor') ? 'dialog'
+                    : interacting ? 'view-interaction'
+                    : commandProfiles?.state().loading ? 'command-profiles'
+                    : !commandLanguageIdle() ? 'active-command' : null,
+            }),
+            lifecycle: {
+                suspend() {
+                    activity.suspend();
+                    workspaceControlsEnabled = controls.enabled;
+                    controls.enabled = false;
+                    translationLifecycle.dispose();
+                },
+                activate() {
+                    controls.enabled = workspaceControlsEnabled;
+                    activity.activate();
+                    translationLifecycle.connect();
+                    onWindowResize();
+                    updateSpaceTabsOverflow();
+                    requestRender();
+                },
+                async dispose() {
+                    activity.dispose();
+                    importSession.cancel();
+                    translationLifecycle.dispose();
+                    recoverySession.disconnect();
+                    await autosave?.dispose();
+                    pendingTextLOD?.return(); pendingTextLOD = null;
+                    window.DxfWorkspaceActivity.disposeGraphics({ scenes: [scene],
+                        renderers: [renderer, labelRenderer], controls: [controls], textures: textTextureCache });
+                    textSpriteRegistry = [];
+                },
+            },
+        });
+        export { workspace };

@@ -329,14 +329,14 @@
     // ===== Interaction state machine =====
 
     const HINTS = {
-        move:   ['Click base point', 'Click destination — or type a distance toward the cursor'],
-        copy:   ['Click base point', 'Click destination for the copy — or type a distance toward the cursor'],
-        rotate: ['Click rotation center', 'Click to set angle — or type degrees'],
-        scale:  ['Click base point', 'Click reference point (defines distance = 1×)', 'Click new distance — or type a scale factor'],
-        mirror: ['Click first point of mirror axis', 'Click second axis point (copies are created; originals kept)'],
-        arraypolar: ['Click the array center point'],
-        stretch: ['Click first corner of the crossing box', 'Click opposite corner',
-                  'Click base point', 'Click destination — or type a distance toward the cursor'],
+        move:   [["drawClickBasePoint", "Click base point"], ["drawClickDestinationOrTypeADistanceTowardTheCursor", "Click destination — or type a distance toward the cursor"]],
+        copy:   [["drawClickBasePoint", "Click base point"], ["drawClickDestinationForTheCopyOrTypeADistance", "Click destination for the copy — or type a distance toward the cursor"]],
+        rotate: [["drawClickRotationCenter", "Click rotation center"], ["drawClickToSetAngleOrTypeDegrees", "Click to set angle — or type degrees"]],
+        scale:  [["drawClickBasePoint", "Click base point"], ["drawClickReferencePointDefinesDistance1", "Click reference point (defines distance = 1×)"], ["drawClickNewDistanceOrTypeAScaleFactor", "Click new distance — or type a scale factor"]],
+        mirror: [["drawClickFirstPointOfMirrorAxis", "Click first point of mirror axis"], ["drawClickSecondAxisPointCopiesAreCreatedOriginalsKept", "Click second axis point (copies are created; originals kept)"]],
+        arraypolar: [["drawClickTheArrayCenterPoint", "Click the array center point"]],
+        stretch: [["drawClickFirstCornerOfTheCrossingBox", "Click first corner of the crossing box"], ["drawClickOppositeCorner", "Click opposite corner"],
+                  ["drawClickBasePoint", "Click base point"], ["drawClickDestinationOrTypeADistanceTowardTheCursor", "Click destination — or type a distance toward the cursor"]],
     };
 
     function create(hooks) {
@@ -344,6 +344,7 @@
         const onPreview = hooks.onPreview || noop;
         const onCommit = hooks.onCommit || noop;
         const onHint = hooks.onHint || noop;
+        const tr = hooks.translate || ((key, fallback, vars = {}) => String(fallback ?? key).replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(vars, name) ? String(vars[name]) : match));
         const onExit = hooks.onExit || noop;
 
         let tool = null;
@@ -353,7 +354,8 @@
         function hint() {
             if (!tool) { onHint(''); return; }
             const list = HINTS[tool] || [];
-            onHint(list[Math.min(points.length, list.length - 1)] || '');
+            const message = list[Math.min(points.length, list.length - 1)];
+            onHint(message ? tr(...message) : '');
         }
 
         // Live preview parameters for the host to render the transformed selection.
@@ -409,6 +411,7 @@
         }
 
         return {
+            refreshHint: hint,
             isActive() { return tool !== null; },
             activeTool() { return tool; },
             pendingPointCount() { return points.length; },

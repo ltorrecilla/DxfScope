@@ -455,7 +455,8 @@
             dirty = false;
             draw();
         }
-        function onResize() { resizeView(); requestRender(); }
+        // A disconnected observer may still have a queued delivery.
+        function onResize() { if (running) { resizeView(); requestRender(); } }
         function start() {
             if (running) return;
             running = true;

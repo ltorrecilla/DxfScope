@@ -2,6 +2,9 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        const document = window.DxfModeDOM?.documentFor('compare') || window.document;
+        const activity = window.DxfWorkspaceActivity.create({ window, document });
+
         // ==================================================================
         //  Diff palette
         // ==================================================================
@@ -1063,7 +1066,7 @@
             highlightLine.geometry = geom;
             highlightLine.visible = true;
             requestRender();
-            setTimeout(() => { highlightLine.visible = false; requestRender(); }, 1600);
+            activity.setTimeout(() => { highlightLine.visible = false; requestRender(); }, 1600);
         }
 
         // ==================================================================
@@ -1126,7 +1129,11 @@
 
         // tr() shim mirroring the viewer: PAGE_I18N lookup + {placeholders}.
         function tr(key, fallback, params) { return window.DxfCompareUI.translate(window, key, fallback, params); }
-        window.refreshCompareTranslations = function () { if (compareResult || singleFileMode) refreshPanel(); };
+        window.refreshCompareTranslations = function () {
+            if (!activity.isActive()) return;
+            updateOpenButton();
+            if (compareResult || singleFileMode) refreshPanel();
+        };
 
         // ==================================================================
         //  Measure distance + quick room dimensions (read-only overlays)
@@ -1495,7 +1502,7 @@
 
         document.getElementById('btn-roomdim').addEventListener('click', () => setToolMode('roomdim'));
 
-        window.addEventListener('keydown', ev => {
+        activity.listen(window, 'keydown', ev => {
             if (ev.key === 'F3') {
                 ev.preventDefault();
                 settings.snapEnabled = !settings.snapEnabled;
@@ -1578,7 +1585,7 @@
             setViewMode(mode === 'drag' ? 'overlay' : 'sbs');
             if (mode !== 'drag') alignmentSnapCache('b');
             syncAlignmentUi();
-            requestAnimationFrame(() => { onResize(); zoomToFit(); });
+            activity.requestAnimationFrame(() => { onResize(); zoomToFit(); });
         }
         function applyAlignment(offset, reset = false) {
             stopAlignment(); clearMeasurements();
@@ -1588,7 +1595,7 @@
                 ? tr('modeHandle', 'matched by handle') : tr('modeFingerprint', 'matched by geometry');
             setStatus(reset ? tr('alignmentReset', 'Original alignment restored.') : tr('alignmentApplied', 'Manual alignment applied.'));
             setViewMode('overlay');
-            requestAnimationFrame(() => { onResize(); zoomToFit(); });
+            activity.requestAnimationFrame(() => { onResize(); zoomToFit(); });
         }
         function wireAlignmentEvents(host) {
             host.addEventListener('pointerdown', ev => {
@@ -1606,7 +1613,7 @@
                 const point = findSnap(p, host);
                 if (alignmentMode === 'pick-b') {
                     alignmentAnchor = point; alignmentMode = 'pick-a';
-                    updateSnapMarker({ ...point, snapped: true, type: 'END' });
+                    updateSnapMarker(null);
                     alignmentSnapCache('a'); syncAlignmentUi();
                 } else {
                     const offset = alignmentOffset();
@@ -1614,12 +1621,25 @@
                 }
             }, true);
             host.addEventListener('pointermove', ev => {
+                if (alignmentMode === 'pick-b' || alignmentMode === 'pick-a') {
+                    const expectedHost = alignmentMode === 'pick-b' ? hostB : hostA;
+                    if (host !== expectedHost) { updateSnapMarker(null); return; }
+                    // Preview the same snap used by pointerdown, in the pane
+                    // being picked. Do not rebuild the geometry cache per move.
+                    measureHost = host;
+                    ensureMeasureGroup();
+                    updateSnapMarker(findSnap(screenToWorld(ev, host), host));
+                    return;
+                }
                 if (!alignmentDrag || ev.pointerId !== alignmentDrag.pointerId) return;
                 ev.preventDefault(); ev.stopPropagation();
                 const p = screenToWorld(ev, host), drag = alignmentDrag;
                 drag.current = { x: drag.offset.x + p.x - drag.start.x, y: drag.offset.y + p.y - drag.start.y };
                 positionAlignedGroups(drag.current);
             }, true);
+            host.addEventListener('pointerleave', () => {
+                if (alignmentMode && !alignmentDrag) updateSnapMarker(null);
+            });
             const end = ev => {
                 if (!alignmentDrag || ev.pointerId !== alignmentDrag.pointerId) return;
                 ev.preventDefault(); ev.stopPropagation();
@@ -1635,7 +1655,7 @@
 
 
 
-        window.addEventListener('keydown', ev => { if (ev.key === 'Escape' && alignmentMode) stopAlignment(); });
+        activity.listen(window, 'keydown', ev => { if (ev.key === 'Escape' && alignmentMode) stopAlignment(); });
 
         // ==================================================================
         //  File selection UI
@@ -1675,14 +1695,25 @@
             setStatus('Import cancelled. The open comparison is unchanged.');
         }
         importCancel.addEventListener('click', cancelImport);
-        window.addEventListener('keydown', event => {
+        activity.listen(window, 'keydown', event => {
             if (event.key === 'Escape' && !importCancel.classList.contains('hidden')) { event.preventDefault(); cancelImport(); }
         });
 
 
-        async function openDrawings() {
+        async function openDrawings(_event, candidate = fileState) {
+            // Snapshot receipt is transactional through scene commit as well as
+            // parsing. Retain the old model/results so a failed rebuild can restore it.
+            const previous = candidate !== fileState ? { a: { ...ctxA }, b: { ...ctxB },
+                single: singleFileMode, result: compareResult, spaces: spaceResults, space: currentSpace,
+                view: viewMode, colors: colorMode, alignments: new Map(alignments),
+                title: document.getElementById('compare-title').textContent,
+                badge: document.getElementById('mode-badge').textContent,
+                counts: ['info-ents-a', 'info-ents-b'].map(id => document.getElementById(id).textContent),
+                disabled: ['tab-compare', 'btn-papers'].map(id => document.getElementById(id).disabled),
+                position: camera?.position.clone(), zoom: camera?.zoom } : null;
+            let committed = false;
             const labels = { read: 'Reading drawing…', converter: 'Loading DWG converter…', convert: 'Converting DWG…', modules: 'Loading drawing readers…', recover: 'Preparing drawing…' };
-            const job = pairLoader.begin(fileState, (file, event) => {
+            const job = pairLoader.begin(candidate, (file, event) => {
                 loaderMsg.textContent = `${file.name} · ${labels[event.stage] || 'Preparing drawing…'}`;
             });
             const { isCurrent } = job;
@@ -1693,8 +1724,9 @@
             document.getElementById('error-box').classList.add('hidden');
             try {
                 const next = await job.load();
-                if (!isCurrent()) return;
+                if (!isCurrent()) return { status: 'cancelled' };
                 // Commit only when both imports succeed; cancellation keeps the old pair.
+                committed = true;
                 importCancel.classList.add('hidden');
                 stopAlignment(); alignments.clear();
                 singleFileMode = next.singleFileMode;
@@ -1718,7 +1750,7 @@
                 document.getElementById('tab-compare').disabled = false;
                 document.getElementById('btn-papers').disabled = false;
                 switchTab('view-compare');
-                requestAnimationFrame(() => { measureToolbarHeight(); applyThemeButton(); setRightTab('comparison'); setRightOpen(false); });
+                activity.requestAnimationFrame(() => { measureToolbarHeight(); applyThemeButton(); setRightTab('comparison'); setRightOpen(false); });
 
                 initThree();
                 onResize();
@@ -1770,16 +1802,37 @@
                 if (wantView && VIEW_MODES.includes(wantView) && wantView !== viewMode) {
                     setViewMode(wantView);
                     // refit once the hosts have their size (after setViewMode's resize)
-                    requestAnimationFrame(() => requestAnimationFrame(zoomToFit));
+                    activity.requestAnimationFrame(() => activity.requestAnimationFrame(zoomToFit));
                 }
                 zoomToFit();
+                return { status: 'completed' };
             } catch (err) {
-                if (!isCurrent() || err.name === 'AbortError') return;
+                if (!isCurrent() || err.name === 'AbortError') return { status: 'cancelled' };
+                if (previous && committed) {
+                    window.DxfCompareContext.replace(ctxA, previous.a);
+                    window.DxfCompareContext.replace(ctxB, previous.b);
+                    singleFileMode = previous.single; compareResult = previous.result;
+                    spaceResults = previous.spaces; currentSpace = previous.space; colorMode = previous.colors;
+                    alignments.clear(); previous.alignments.forEach((value, key) => alignments.set(key, value));
+                    document.getElementById('compare-title').textContent = previous.title;
+                    document.getElementById('mode-badge').textContent = previous.badge;
+                    ['info-ents-a', 'info-ents-b'].forEach((id, index) => { document.getElementById(id).textContent = previous.counts[index]; });
+                    ['tab-compare', 'btn-papers'].forEach((id, index) => { document.getElementById(id).disabled = previous.disabled[index]; });
+                    ['btn-view-sbs', 'btn-view-swipe', 'btn-panel', 'btn-display', 'btn-blend'].forEach(id => document.getElementById(id).classList.toggle('hidden', singleFileMode));
+                    try {
+                        if (ctxA.fileName || ctxB.fileName) {
+                            if (singleFileMode) rebuildViewerScene(); else rebuildDiffScene();
+                            setViewMode(previous.view); syncDisplayControls(); refreshPanel();
+                            if (previous.position) { camera.position.copy(previous.position); camera.zoom = previous.zoom; camera.updateProjectionMatrix(); syncControlsToCamera(); requestRender(); }
+                        } else switchTab('view-upload');
+                    } catch (restoreError) { console.error('Comparison display restore failed:', restoreError); switchTab('view-upload'); }
+                }
                 console.error(err);
                 const box = document.getElementById('error-box');
                 document.getElementById('error-text').textContent = (err && err.message) || tr('errorParsingDxf', 'Error parsing DXF.');
                 box.classList.remove('hidden');
                 if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
+                return { status: 'failed', reason: err.message || 'Import failed' };
             } finally {
                 if (isCurrent()) { loader.classList.add('hidden'); importCancel.classList.add('hidden'); }
             }
@@ -1810,7 +1863,7 @@
             syncControlsToCamera();
             parentGroupsForMode();
             // Resize after layout settles.
-            requestAnimationFrame(() => { onResize(); requestRender(); });
+            activity.requestAnimationFrame(() => { onResize(); requestRender(); });
         }
 
 
@@ -1912,11 +1965,11 @@
         function changeTolerance(value) {
             tolerance = Math.pow(10, Number(value));
             if (singleFileMode || !ctxA.dxf) return;
-            clearTimeout(tolDebounce);
-            tolDebounce = setTimeout(() => {
+            activity.clearTimeout(tolDebounce);
+            tolDebounce = activity.setTimeout(() => {
                 loader.classList.remove('hidden');
                 loaderMsg.textContent = tr('loaderComparing', 'Comparing…');
-                setTimeout(() => {
+                activity.setTimeout(() => {
                     try {
                         runCompare();
                     syncDisplayControls();
@@ -1955,6 +2008,69 @@
             }
         });
 
+        // Contexts and results remain app-owned; return only scalar session facts.
+        let workspaceControlStates = [];
+        let projectHandoffPending = false;
+        async function receiveEditorSnapshot(snapshot) {
+            if (typeof snapshot?.text !== 'string' || !snapshot.text.trim()) throw new Error('Empty editor snapshot');
+            const file = new File([snapshot.text], snapshot.name || 'editor-snapshot.dxf', { type: 'application/dxf', lastModified: snapshot.createdAt || Date.now() });
+            const result = await openDrawings(null, { a: file, b: fileState.b });
+            if (result.status === 'completed') {
+                fileState.a = file;
+                const label = document.getElementById('file-a-name');
+                label.textContent = file.name;
+                label.removeAttribute('data-i18n');
+                label.classList.remove('text-slate-500'); label.classList.add('text-blue-600');
+                // Reflect the synthetic file in the native picker too, matching
+                // the filename card instead of showing "No file selected".
+                const selected = new DataTransfer(); selected.items.add(file);
+                document.getElementById('input-a').files = selected.files;
+                updateOpenButton();
+            }
+            return result;
+        }
+        const workspace = window.DxfWorkspace.create({
+            mode: 'compare',
+            receiveSnapshot: receiveEditorSnapshot,
+            readState: () => ({
+                hasDocument: !!(ctxA.fileName || ctxB.fileName),
+                hasInputs: !!(fileState.a || fileState.b),
+                dirty: false,
+                documentName: [ctxA.fileName, ctxB.fileName].filter(Boolean).join(' → '),
+                busyReason: activity.isBusy() ? 'pending-task' : importClient.job || !loader.classList.contains('hidden') ? 'import-or-rebuild'
+                    : projectHandoffPending ? 'project-handoff'
+                    : alignmentMode || alignmentDrag ? 'alignment'
+                    : toolMode ? 'measurement' : null,
+            }),
+            lifecycle: {
+                suspend() {
+                    activity.suspend();
+                    renderLifecycle?.stop();
+                    workspaceControlStates = Object.values(rendererSession?.controls || {}).map(control => [control, control.enabled]);
+                    workspaceControlStates.forEach(([control]) => { control.enabled = false; });
+                },
+                activate() {
+                    workspaceControlStates.forEach(([control, enabled]) => { control.enabled = enabled; });
+                    activity.activate();
+                    renderLifecycle?.start();
+                    renderLifecycle?.resize();
+                    window.refreshCompareTranslations();
+                },
+                dispose() {
+                    activity.dispose();
+                    pairLoader.cancel();
+                    renderLifecycle?.stop();
+                    sceneBuilder.clearTextSprites();
+                    window.DxfWorkspaceActivity.disposeGraphics({
+                        scenes: Object.values(rendererSession?.scenes || {}),
+                        renderers: Object.values(rendererSession?.renderers || {}),
+                        controls: Object.values(rendererSession?.controls || {}), textures: textTextureCache,
+                    });
+                },
+            },
+        });
+        export { workspace };
+
         /* ==================== CDE project handoff ====================
          * ?project=<guid>&open=<relPath>. The hub hands over a .dxf/.dwg
          * inside the linked project folder. READ-ONLY: the file lands in
@@ -1967,7 +2083,7 @@
         (function cdeAutoOpen() {
             let params = null;
             try {
-                const q = new URLSearchParams(window.location.search);
+                const q = new URLSearchParams(document.modeSearch ?? window.location.search);
                 const guid = q.get('project'), open = q.get('open');
                 if (guid && open) params = {
                     guid: guid, open: open,
@@ -2021,6 +2137,7 @@
                 const setName = (id, file) => {
                     const el = document.getElementById(id);
                     el.textContent = file.name;
+                    el.removeAttribute('data-i18n');
                     el.classList.remove('text-slate-500');
                     el.classList.add('text-blue-600');
                 };
@@ -2066,30 +2183,34 @@
                 host.insertBefore(banner, host.firstChild);
                 if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' });
                 document.getElementById('cde-regrant-btn').addEventListener('click', async () => {
+                    projectHandoffPending = true;
                     try {
                         const info = await cde.requestAccess(params.guid);
                         if (info && info.permission === 'granted') {
                             banner.remove();
-                            loadIntoSlotA(info);
+                            await loadIntoSlotA(info);
                         } else {
                             cdeFail(tr('cdeNoAccess', 'Folder access was not granted.'));
                         }
                     } catch (err) {
                         console.error('CDE REQUEST ACCESS ERROR:', err);
                         cdeFail(tr('cdeNoAccess', 'Folder access was not granted.'));
-                    }
+                    } finally { projectHandoffPending = false; }
                 });
             }
 
             (async () => {
-                let info = null;
-                try { info = await cde.openProject(params.guid); } catch (e) { }
-                if (!info) {
-                    cdeFail(tr('cdeNoHandle', 'This project has no linked folder on this machine. Open the Projects page and link it first.'));
-                    return;
-                }
-                if (info.permission === 'granted') loadIntoSlotA(info);
-                else showRegrantBanner();
+                projectHandoffPending = true;
+                try {
+                    let info = null;
+                    try { info = await cde.openProject(params.guid); } catch (e) { }
+                    if (!info) {
+                        cdeFail(tr('cdeNoHandle', 'This project has no linked folder on this machine. Open the Projects page and link it first.'));
+                        return;
+                    }
+                    if (info.permission === 'granted') await loadIntoSlotA(info);
+                    else showRegrantBanner();
+                } finally { projectHandoffPending = false; }
             })();
         })();
     

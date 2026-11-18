@@ -60,6 +60,16 @@
             leave() {
                 try { cfg.alive && cfg.alive.removeItem(aliveKey(id)); } catch (e) { /* ignore */ }
             },
+            // Final document teardown, not workspace suspension. Keep any recovery
+            // record, but stop writes/heartbeat before the host removes the frame.
+            async dispose() {
+                disabled = true;
+                clearTimeout(timer);
+                if (beat) clearInterval(beat);
+                timer = beat = null;
+                if (writing) await writing;
+                api.leave();
+            },
             schedule() {
                 if (disabled) return;
                 clearTimeout(timer);

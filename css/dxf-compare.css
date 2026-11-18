@@ -1,0 +1,281 @@
+
+        html, body { height: 100%; }
+        body { font-family: Inter, sans-serif; }
+        .scroller::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scroller::-webkit-scrollbar-thumb { background: var(--dxf-ui-bg-cbd5e1, #cbd5e1); border-radius: 3px; }
+
+        /* Sidebar Tab Styles (same as DXF Viewer/Editor) */
+        .tab-btn {
+            display: flex; align-items: center; width: 100%; padding: 0 1rem;
+            height: 2.5rem; min-height: 2.5rem; color: var(--dxf-ui-text-475569, #475569);
+            border-radius: 0rem; transition: all 0.2s; margin-bottom: 0.25rem;
+            font-size: 0.875rem; font-weight: 500; border: none;
+            background: transparent; cursor: pointer;
+        }
+        .tab-btn:hover:not(:disabled) { background-color: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-0f172a, #0f172a); }
+        .tab-btn.active {
+            background-color: var(--dxf-ui-bg-e2e8f0, #e2e8f0); color: var(--dxf-ui-text-2563eb, #2563eb); font-weight: 600;
+            box-shadow: inset 3px 0 0 #2563eb;
+        }
+        .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tab-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; }
+
+        .dragover, .drop-zone.dragover { border-color: var(--dxf-ui-border-2563eb, #2563eb) !important; background-color: rgba(238, 242, 255, 0.5) !important; }
+
+        /* ---- Editor top toolbar ---- */
+        .draw-toolbar {
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; flex-direction: column; gap: 2px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+            padding: 3px 6px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06); z-index: 21;
+        }
+        .draw-toolbar-row {
+            display: flex; gap: 2px; align-items: center; justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .draw-toolbar-spacer { flex: 1 1 auto; }
+        #papers-panel, #right-panel { top: var(--draw-toolbar-h, 0px); }
+        #canvas-wrap { margin-top: var(--draw-toolbar-h, 0px); }
+        .settings-popup { top: max(64px, calc(var(--draw-toolbar-h, 0px) + 16px)); }
+        .settings-popup { max-height: calc(100% - max(80px, var(--draw-toolbar-h, 0px) + 32px)); }
+
+        .viewer-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 32px; height: 32px; padding: 0 8px; background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid transparent; border-radius: 4px; color: var(--dxf-ui-text-64748b, #64748b);
+            font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+        }
+        .viewer-btn:hover:not(:disabled) { background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-1e293b, #1e293b); border-color: transparent; }
+        .viewer-btn.active { background: var(--dxf-ui-bg-e0e7ff, #e0e7ff); color: var(--dxf-ui-text-2563eb, #2563eb); border-color: var(--dxf-ui-border-bfdbfe, #bfdbfe); font-weight: 600; }
+        .viewer-btn:disabled { opacity: 0.42; cursor: not-allowed; background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-94a3b8, #94a3b8); }
+        .viewer-toolbar-sep { width: 1px; height: 18px; background: var(--dxf-ui-bg-e2e8f0, #e2e8f0); margin: 0 2px; align-self: center; }
+
+        /* ---- Measure tool (editor styles) ---- */
+        .measure-panel {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 24; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100% - 24px); align-items: center; gap: 10px; padding: 8px 10px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); font-size: 11px; color: var(--dxf-ui-text-1e293b, #1e293b);
+        }
+        .measure-panel.hidden { display: none !important; }
+        .measure-panel-title { font-weight: 800; color: var(--dxf-ui-text-111827, #111827); padding-right: 2px; }
+        .measure-snap-option { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--dxf-ui-text-475569, #475569); white-space: nowrap; }
+        .measure-snap-option input[type="checkbox"] { accent-color: var(--dxf-ui-text-2563eb, #2563eb); width: 13px; height: 13px; }
+        .measure-clear-btn {
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-334155, #334155); border-radius: 4px;
+            padding: 3px 8px; font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+        .measure-clear-btn:hover { background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-111827, #111827); }
+        .measure-hint { color: var(--dxf-ui-text-64748b, #64748b); font-weight: 600; border-left: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); padding-left: 10px; }
+        .measure-label {
+            position: absolute; transform: translate(-50%, -140%); pointer-events: none; z-index: 25;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-111827, #111827); font-size: 10px; font-weight: 800;
+            border: 1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+        }
+        .cmp-canvas-host.measure-active canvas { cursor: crosshair; }
+
+        /* ---- Sliding side panels ---- */
+        .cmp-canvas-host { position: relative; overflow: hidden; background: #2a2e37; }
+        .cmp-canvas-host canvas { display: block; }
+        .canvas-tag {
+            position: absolute; top: 8px; left: 8px; z-index: 5;
+            font-size: 10px; font-weight: 700; letter-spacing: .04em;
+            padding: 2px 8px; border-radius: 6px; color: #fff;
+            background: rgba(15, 23, 42, .65); pointer-events: none;
+        }
+
+        /* ---- Swipe view: one canvas, A left of the divider, B right ---- */
+        #canvas-wrap { position: relative; }
+        .swipe-tag { display: none; }
+        #canvas-wrap.swipe .swipe-tag { display: block; }
+        #swipe-tag-b { left: auto; right: 8px; }
+        #swipe-bar {
+            display: none; position: absolute; top: 0; bottom: 0;
+            left: var(--split, 50%); width: 14px; margin-left: -7px;
+            z-index: 6; cursor: ew-resize; touch-action: none;
+        }
+        #canvas-wrap.swipe #swipe-bar { display: block; }
+        #swipe-bar::before {
+            content: ''; position: absolute; top: 0; bottom: 0;
+            left: 6px; width: 2px; background: #2563eb;
+        }
+        #swipe-grip {
+            position: absolute; top: 50%; left: -7px; width: 28px; height: 28px;
+            margin-top: -14px; border-radius: 50%; background: #2563eb;
+            border: 2px solid var(--dxf-ui-border-fff, #fff); box-shadow: 0 1px 6px rgba(15, 23, 42, .3);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+        }
+
+        .cat-chip { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+            padding: 5px 9px; border-radius: 6px; border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); font-size: 11px; font-weight: 700; width: 100%; }
+        .cat-chip .chip-count { margin-left: auto; }
+        .cat-chip.off { opacity: .38; }
+        .cat-dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+
+        /* Editor CAD layer rows */
+        .layer-checkbox {
+            appearance: none; -webkit-appearance: none;
+            width: 14px; height: 14px; min-width: 14px; min-height: 14px;
+            margin: 0; border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer; display: inline-block;
+            vertical-align: middle; position: relative;
+        }
+        .layer-checkbox:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:indeterminate {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'><line x1='4' y1='8' x2='12' y2='8'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .dxf-layer-row {
+            display: grid; grid-template-columns: 14px 18px minmax(0, 1fr) auto;
+            align-items: center; column-gap: 8px; min-height: 30px; padding: 4px 2px;
+            border-bottom: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); font-size: 11px; color: var(--dxf-ui-text-1e293b, #1e293b);
+        }
+        .dxf-layer-row-all { margin-bottom: 6px; border-bottom-color: var(--dxf-ui-border-e2e8f0, #e2e8f0); font-weight: 800; }
+        .dxf-layer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+        .dxf-layer-color {
+            width: 14px; height: 14px; border-radius: 9999px; display: inline-block;
+            border: 1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); box-shadow: inset 0 0 2px rgba(0,0,0,0.15);
+        }
+
+        .result-row { cursor: pointer; }
+        .result-row:hover { background: var(--dxf-ui-bg-eff6ff, #eff6ff); }
+        .layer-row:hover { background: var(--dxf-ui-bg-f8fafc, #f8fafc); }
+
+        /* ---- Right panel tabs (editor inspector pattern) ---- */
+        .panel-tab {
+            flex: 1; padding: 12px 0; font-size: 12px; font-weight: 700; text-align: center;
+            color: var(--dxf-ui-text-64748b, #64748b); border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer;
+        }
+        .panel-tab:hover { color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .panel-tab.active { color: var(--dxf-ui-text-2563eb, #2563eb); border-bottom-color: var(--dxf-ui-border-2563eb, #2563eb); font-weight: 800; }
+
+        /* ---- Settings popup (editor) ---- */
+        .prop-popup-close { color: var(--dxf-ui-text-94a3b8, #94a3b8); background: transparent; border: none; cursor: pointer; padding: 2px; }
+        .prop-popup-close:hover { color: var(--dxf-ui-text-475569, #475569); }
+        .settings-popup {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 440px; min-width: 320px; max-width: 92%;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); display: flex;
+            flex-direction: column; overflow: hidden; z-index: 50;
+        }
+        #settings-popup {
+            top: var(--draw-toolbar-h, 0px); bottom: 28px; left: 0; right: auto;
+            transform: none; width: min(390px, 100%); min-width: 0;
+            max-width: 100%; max-height: none; border-radius: 0;
+            border-top: 0; border-bottom: 0; border-left: 0;
+            box-shadow: 4px 0 15px -3px rgba(0, 0, 0, 0.05); z-index: 25;
+        }
+        .dxf-layer-row.is-layer-selected,
+        .dxf-layer-row.is-layer-selected:hover { background: rgba(59, 130, 246, .16); border-radius: 0; }
+        .dxf-layer-row .dxf-layer-name { user-select: none; cursor: pointer; }
+        .dxf-layer-row .dxf-layer-name:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+        .settings-popup.closed { display: none !important; }
+        .osnap-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; font-size: 11px; }
+        .osnap-modes .measure-snap-option { display: grid; grid-template-columns: 14px 16px minmax(0, 1fr); gap: 8px; min-width: 0; min-height: 28px; white-space: normal; cursor: pointer; }
+        .osnap-modes .measure-snap-option span:last-child { overflow-wrap: anywhere; }
+        .osnap-modes input { width: 14px; height: 14px; margin: 0; accent-color: var(--dxf-ui-text-111827, #111827); }
+        .dxf-snap-option-icon { display: inline-block; width: 16px; height: 16px; background-color: currentColor; -webkit-mask: var(--dxf-snap-icon) center / contain no-repeat; mask: var(--dxf-snap-icon) center / contain no-repeat; }
+        .settings-content { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0; }
+        .settings-section-title {
+            font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--dxf-ui-text-64748b, #64748b); padding: 16px 16px 6px; margin-top: 6px; border-top: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9);
+        }
+        .settings-section-title--first { border-top: none; margin-top: 0; padding-top: 10px; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label { font-size: 13px; font-weight: 700; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-row-hint { font-size: 11px; color: var(--dxf-ui-text-64748b, #64748b); margin-top: 2px; line-height: 1.4; }
+        .settings-row-control { flex-shrink: 0; }
+        .settings-select {
+            font-size: 12px; font-weight: 600; color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px; padding: 5px 8px; outline: none; cursor: pointer;
+        }
+        .settings-select:focus { border-color: var(--dxf-ui-border-111827, #111827); }
+        .settings-check-input { accent-color: var(--dxf-ui-text-111827, #111827); width: 17px; height: 17px; cursor: pointer; }
+
+        .loader {
+            border: 4px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-top: 4px solid var(--dxf-ui-border-2563eb, #2563eb);
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+
+/* Settings controls follow the editor reference. */
+        .settings-panel-header { position: relative; display: flex; align-items: stretch; border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); background: var(--dxf-ui-bg-f8fafc, #f8fafc); flex-shrink: 0; }
+        .settings-tabs { display: flex; flex: 1; min-width: 0; }
+        .settings-tab {
+            flex: 1; min-width: 0; min-height: 0; padding: 12px 8px; line-height: 16px; border: 0; border-bottom: 2px solid transparent;
+            background: transparent; color: var(--dxf-ui-text-64748b, #64748b); font-size: 12px; font-weight: 700;
+            cursor: pointer;
+        }
+        .settings-tab:hover { color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-tab.active { border-bottom-color: var(--dxf-ui-border-2563eb, #2563eb); color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .settings-panel-close { position: absolute; right: 8px; top: 10px; display: flex; padding: 4px; border: 0; border-radius: 4px; background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-94a3b8, #94a3b8); cursor: pointer; }
+        .settings-panel-close svg { width: 14px; height: 14px; }
+        .settings-panel-close:hover { color: var(--dxf-ui-text-475569, #475569); }
+        .settings-tab-panel { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 20px 0; }
+        .settings-section-title {
+            font-size: 11px; line-height: 16.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--dxf-ui-text-94a3b8, #94a3b8); padding: 0 0 4px; margin: 24px 20px 12px;
+            border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+        }
+        .settings-section-title:first-child { margin-top: 0; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 20px; }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label { font-size: 13px; font-weight: 700; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-row-hint { font-size: 11px; color: var(--dxf-ui-text-64748b, #64748b); margin-top: 2px; line-height: 1.4; }
+        .settings-row-control { flex-shrink: 0; }
+        .settings-check { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; cursor: pointer; line-height: 0; }
+        .settings-check input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none; width: 18px; height: 18px; margin: 0;
+            border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px; background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer;
+            display: inline-block; vertical-align: middle; position: relative; transition: background-color 0.12s ease;
+        }
+        .settings-check input[type="checkbox"]:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 14px 14px;
+        }
+        .settings-check input[type="checkbox"]:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .settings-select {
+            font-size: 12px; font-weight: 600; color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px; padding: 6px 8px; cursor: pointer;
+        }
+        .settings-select:focus { outline: none; border-color: var(--dxf-ui-border-2563eb, #2563eb); }
+        .measure-snap-option input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none; width: 14px; height: 14px; margin: 0;
+            border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px; background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer;
+        }
+        .measure-snap-option input[type="checkbox"]:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .settings-help-list { list-style: none; margin: 0; padding: 4px 16px 8px; }
+        .settings-help-row { display: grid; grid-template-columns: 20px 132px 1fr; align-items: center; gap: 10px; padding: 7px 0; font-size: 12px; color: var(--dxf-ui-text-64748b, #64748b); }
+        .settings-help-row i { width: 12px; height: 12px; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-help-key { font-weight: 700; color: var(--dxf-ui-text-1e293b, #1e293b); }
+
+#settings-popup .settings-row { border-bottom: 0; }
+#settings-popup .settings-section-title { border-top: 0; }
+#settings-popup .settings-help-row { grid-template-columns: 18px minmax(88px, 110px) minmax(0, 1fr); }
+#settings-popup .settings-help-row span:last-child { overflow-wrap: anywhere; }
+#settings-popup .settings-tabs { padding-right: 32px; }
+#settings-popup .settings-tab-panel { scrollbar-gutter: stable; }
+
+/* Static toolbar spacing and result-category swatches. */
+.viewer-btn.viewer-btn-label { gap: 6px; }
+.cat-chip[data-cat="added"] .cat-dot { background: #22c55e; }
+.cat-chip[data-cat="deleted"] .cat-dot { background: #ef4444; }
+.cat-chip[data-cat="modified"] .cat-dot { background: #f97316; }
+.cat-chip[data-cat="unchanged"] .cat-dot { background: #6b7280; }

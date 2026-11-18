@@ -176,6 +176,7 @@
         const onPreview = hooks.onPreview || noop;
         const onCommit = hooks.onCommit || noop;
         const onHint = hooks.onHint || noop;
+        const tr = hooks.translate || ((key, fallback, vars = {}) => String(fallback ?? key).replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(vars, name) ? String(vars[name]) : match));
         const onExit = hooks.onExit || noop;
         const previewReach = typeof hooks.previewReach === 'function' ? hooks.previewReach : () => 1e4;
 
@@ -193,61 +194,61 @@
         let xlMode = '', xlAngle = 0;
 
         const HINTS = {
-            line:     ['Click start point', 'Click end point — or type a length  •  Esc to stop'],
-            polyline: ['Click first vertex', 'Click next vertex — or type a length  •  Enter to finish  •  C to close  •  Esc to cancel'],
-            rect:     ['Click first corner', 'Click opposite corner'],
-            viewport: ['Click first corner of the frame', 'Click opposite corner'],
-            circle:   ['Click center', 'Click to set radius — or type it'],
-            ellipse:  ['Click center', 'Click the end of the major axis', 'Click to set the minor axis'],
-            spline:   ['Click the first fit point', 'Click the next fit point — Enter to finish (3+ points)  •  Esc to cancel'],
-            leader:   ['Click the arrow point (what the note points at)', 'Click the landing — more clicks add bends  •  Enter to finish and type the note'],
-            wipeout:  ['Click the first corner of the masking area', 'Click the next corner — Enter to finish (3+ points)  •  Esc to cancel'],
-            arc:      ['Click arc start', 'Click arc end', 'Click a point on the arc'],
-            text:     ['Click text insertion point'],
-            mtext:    ['Click MTEXT insertion point'],
-            dim:      ['Click first point to measure', 'Click second point', 'Click to place the dimension line'],
-            'dim-aligned': ['Click first point to measure', 'Click second point', 'Click to place the dimension line'],
-            dimChain: ['Click the next point to continue the chain — Enter for a new dimension, Esc to exit'],
-            'dim-radial':   ['Click a circle or arc', 'Click to place the dimension'],
-            'dim-diameter': ['Click a circle or arc', 'Click to place the dimension'],
-            'dim-ordinate': ['Click the feature point to measure', 'Click the leader end — drag up/down measures X, left/right measures Y'],
+            line:     [["drawClickStartPoint", "Click start point"], ["drawClickEndPointOrTypeALengthEscTo", "Click end point — or type a length  •  Esc to stop"]],
+            polyline: [["drawClickFirstVertex", "Click first vertex"], ["drawClickNextVertexOrTypeALengthEnterTo", "Click next vertex — or type a length  •  Enter to finish  •  C to close  •  Esc to cancel"]],
+            rect:     [["drawClickFirstCorner", "Click first corner"], ["drawClickOppositeCorner", "Click opposite corner"]],
+            viewport: [["drawClickFirstCornerOfTheFrame", "Click first corner of the frame"], ["drawClickOppositeCorner", "Click opposite corner"]],
+            circle:   [["drawClickCenter", "Click center"], ["drawClickToSetRadiusOrTypeIt", "Click to set radius — or type it"]],
+            ellipse:  [["drawClickCenter", "Click center"], ["drawClickTheEndOfTheMajorAxis", "Click the end of the major axis"], ["drawClickToSetTheMinorAxis", "Click to set the minor axis"]],
+            spline:   [["drawClickTheFirstFitPoint", "Click the first fit point"], ["drawClickTheNextFitPointEnterToFinish3", "Click the next fit point — Enter to finish (3+ points)  •  Esc to cancel"]],
+            leader:   [["drawClickTheArrowPointWhatTheNotePointsAt", "Click the arrow point (what the note points at)"], ["drawClickTheLandingMoreClicksAddBendsEnterTo", "Click the landing — more clicks add bends  •  Enter to finish and type the note"]],
+            wipeout:  [["drawClickTheFirstCornerOfTheMaskingArea", "Click the first corner of the masking area"], ["drawClickTheNextCornerEnterToFinish3Points", "Click the next corner — Enter to finish (3+ points)  •  Esc to cancel"]],
+            arc:      [["drawClickArcStart", "Click arc start"], ["drawClickArcEnd", "Click arc end"], ["drawClickAPointOnTheArc", "Click a point on the arc"]],
+            text:     [["drawClickTextInsertionPoint", "Click text insertion point"]],
+            mtext:    [["drawClickMTEXTInsertionPoint", "Click MTEXT insertion point"]],
+            dim:      [["drawClickFirstPointToMeasure", "Click first point to measure"], ["uiClickSecondPoint", "Click second point"], ["drawClickToPlaceTheDimensionLine", "Click to place the dimension line"]],
+            'dim-aligned': [["drawClickFirstPointToMeasure", "Click first point to measure"], ["uiClickSecondPoint", "Click second point"], ["drawClickToPlaceTheDimensionLine", "Click to place the dimension line"]],
+            dimChain: [["drawClickTheNextPointToContinueTheChainEnter", "Click the next point to continue the chain — Enter for a new dimension, Esc to exit"]],
+            'dim-radial':   [["drawClickACircleOrArc", "Click a circle or arc"], ["drawClickToPlaceTheDimension", "Click to place the dimension"]],
+            'dim-diameter': [["drawClickACircleOrArc", "Click a circle or arc"], ["drawClickToPlaceTheDimension", "Click to place the dimension"]],
+            'dim-ordinate': [["drawClickTheFeaturePointToMeasure", "Click the feature point to measure"], ["drawClickTheLeaderEndDragUpDownMeasuresX", "Click the leader end — drag up/down measures X, left/right measures Y"]],
         };
 
         const POLY_MODE_LABEL = { I: 'inscribed', C: 'circumscribed', E: 'edge' };
 
         function polygonHint() {
-            const head = `Polygon · ${polySides} sides · ${POLY_MODE_LABEL[polyMode]}`;
+            const head = tr("drawPolygonValue1SidesValue2", "Polygon · {value1} sides · {value2}", {value1: polySides, value2: tr('drawPolygonMode'+polyMode, POLY_MODE_LABEL[polyMode])});
             let step;
             if (polyMode === 'E') {
-                step = points.length === 0 ? 'Click the first edge point' : 'Click the second edge point';
+                step = points.length === 0 ? tr("drawClickTheFirstEdgePoint", "Click the first edge point") : tr("drawClickTheSecondEdgePoint", "Click the second edge point");
             } else {
-                step = points.length === 0 ? 'Click the center' : 'Click a point — or type the radius';
+                step = points.length === 0 ? tr("drawClickTheCenter", "Click the center") : tr("drawClickAPointOrTypeTheRadius", "Click a point — or type the radius");
             }
-            const keys = points.length === 0 ? 'type sides, I/C/E' : 'I/C/E';
-            return `${head}  •  ${step}  •  ${keys}  •  Esc to stop`;
+            const keys = points.length === 0 ? tr("drawTypeSidesICE", "type sides, I/C/E") : 'I/C/E';
+            return tr("drawValue1Value2Value3EscToStop", "{value1}  •  {value2}  •  {value3}  •  Esc to stop", {value1: head, value2: step, value3: keys});
         }
 
         const fmt = (v) => String(Math.round(v * 1e6) / 1e6);
 
         function donutHint() {
-            return `Donut · inside ${fmt(donutInside)} · outside ${fmt(donutOutside)}  •  Click the center  •  type the ${donutNext} diameter  •  Esc to stop`;
+            return tr("drawDonutInsideValue1OutsideValue2ClickTheCenterType", "Donut · inside {value1} · outside {value2}  •  Click the center  •  type the {value3} diameter  •  Esc to stop", {value1: fmt(donutInside), value2: fmt(donutOutside), value3: tr(donutNext === 'inside' ? 'drawInside' : 'drawOutside', donutNext)});
         }
 
         function xlineHint() {
             if (tool === 'ray') {
-                return points.length === 0 ? 'Ray · Click the start point  •  Esc to stop'
-                    : 'Ray · Click a point it passes through (more clicks add rays)  •  Esc to stop';
+                return points.length === 0 ? tr("drawRayClickTheStartPointEscToStop", "Ray · Click the start point  •  Esc to stop")
+                    : tr("drawRayClickAPointItPassesThroughMoreClicks", "Ray · Click a point it passes through (more clicks add rays)  •  Esc to stop");
             }
             const keys = 'H/V/A';
             if (xlMode === 'H' || xlMode === 'V') {
-                return `Xline · ${xlMode === 'H' ? 'horizontal' : 'vertical'}  •  Click a point it passes through  •  ${keys}  •  Esc to stop`;
+                return tr("drawXlineValue1ClickAPointItPassesThroughValue2", "Xline · {value1}  •  Click a point it passes through  •  {value2}  •  Esc to stop", {value1: tr(xlMode === 'H' ? 'drawHorizontal' : 'drawVertical', xlMode === 'H' ? 'horizontal' : 'vertical'), value2: keys});
             }
             if (xlMode === 'A') {
-                return `Xline · angle ${fmt(xlAngle)}°  •  type an angle or click a point it passes through  •  ${keys}  •  Esc to stop`;
+                return tr("drawXlineAngleValue1TypeAnAngleOrClickA", "Xline · angle {value1}°  •  type an angle or click a point it passes through  •  {value2}  •  Esc to stop", {value1: fmt(xlAngle), value2: keys});
             }
             return points.length === 0
-                ? `Xline · Click a point  •  ${keys}  •  Esc to stop`
-                : `Xline · Click a point it passes through (more clicks add lines)  •  ${keys}  •  Esc to stop`;
+                ? tr("drawXlineClickAPointValue1EscToStop", "Xline · Click a point  •  {value1}  •  Esc to stop", {value1: keys})
+                : tr("drawXlineClickAPointItPassesThroughMoreClicks", "Xline · Click a point it passes through (more clicks add lines)  •  {value1}  •  Esc to stop", {value1: keys});
         }
 
         function xlineFixedDir() {
@@ -288,9 +289,10 @@
             if (tool === 'polygon') { onHint(polygonHint()); return; }
             if (tool === 'donut') { onHint(donutHint()); return; }
             if (tool === 'xline' || tool === 'ray') { onHint(xlineHint()); return; }
-            if ((tool === 'dim' || tool === 'dim-aligned') && dimChainOffset) { onHint(HINTS.dimChain[0]); return; }
+            if ((tool === 'dim' || tool === 'dim-aligned') && dimChainOffset) { onHint(tr(...HINTS.dimChain[0])); return; }
             const list = HINTS[tool] || [];
-            onHint(list[Math.min(points.length, list.length - 1)] || '');
+            const message = list[Math.min(points.length, list.length - 1)];
+            onHint(message ? tr(...message) : '');
         }
 
         // Current polygon outline for the pending points + a cursor/point.
@@ -385,6 +387,7 @@
         }
 
         return {
+            refreshHint: hint,
             isActive() { return tool !== null; },
             activeTool() { return tool; },
             pendingPointCount() { return points.length; },
@@ -539,7 +542,7 @@
                         donutNext = 'outside';
                     } else {
                         if (!(v > donutInside)) {
-                            onHint(`Outside diameter must be larger than ${fmt(donutInside)}  •  ${donutHint()}`);
+                            onHint(tr("drawOutsideDiameterMustBeLargerThanValue1Value2", "Outside diameter must be larger than {value1}  •  {value2}", {value1: fmt(donutInside), value2: donutHint()}));
                             return true;
                         }
                         donutOutside = v;
@@ -554,7 +557,7 @@
                     if (points.length === 0) {
                         const n = polygonSides(v);
                         if (!n || n !== v) {
-                            onHint(`Sides must be a whole number from ${POLYGON_MIN_SIDES} to ${POLYGON_MAX_SIDES}  •  ${polygonHint()}`);
+                            onHint(tr("drawSidesMustBeAWholeNumberFromValue1To", "Sides must be a whole number from {value1} to {value2}  •  {value3}", {value1: POLYGON_MIN_SIDES, value2: POLYGON_MAX_SIDES, value3: polygonHint()}));
                             return true;
                         }
                         polySides = n;

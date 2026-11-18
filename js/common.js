@@ -191,12 +191,13 @@ const CATEGORIES = [
 // svgIcon: optional custom SVG file. Rendered as a CSS mask filled with
 //          currentColor, so it follows the same text-* colours as Lucide.
 const APPS = [
-    { id: 2, skipModal: false, icon: 'calendars', categories: ['ops', 'pm'], url: window.SITE_ROOT + 'tools/project-portfolio.html' },
-    { id: 26, skipModal: false, icon: 'file-text', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdf-viewer.html' },
-    { id: 11, skipModal: false, icon: 'box', svgIcon: window.SITE_ROOT + 'img/tools/liteaeco-ifc-viewer.svg', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-viewer-audit.html' },
+    { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/cadscope.html' },
+    { id: 26, skipModal: false, icon: 'file-text', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdfscope.html' },
+    { id: 11, skipModal: false, icon: 'box', svgIcon: window.SITE_ROOT + 'img/tools/liteaeco-ifc-viewer.svg', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifcscope.html' },
     { id: 3, skipModal: false, icon: 'file-badge', categories: ['data', 'bim'], url: window.SITE_ROOT + 'tools/ids-generator.html' },
 
     { id: 1, skipModal: false, icon: 'chart-bar', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/project-timeline.html', imageUrl: window.SITE_ROOT + 'img/tools/timeline.webp' },
+    { id: 2, skipModal: false, icon: 'calendars', categories: ['ops', 'pm'], url: window.SITE_ROOT + 'tools/project-portfolio.html' },
     { id: 17, skipModal: false, icon: 'user-group', categories: ['pm', 'ops'], url: window.SITE_ROOT + 'tools/organizational-chart.html', imageUrl: window.SITE_ROOT + 'img/tools/org-chart.webp' },
     { id: 12, skipModal: false, icon: 'list-todo', categories: ['pm'], url: window.SITE_ROOT + 'tools/meetings.html', imageUrl: window.SITE_ROOT + 'img/tools/meetings.webp' },
     { id: 13, skipModal: false, icon: 'table-2', categories: ['pm'], url: window.SITE_ROOT + 'tools/responsibility-matrix.html' },
@@ -217,9 +218,8 @@ const APPS = [
     { id: 5, skipModal: false, icon: 'app-window-mac', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-application-changer.html' },
     { id: 10, skipModal: false, icon: 'map-pin', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-reposition.html' },
 
-    { id: 24, skipModal: false, icon: 'drafting-compass', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-editor.html' },
-    { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-compare.html' },
-    { id: 27, skipModal: false, icon: 'file-diff', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdf-compare.html' },
+    // { id: 25, skipModal: false, icon: 'columns-2', categories: ['ops'], url: window.SITE_ROOT + 'tools/dxf-compare.html' },
+    // { id: 27, skipModal: false, icon: 'file-diff', categories: ['ops'], url: window.SITE_ROOT + 'tools/pdfscope.html?mode=compare' },
     // { id: 23, skipModal: false, icon: 'equal-not', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-compare.html' }, 
     // { id: 19, skipModal: false, icon: 'building', categories: ['ops'], url: window.SITE_ROOT + 'tools/COBIE_CMMS.html' },
     // { id: 14, skipModal: false, icon: 'arrow-down-up', categories: ['bim'], url: window.SITE_ROOT + 'tools/ifc-schema-changer.html' },
@@ -507,7 +507,7 @@ function i18nApplyTo(root, dict) {
     if (!d) return;
     const scope = root || document;
     const all = (sel) => {
-        const list = [...scope.querySelectorAll(sel)];
+        const list = [...scope.querySelectorAll(sel)].filter(el => !window.PDFV_SITE || window.PDFV_SITE.canTranslate(el));
         if (scope !== document && scope.matches && scope.matches(sel)) list.unshift(scope);
         return list;
     };
@@ -1005,6 +1005,14 @@ function renderNav() {
             </div>`;
     }).join('');
 
+    // Donate — last row of the mobile menu, same place as on desktop (after Operations)
+    if (window._showDonation) {
+        mobileNav.innerHTML += `
+            <a href="${window.SITE_ROOT}info/fund.html" class="block text-left px-6 py-4 text-xs font-bold uppercase tracking-widest border-b border-slate-100 text-blue-600 hover:bg-slate-50 hover:text-blue-700 transition-colors focus:outline-none">
+                ${d.linkDonate || 'Donate'}
+            </a>`;
+    }
+
     applyUiLinkTarget(desktopNav);
     applyUiLinkTarget(mobileNav);
     if (window.lucide) lucide.createIcons();
@@ -1055,7 +1063,7 @@ function setupHelpButton() {
     // Prevent adding multiple buttons if this function runs twice
     if (document.getElementById('dynamic-help-btn')) return;
 
-    // 4. Convert filename to Help ID (e.g., "ifc-viewer-audit.html" -> "ifc-viewer-audit")
+    // 4. Convert filename to Help ID (e.g., "ifcscope.html" -> "ifcscope")
     const helpId = fileNameFull.replace('.html', '').toLowerCase().replace(/_/g, '-');
 
     // 5. Create the Help Button

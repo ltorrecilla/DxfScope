@@ -1,7 +1,7 @@
 /* Editor command registry and alias dispatch. Actions are supplied lazily by the app. */
 (function (root, factory) {
     const api = factory(typeof module === 'object' && module.exports
-        ? require('./dxf-editor-command-language.js') : root.DxfEditorCommandLanguage);
+        ? require('./cadscope-command-language.js') : root.DxfEditorCommandLanguage);
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.DxfEditorCommands = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (language) {
