@@ -39,6 +39,92 @@
         return fallback;
     }
 
+    // Browser-only draft storage for tools that already own identity, debounce and
+    // lifecycle. No file handles, UI, timers, saved-state callbacks or leave guards.
+    // Await ready before restoring; writes are immutable and flush awaits persistence.
+    liteAECO.createBrowserDraftStore = function ({ toolId, onError = () => {}, onStatus = () => {} }) {
+        const database = 'liteaeco-as-' + toolId, prefix = database + ':';
+        const cache = new Map();
+        let sequence = 0, tail = Promise.resolve();
+        const pending = new Set(), failed = new Set();
+        let writing = 0, lastSavedAt = null;
+        function notify() {
+            try { onStatus({ state: failed.size ? 'error' : writing ? 'saving' : pending.size ? 'pending' : lastSavedAt ? 'saved' : 'ready', lastSavedAt }); } catch (_) {}
+        }
+        const report = error => { try { onError(error); } catch (_) {} };
+        function open() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(database, 1);
+                request.onupgradeneeded = () => request.result.createObjectStore('kv');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+                request.onblocked = () => reject(Error('Browser draft database is blocked.'));
+            });
+        }
+        const ready = (async () => {
+            let db;
+            try {
+                db = await open();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction('kv', 'readonly'), request = tx.objectStore('kv').openCursor();
+                    request.onsuccess = () => {
+                        const cursor = request.result;
+                        if (!cursor) return;
+                        if (!cache.has(cursor.key)) cache.set(cursor.key, cursor.value);
+                        cursor.continue();
+                    };
+                    tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error);
+                });
+            } catch (error) { failed.add('database'); report(error); }
+            finally { db?.close(); notify(); }
+        })();
+        function latest(key) {
+            let value = cache.get(key);
+            try {
+                const journal = JSON.parse(localStorage.getItem(prefix + key) || 'null');
+                if (journal && (!value || journal.at > value.at)) value = journal;
+            } catch (error) { report(error); }
+            return value;
+        }
+        function setItem(key, text) {
+            const previous = latest(key);
+            sequence = Math.max(Date.now(), sequence + 1, (previous?.at || 0) + 1);
+            const value = { at: sequence, text: text === null ? null : String(text) };
+            cache.set(key, value);
+            pending.delete(key); writing++; notify();
+            // A synchronous journal covers page close while the IDB write is pending.
+            try { localStorage.setItem(prefix + key, JSON.stringify(value)); }
+            catch (error) { failed.add(key); report(error); notify(); }
+            tail = tail.then(async () => {
+                await ready;
+                let db;
+                try {
+                    db = await open();
+                    await new Promise((resolve, reject) => {
+                        const tx = db.transaction('kv', 'readwrite');
+                        tx.objectStore('kv').put(value, key);
+                        tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error);
+                    });
+                    const journal = JSON.parse(localStorage.getItem(prefix + key) || 'null');
+                    if (journal?.at === value.at && journal.text === value.text) localStorage.removeItem(prefix + key);
+                    localStorage.removeItem(key); // Migrate the old per-feature draft only after commit.
+                    failed.delete(key); failed.delete('database'); lastSavedAt = Date.now();
+                } catch (error) { failed.add(key); report(error); }
+                finally { db?.close(); writing--; notify(); }
+            });
+        }
+        function getItem(key) {
+            const value = latest(key);
+            if (value) return value.text;
+            // Legacy drafts remain readable and are migrated without changing their payload.
+            const legacy = localStorage.getItem(key);
+            if (legacy !== null) setItem(key, legacy);
+            return legacy;
+        }
+        return { ready, getItem, setItem, removeItem: key => setItem(key, null), flush: () => tail,
+            markPending(key) { if (key) { pending.add(key); notify(); } } };
+    };
+
     liteAECO.createAutosave = function (cfg) {
         const DB = "liteaeco-as-" + cfg.toolId;
         const OPTOUT = "liteaeco_as_off_" + cfg.toolId;

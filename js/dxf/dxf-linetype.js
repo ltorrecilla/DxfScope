@@ -21,6 +21,7 @@
     };
 
     const DOT_LEN_FRACTION = 0.04; // a dot's rendered length, as a fraction of the pattern cycle
+    const MAX_CHOP_STEPS = 20000;
 
     /** Is this linetype name effectively continuous (no chopping needed)? */
     function isContinuousName(name) {
@@ -45,10 +46,10 @@
      * pattern is degenerate (falls back to continuous rendering).
      */
     function createChopper(pattern, scale) {
-        if (!Array.isArray(pattern) || !pattern.length) return null;
+        if (!Array.isArray(pattern) || !pattern.length || !pattern.every(Number.isFinite)) return null;
         const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
         const cycleRaw = pattern.reduce((a, v) => a + Math.abs(v), 0);
-        if (!(cycleRaw > 0)) return null;
+        if (!(cycleRaw > 0) || !Number.isFinite(cycleRaw)) return null;
         const dotLen = cycleRaw * DOT_LEN_FRACTION * s;
         // Normalize into [{len, draw}] with dots as short drawn stubs.
         const elems = pattern.map(v => {
@@ -57,38 +58,43 @@
             return { len: dotLen, draw: true, dot: true };
         });
         const cycle = elems.reduce((a, e) => a + e.len, 0);
-        if (!(cycle > 0)) return null;
+        if (!(cycle > 0) || !Number.isFinite(cycle) ||
+            elems.some(e => !(e.len > 0) || !Number.isFinite(e.len))) return null;
 
         let idx = 0;        // current element
         let rem = elems[0].len; // remaining length in current element
-
-        function advance(d) { // consume d along the pattern
-            while (d > 1e-12) {
-                if (d < rem) { rem -= d; return; }
-                d -= rem;
-                idx = (idx + 1) % elems.length;
-                rem = elems[idx].len;
-            }
-        }
 
         return {
             reset() { idx = 0; rem = elems[0].len; },
             chop(x1, y1, x2, y2) {
                 const segLen = Math.hypot(x2 - x1, y2 - y1);
-                if (!(segLen > 1e-12)) return [];
+                if (![x1, y1, x2, y2, segLen].every(Number.isFinite) || !(segLen > 1e-12)) return [];
                 const ux = (x2 - x1) / segLen, uy = (y2 - y1) / segLen;
                 const outSegs = [];
                 let t = 0;
+                let steps = 0;
                 while (t < segLen - 1e-12) {
+                    // Extremely dense patterns must not allocate unbounded geometry.
+                    // Fall back to a continuous segment, just as for invalid patterns.
+                    if (++steps > MAX_CHOP_STEPS) {
+                        idx = 0; rem = elems[0].len;
+                        return [{ x1, y1, x2, y2 }];
+                    }
                     const take = Math.min(rem, segLen - t);
-                    if (elems[idx].draw) {
+                    const next = t + take;
+                    if (elems[idx].draw && next > t) {
                         outSegs.push({
                             x1: x1 + ux * t, y1: y1 + uy * t,
-                            x2: x1 + ux * (t + take), y2: y1 + uy * (t + take),
+                            x2: x1 + ux * next, y2: y1 + uy * next,
                         });
                     }
-                    t += take;
-                    advance(take);
+                    t = next;
+                    // take never crosses more than one element. Consume even a
+                    // sub-epsilon remainder left by a previous polyline edge.
+                    if (take >= rem) {
+                        idx = (idx + 1) % elems.length;
+                        rem = elems[idx].len;
+                    } else rem -= take;
                 }
                 return outSegs;
             },

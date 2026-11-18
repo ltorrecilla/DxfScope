@@ -1,0 +1,523 @@
+      
+        /* Sidebar Tab Styles */
+        .tab-btn {
+            display: flex; align-items: center; width: 100%; padding: 0 1rem;
+            height: 2.5rem; min-height: 2.5rem; color: var(--dxf-ui-text-475569, #475569);
+            border-radius: 0rem; transition: all 0.2s; margin-bottom: 0.25rem;
+            font-size: 0.875rem; font-weight: 500; border: none;
+            background: transparent; cursor: pointer;
+        }
+        .tab-btn:hover:not(:disabled) { background-color: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-0f172a, #0f172a); }
+        .tab-btn.active {
+            background-color: var(--dxf-ui-bg-e2e8f0, #e2e8f0); color: var(--dxf-ui-text-2563eb, #2563eb); font-weight: 600;
+            box-shadow: inset 3px 0 0 #2563eb;
+        }
+        .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tab-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; }
+
+        .dragover, .drop-zone.dragover { border-color: var(--dxf-ui-border-2563eb, #2563eb) !important; background-color: rgba(238, 242, 255, 0.5) !important; }
+
+        /* Classifier-inspired CAD layer controls */
+        .settings-help-icon{
+            width: 18px;
+            height: 18px;
+        }
+        .layer-checkbox {
+            appearance: none; -webkit-appearance: none;
+            width: 14px; height: 14px; min-width: 14px; min-height: 14px;
+            margin: 0; border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer; display: inline-block;
+            vertical-align: middle; position: relative;
+        }
+        .layer-checkbox:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:indeterminate {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'><line x1='4' y1='8' x2='12' y2='8'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .layer-checkbox:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        #inspector-resize-handle {
+            position: absolute; left: -3px; top: 0; bottom: 0; width: 7px;
+            cursor: ew-resize; z-index: 30;
+        }
+        #inspector-resize-handle:hover { background: rgba(79, 70, 229, 0.18); }
+        .dxf-layer-row {
+            display: grid; grid-template-columns: 14px 18px 16px minmax(0, 1fr) 62px 20px 38px;
+            align-items: center; column-gap: 8px; min-height: 30px; padding: 4px 0;
+            border-bottom: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); font-size: 11px; color: var(--dxf-ui-text-1e293b, #1e293b);
+        }
+        .dxf-layer-row-all { margin-bottom: 6px; border-bottom-color: var(--dxf-ui-border-e2e8f0, #e2e8f0); font-weight: 800; }
+        .dxf-layer-row.is-layer-selected,
+        .dxf-layer-row.is-layer-selected:hover { background: rgba(59, 130, 246, .16); border-radius: 0; }
+        .dxf-layer-row .dxf-layer-name { user-select: none; cursor: pointer; }
+        .dxf-layer-row .dxf-layer-name:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+        .modify-picking, .modify-picking * { cursor: cell !important; }
+        .dxf-layer-lt-cell { position: relative; display: inline-flex; }
+        .dxf-layer-lt-palette {
+            position: absolute; right: 0; top: 22px; z-index: 60; min-width: 148px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14); padding: 4px;
+            display: flex; flex-direction: column; gap: 1px;
+        }
+        .dxf-layer-lt-option {
+            display: flex; align-items: center; gap: 8px; border: none; background: transparent;
+            border-radius: 3px; padding: 3px 6px; cursor: pointer;
+            font-size: 10px; font-weight: 700; color: var(--dxf-ui-text-334155, #334155);
+        }
+        .dxf-layer-lt-option svg { width: 48px; height: 14px; flex-shrink: 0; color: var(--dxf-ui-text-475569, #475569); }
+        .dxf-layer-lt-option:hover { background: var(--dxf-ui-bg-eff6ff, #eff6ff); }
+        .dxf-layer-lt-option.selected { background: var(--dxf-ui-bg-e0e7ff, #e0e7ff); color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .dxf-layer-lt-option.selected svg { color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .dxf-layer-weight-select {
+            font-size: 10px; font-weight: 700; color: var(--dxf-ui-text-475569, #475569); width: 100%;
+            border: 1px solid transparent; border-radius: 4px; padding: 1px 2px;
+            background: transparent; cursor: pointer; outline: none;
+        }
+        .dxf-layer-weight-select:hover { border-color: var(--dxf-ui-border-cbd5e1, #cbd5e1); background: var(--dxf-ui-bg-fff, #fff); }
+        .dxf-layer-actions { display: flex; gap: 2px; justify-self: end; opacity: 0.25; transition: opacity 0.15s; }
+        .dxf-layer-row:hover .dxf-layer-actions { opacity: 1; }
+        .dxf-layer-action-btn {
+            width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+            border: none; background: transparent; border-radius: 4px; cursor: pointer; color: var(--dxf-ui-text-64748b, #64748b); padding: 0;
+        }
+        .dxf-layer-action-btn:hover { background: var(--dxf-ui-bg-e2e8f0, #e2e8f0); color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .dxf-layer-action-btn.danger:hover { background: var(--dxf-ui-bg-fee2e2, #fee2e2); color: var(--dxf-ui-text-dc2626, #dc2626); }
+        .dxf-layer-action-btn svg { width: 12px; height: 12px; pointer-events: none; }
+        .dxf-layer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+        .dxf-layer-weight {
+            color: var(--dxf-ui-text-64748b, #64748b); font-size: 10px; font-weight: 700; white-space: nowrap;
+            justify-self: end; text-align: right; width: 62px; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dxf-layer-count {
+            color: var(--dxf-ui-text-64748b, #64748b); font-weight: 700; font-size: 10px; background: var(--dxf-ui-bg-f1f5f9, #f1f5f9);
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 999px; padding: 1px 6px; white-space: nowrap;
+            justify-self: end; min-width: 42px; text-align: center;
+        }
+        .dxf-layer-color-picker { position: relative; width: 18px; height: 18px; }
+        .dxf-layer-color-trigger, .dxf-layer-color-option {
+            --layer-color: transparent; width: 18px; height: 18px; border-radius: 999px;
+            border: 1.5px solid #ffffff; background: var(--layer-color);
+            box-shadow: 0 0 0 1px #cbd5e1; cursor: pointer; display: inline-flex;
+            align-items: center; justify-content: center; padding: 0;
+        }
+        .dxf-layer-color-trigger:hover, .dxf-layer-color-option:hover { box-shadow: 0 0 0 2px #bfdbfe; }
+        .dxf-layer-color-option.is-original {
+            background: linear-gradient(135deg, #ffffff 0 44%, #94a3b8 45% 55%, #ffffff 56% 100%);
+        }
+        .dxf-layer-color-option.selected { box-shadow: 0 0 0 2px #111827; }
+        .dxf-layer-color-palette {
+            position: absolute; top: 22px; left: 0; z-index: 80; display: grid;
+            grid-template-columns: repeat(4, 18px); gap: 8px; padding: 8px; background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        }
+
+        .dxf-text-label {
+            display: inline-block;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.15;
+            white-space: pre;
+            pointer-events: none;
+            user-select: none;
+            text-shadow:
+                0 0 2px rgba(255, 255, 255, 0.95),
+                0 1px 3px rgba(15, 23, 42, 0.20);
+        }
+        .dxf-text-label.mtext { white-space: pre-line; }
+        .dxf-text-label.empty { opacity: 0; }
+        
+        canvas { outline: none; }
+
+        /* Area selection box overlay */
+        #selection-box-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 15; overflow: hidden;
+        }
+        #selection-box-rect {
+            position: absolute; display: none;
+            border: 1.5px dashed #2563eb;
+            background: rgba(79, 70, 229, 0.07);
+            pointer-events: none; box-sizing: border-box;
+        }
+        #selection-box-rect.crossing {
+            border-color: #16a34a;
+            background: rgba(22, 163, 74, 0.07);
+        }
+        /* Cursor changes for area-select mode */
+        .area-selecting { cursor: crosshair !important; }
+        .rot-180 { transform: rotate(180deg); }
+        /* Status badge shown during area select */
+        #area-select-hint {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            background: rgba(15,23,42,0.78); color: #fff; font-size: 11px; font-weight: 700;
+            padding: 3px 10px; border-radius: 4px; pointer-events: none; z-index: 20;
+            display: none; white-space: nowrap; letter-spacing: 0.03em;
+        }
+
+        /* Inline text editor */
+        #text-edit-input {
+            position: absolute; display: none; z-index: 40;
+            margin: 0; padding: 2px 4px; resize: none; overflow: hidden;
+            border: 1.5px solid var(--dxf-ui-border-2563eb, #2563eb); border-radius: 3px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-111827, #111827);
+            box-shadow: 0 4px 16px rgba(79,70,229,0.25);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            outline: none; white-space: pre; overflow-wrap: normal;
+            box-sizing: border-box;
+        }
+        #text-edit-format-toolbar {
+            position: absolute; display: none; z-index: 41; gap: 4px;
+            padding: 3px; border: 1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1);
+            border-radius: 4px; background: var(--dxf-ui-bg-ffffff, #ffffff);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+        }
+        .mtext-format-button {
+            min-width: 25px; padding: 2px 6px; border-radius: 3px;
+            color: var(--dxf-ui-text-111827, #111827);
+        }
+        .mtext-format-button:hover { background: #dbeafe; }
+
+        .loader {
+            border: 4px solid var(--dxf-ui-border-f3f3f3, #f3f3f3); border-top: 4px solid var(--dxf-ui-border-111827, #111827);
+            border-radius: 50%; width: 24px; height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom Scrollbar for panels */
+        .scroller::-webkit-scrollbar { width: 6px; }
+        .scroller::-webkit-scrollbar-track { background: transparent; }
+        .scroller::-webkit-scrollbar-thumb { background: var(--dxf-ui-bg-cbd5e1, #cbd5e1); border-radius: 3px; }
+        .scroller::-webkit-scrollbar-thumb:hover { background: var(--dxf-ui-bg-94a3b8, #94a3b8); }
+
+        /* 3D Viewer Toolbar & Popups */
+        .viewer-controls {
+            position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 4px; background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+            border-radius: 6px; padding: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); z-index: 20;
+        }
+        /* Fixed full-width top toolbar (CAD style): save, layers, drawing tools, left-to-right */
+        .draw-toolbar {
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; flex-direction: column; gap: 2px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+            padding: 3px 6px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06); z-index: 21;
+        }
+        .draw-toolbar-row {
+            display: flex; gap: 2px; align-items: center; justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .draw-toolbar-row.row-tools { border-top: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); padding-top: 2px; }
+        .draw-toolbar .rot-45 { transform: rotate(45deg); }
+        .draw-toolbar-spacer { flex: 1 1 auto; }
+        /* The toolbar floats over the canvas and its rows wrap, so its height is
+           measured at runtime into --draw-toolbar-h. Side panels start below it,
+           which keeps their headers (and the toolbar itself) reachable. */
+        #inspector-panel { top: var(--draw-toolbar-h, 0px); }
+        #panel-content-props.block-attributes-active #prop-empty { display: none; }
+        .settings-popup { top: max(128px, calc(var(--draw-toolbar-h, 0px) + 16px)); }
+        .settings-popup { max-height: calc(100% - max(144px, var(--draw-toolbar-h, 0px) + 32px)); }
+        .space-tab-wrap { display: inline-flex; align-items: center; gap: 1px; flex: 0 0 auto; }
+        .space-tab-wrap .space-tab-act {
+            display: none; width: 15px; height: 15px; border: none; background: transparent;
+            color: var(--dxf-ui-text-94a3b8, #94a3b8); cursor: pointer; padding: 0; align-items: center; justify-content: center;
+        }
+        .space-tab-wrap:hover .space-tab-act { display: inline-flex; }
+        .space-tab-act:hover { color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .space-tab-act.danger:hover { color: var(--dxf-ui-text-dc2626, #dc2626); }
+        .space-tab-act svg { width: 11px; height: 11px; }
+        /* One-line CAD console above the space bar */
+        #cad-console {
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+            height: 26px; padding: 0 10px; background: #0f172a; color: #cbd5e1;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px; text-align: left; border-top: 1px solid #1e293b; z-index: 30;
+        }
+        #console-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #94a3b8; }
+        #console-msg.console-active { color: #fdba74; }
+        #console-input {
+            flex: 1 1 auto; min-width: 60px; background: transparent; border: none; outline: none;
+            color: #f1f5f9; font: inherit; caret-color: #fb923c; padding: 0;
+        }
+        #dynamic-input-toggle, #osnap-toggle { border: 1px solid #475569; border-radius: 4px; padding: 1px 5px; color: #cbd5e1; font-size: 10px; white-space: nowrap; }
+        #dynamic-input-toggle[aria-pressed="true"], #osnap-toggle[aria-pressed="true"] { border-color: #fb923c; color: #fdba74; }
+        #osnap-toggle { display: inline-flex; align-items: center; gap: 3px; }
+        #osnap-toggle svg { width: 12px; height: 12px; }
+        #dynamic-input { position: absolute; z-index: 19; display: none; box-sizing: border-box; width: 140px; padding: 3px 5px;
+            border: 1px solid #94a3b8; border-radius: 0; background: #fff; color: #0f172a;
+            box-shadow: 0 2px 6px rgba(15,23,42,.12); font: 11px/14px ui-monospace, SFMono-Regular, Consolas, monospace;
+            pointer-events: none; }
+        #dynamic-input.dark { background: #172033; color: #e2e8f0; border-color: #64748b; }
+        #dynamic-input input { width: 100%; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; pointer-events: auto; }
+        #dynamic-input-meta, #dynamic-input-measure { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #dynamic-input input.error { color: #dc2626; }
+        #dynamic-input.dark input.error { color: #fca5a5; }
+        .viewer-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 32px; height: 32px; padding: 0 8px; background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid transparent; border-radius: 4px; color: var(--dxf-ui-text-64748b, #64748b);
+            font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+        }
+        .viewer-btn:hover:not(:disabled) { background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-1e293b, #1e293b); border-color: transparent; }
+        .viewer-btn.active { background: var(--dxf-ui-bg-e0e7ff, #e0e7ff); color: var(--dxf-ui-text-2563eb, #2563eb); border-color: var(--dxf-ui-border-bfdbfe, #bfdbfe); font-weight: 600; }
+        .viewer-toolbar-sep { width: 1px; height: 18px; background: var(--dxf-ui-bg-e2e8f0, #e2e8f0); margin: 0 2px; align-self: center; }
+        .draw-layer-select {
+            font-size: 10px; font-weight: 700; color: var(--dxf-ui-text-334155, #334155); min-width: 110px; max-width: 110px;
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 6px; padding: 2px 4px; background: var(--dxf-ui-bg-fff, #fff);
+            align-self: center; cursor: pointer; outline: none;
+        }
+        .draw-layer-select:focus { border-color: var(--dxf-ui-border-a5b4fc, #a5b4fc); }
+        .viewer-btn.has-changes:not(:disabled) { background: var(--dxf-ui-bg-dcfce7, #dcfce7); color: var(--dxf-ui-text-16a34a, #16a34a); border-color: var(--dxf-ui-border-86efac, #86efac); }
+        .viewer-btn.has-changes:not(:disabled):hover { background: var(--dxf-ui-bg-bbf7d0, #bbf7d0); color: var(--dxf-ui-text-15803d, #15803d); }
+        .viewer-btn:disabled { opacity: 0.42; cursor: not-allowed; background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-94a3b8, #94a3b8); }
+        #plot-convert-mode:disabled { opacity: .45; cursor: default !important; }
+        .viewer-btn i { font-size: 13px; }
+
+        .space-switcher {
+            display: flex; align-items: center; gap: 4px; flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; padding: 1px;
+            justify-content: flex-start; min-width: 0; scrollbar-width: none;
+        }
+        .space-switcher::-webkit-scrollbar { height: 4px; }
+        .space-switcher::-webkit-scrollbar-thumb { background: var(--dxf-ui-bg-cbd5e1, #cbd5e1); border-radius: 999px; }
+        #space-tabs-control { flex: 1 1 auto; }
+        .space-scroll-btn { display: none; flex: 0 0 auto; width: 22px; height: 24px; align-items: center; justify-content: center;
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px; background: var(--dxf-ui-bg-ffffff, #ffffff);
+            color: var(--dxf-ui-text-475569, #475569); font-size: 18px; line-height: 1; cursor: pointer; }
+        #space-tabs-control.has-overflow .space-scroll-btn { display: inline-flex; }
+        .space-scroll-btn:disabled { opacity: .35; cursor: default; }
+        .space-switch-btn, .layout-export-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+            height: 24px; min-width: 0; padding: 0 8px; border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-475569, #475569); font-size: 11px; font-weight: 700; line-height: 1;
+            cursor: pointer; white-space: nowrap; transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+        }
+        .space-switch-btn:hover, .layout-export-btn:hover { background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .space-switch-btn.active { background: var(--dxf-ui-bg-e0e7ff, #e0e7ff); border-color: var(--dxf-ui-border-bfdbfe, #bfdbfe); color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .layout-export-btn { background: var(--dxf-ui-bg-111827, #111827); color: #ffffff; border-color: var(--dxf-ui-border-111827, #111827); }
+        .layout-export-btn:hover:not(:disabled) { background: var(--dxf-ui-bg-1f2937, #1f2937); color: #ffffff; border-color: var(--dxf-ui-border-1f2937, #1f2937); }
+        .layout-export-btn:disabled { opacity: 0.45; cursor: not-allowed; background: var(--dxf-ui-bg-334155, #334155); border-color: var(--dxf-ui-border-334155, #334155); }
+        .layout-export-btn.hidden { display: none !important; }
+
+        .properties-popup-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+            font-weight: 600; color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-f1f5f9, #f1f5f9);
+        }
+        .prop-popup-close {
+            color: var(--dxf-ui-text-94a3b8, #94a3b8); background: transparent; border: none; cursor: pointer; padding: 2px;
+        }
+        .prop-popup-close:hover { color: var(--dxf-ui-text-475569, #475569); }
+        .settings-popup {
+            position: absolute; top: 128px; left: 50%; transform: translateX(-50%);
+            width: 440px; min-width: 320px; max-width: 92%; max-height: calc(100% - 144px);
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); display: flex;
+            flex-direction: column; overflow: hidden; z-index: 50;
+        }
+        .settings-popup.closed { display: none !important; }
+        #settings-popup {
+            top: var(--draw-toolbar-h, 0px); bottom: 0; left: 0; right: auto;
+            transform: none; width: min(390px, 100%); min-width: 0;
+            max-width: 100%; max-height: none; border-radius: 0;
+            border-top: 0; border-bottom: 0; border-left: 0;
+            box-shadow: 4px 0 15px -3px rgba(0, 0, 0, 0.05); z-index: 25;
+        }
+        #settings-popup .settings-tab-panel { scrollbar-gutter: stable; }
+        #settings-popup .settings-help-row { grid-template-columns: 18px minmax(88px, 110px) minmax(0, 1fr); }
+        #settings-popup .settings-help-row span:last-child { overflow-wrap: anywhere; }
+        #dim-style-popup { width: min(1120px, 96%); }
+        #text-style-popup { width: min(720px, 96%); }
+        .dim-style-workspace { display: grid; grid-template-columns: minmax(520px, 1.25fr) minmax(320px, 0.9fr); gap: 18px; align-items: start; }
+        .dim-style-list { width: 100%; height: 104px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; font-size: 12px; }
+        .dim-style-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px 12px; }
+        .dim-style-fields label, .dim-style-name-row label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; color: #64748b; }
+        .dim-style-fields input, .dim-style-fields select, .dim-style-name-row input { box-sizing: border-box; width: 100%; border: 1px solid #cbd5e1; border-radius: 5px; padding: 4px 8px; font-size: 12px; color: #1e293b; background: white; }
+        .dim-style-name-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 7px; }
+        .dim-style-name-row label { min-width: 0; }
+        .dim-style-actions { display: flex; gap: 6px; }
+        .dim-style-actions button { border: 1px solid #cbd5e1; border-radius: 5px; padding: 5px 10px; font-size: 11px; font-weight: 700; color: #334155; background: white; }
+        .dim-style-actions button:hover:not(:disabled) { border-color: #2563eb; color: #2563eb; }
+        .dim-style-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .dim-style-preview-pane { position: sticky; top: 0; }
+        .dim-style-preview { width: 100%; height: min(340px, 45vh); min-height: 250px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+        @media (max-width: 940px) { .dim-style-workspace { grid-template-columns: 1fr; } .dim-style-preview-pane { position: static; } .dim-style-preview { height: 340px; min-height: 250px; } }
+        @media (max-width: 560px) { .dim-style-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .paper-size-popup { width: 420px; }
+        .settings-content { display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 0; }
+        .paper-size-form { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
+        .paper-size-field { display: flex; flex-direction: column; gap: 5px; }
+        .paper-size-field label { font-size: 11px; font-weight: 800; color: var(--dxf-ui-text-64748b, #64748b); text-transform: uppercase; letter-spacing: 0.05em; }
+        .paper-size-control { width: 100%; font-size: 12px; font-weight: 600; color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px; padding: 7px 8px; }
+        .paper-size-control:focus { outline: none; border-color: var(--dxf-ui-border-2563eb, #2563eb); box-shadow: 0 0 0 2px #e0e7ff; }
+        .paper-size-grid { display: grid; grid-template-columns: 1fr 1fr 96px; gap: 8px; }
+        .paper-size-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); padding-top: 12px; }
+        .paper-size-action { border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); background: var(--dxf-ui-bg-ffffff, #ffffff); color: var(--dxf-ui-text-334155, #334155); border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .paper-size-action:hover { background: var(--dxf-ui-bg-f8fafc, #f8fafc); color: var(--dxf-ui-text-111827, #111827); }
+        .paper-size-action.primary { background: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827); color: #ffffff; }
+        .paper-size-action.primary:hover { background: var(--dxf-ui-bg-1f2937, #1f2937); }
+        .paper-size-summary { font-size: 11px; color: var(--dxf-ui-text-64748b, #64748b); line-height: 1.45; background: var(--dxf-ui-bg-f8fafc, #f8fafc); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 6px; padding: 9px 10px; }
+        .paper-size-option-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 6px; padding: 10px 11px; }
+        .paper-size-option-text { font-size: 12px; line-height: 1.35; color: var(--dxf-ui-text-64748b, #64748b); }
+        .paper-size-option-text strong { display: block; color: var(--dxf-ui-text-1e293b, #1e293b); font-size: 12px; margin-bottom: 2px; }
+        .settings-panel-header { position: relative; display: flex; align-items: stretch; border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); background: var(--dxf-ui-bg-f8fafc, #f8fafc); flex-shrink: 0; }
+        .settings-tabs { display: flex; flex: 1; min-width: 0; }
+        .settings-tab {
+            flex: 1; min-width: 0; min-height: 0; padding: 12px 8px; line-height: 16px; border: 0; border-bottom: 2px solid transparent;
+            background: transparent; color: var(--dxf-ui-text-64748b, #64748b); font-size: 12px; font-weight: 700;
+            cursor: pointer;
+        }
+        .settings-tab:hover { color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-tab.active { border-bottom-color: var(--dxf-ui-border-2563eb, #2563eb); color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .settings-panel-close { position: absolute; right: 8px; top: 10px; display: flex; padding: 4px; border: 0; border-radius: 4px; background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-94a3b8, #94a3b8); cursor: pointer; }
+        .settings-panel-close svg { width: 14px; height: 14px; }
+        .settings-panel-close:hover { color: var(--dxf-ui-text-475569, #475569); }
+        .settings-tab-panel { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 20px 0; }
+        .settings-section-title {
+            font-size: 11px; line-height: 16.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--dxf-ui-text-94a3b8, #94a3b8); padding: 0 0 4px; margin: 24px 20px 12px;
+            border-bottom: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0);
+        }
+        .settings-section-title:first-child { margin-top: 0; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 20px; }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label { font-size: 13px; font-weight: 700; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-row-hint { font-size: 11px; color: var(--dxf-ui-text-64748b, #64748b); margin-top: 2px; line-height: 1.4; }
+        .settings-row-control { flex-shrink: 0; }
+        .settings-check { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; cursor: pointer; line-height: 0; }
+        .settings-check input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none; width: 18px; height: 18px; margin: 0;
+            border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px; background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer;
+            display: inline-block; vertical-align: middle; position: relative; transition: background-color 0.12s ease;
+        }
+        .settings-check input[type="checkbox"]:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 14px 14px;
+        }
+        .settings-check input[type="checkbox"]:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .settings-select {
+            font-size: 12px; font-weight: 600; color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-ffffff, #ffffff);
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 4px; padding: 6px 8px; cursor: pointer;
+        }
+        .settings-select:focus { outline: none; border-color: var(--dxf-ui-border-2563eb, #2563eb); }
+        .settings-swatches { display: inline-flex; gap: 6px; }
+        .settings-swatch {
+            width: 24px; height: 24px; border-radius: 6px; border: 1.5px solid var(--dxf-ui-border-cbd5e1, #cbd5e1);
+            cursor: pointer; padding: 0; background-size: cover; background-position: center; overflow: hidden;
+            transition: transform 0.1s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+        }
+        .settings-swatch:hover { transform: scale(1.06); border-color: var(--dxf-ui-border-1e293b, #1e293b); }
+        .settings-swatch.selected { border-color: var(--dxf-ui-border-111827, #111827); box-shadow: 0 0 0 2px #ffffff inset, 0 0 0 1px #111827; }
+        .settings-help-list { list-style: none; margin: 0; padding: 4px 16px 8px; }
+        .settings-help-row { display: grid; grid-template-columns: 20px 132px 1fr; align-items: center; gap: 10px; padding: 7px 0; font-size: 12px; color: var(--dxf-ui-text-64748b, #64748b); }
+        .settings-help-row i { width: 12px; height: 12px; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-help-key { font-weight: 700; color: var(--dxf-ui-text-1e293b, #1e293b); }
+        .settings-help-reset {
+            display: flex; align-items: center; gap: 10px; width: calc(100% - 32px);
+            margin: 4px 16px 12px; padding: 9px 12px; font-size: 13px; font-weight: 700;
+            color: var(--dxf-ui-text-1e293b, #1e293b); background: var(--dxf-ui-bg-f8fafc, #f8fafc); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s;
+        }
+        .settings-help-reset:hover { background: var(--dxf-ui-bg-eff6ff, #eff6ff); border-color: var(--dxf-ui-border-bfdbfe, #bfdbfe); }
+        .settings-help-reset i { width: 16px; height: 16px; }
+
+        /* CAD measurement tool */
+        .measure-panel {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 24; display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); font-size: 11px; color: var(--dxf-ui-text-1e293b, #1e293b);
+        }
+        .measure-panel.hidden { display: none !important; }
+        .measure-panel-title { font-weight: 800; color: var(--dxf-ui-text-111827, #111827); padding-right: 2px; }
+        .measure-snap-option { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--dxf-ui-text-475569, #475569); white-space: nowrap; }
+        .measure-snap-option input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none; width: 14px; height: 14px; margin: 0;
+            border: 1.5px solid var(--dxf-ui-border-111827, #111827); border-radius: 3px; background: var(--dxf-ui-bg-ffffff, #ffffff); cursor: pointer;
+        }
+        .measure-snap-option input[type="checkbox"]:checked {
+            background-color: var(--dxf-ui-bg-111827, #111827); border-color: var(--dxf-ui-border-111827, #111827);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='3,8 7,12 13,4'/></svg>");
+            background-repeat: no-repeat; background-position: center; background-size: 11px 11px;
+        }
+        .measure-clear-btn {
+            border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); background: var(--dxf-ui-bg-f8fafc, #f8fafc); color: var(--dxf-ui-text-334155, #334155); border-radius: 4px;
+            padding: 4px 8px; font-weight: 800; cursor: pointer;
+        }
+        .measure-clear-btn:hover { background: var(--dxf-ui-bg-f1f5f9, #f1f5f9); color: var(--dxf-ui-text-111827, #111827); }
+        .measure-hint { color: var(--dxf-ui-text-64748b, #64748b); font-weight: 600; border-left: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); padding-left: 10px; }
+        .measure-snap-label, .measure-distance-label {
+            background: var(--dxf-ui-bg-ffffff, #ffffff); border: 1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14); padding: 2px 6px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 10px; font-weight: 800; color: var(--dxf-ui-text-111827, #111827); white-space: nowrap; pointer-events: none;
+        }
+        .measure-snap-label { transform: translate(10px, -12px); color: var(--dxf-ui-text-2563eb, #2563eb); }
+        .osnap-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; font-size: 11px; }
+        .osnap-modes .measure-snap-option { display: grid; grid-template-columns: 14px 16px minmax(0, 1fr); gap: 8px; min-width: 0; min-height: 28px; white-space: normal; cursor: pointer; }
+        .osnap-modes .measure-snap-option span:last-child { overflow-wrap: anywhere; }
+        .measure-distance-label { transform: translateY(-14px); }
+        #three-container canvas { cursor: default; }
+        #three-container.area-selecting canvas { cursor: crosshair; }
+        #three-container.modify-picking canvas, #three-container.hammer-active canvas { cursor: cell; }
+        /* ===== Shortcuts page ===== */
+        .sc-kbd {
+            display: inline-block; min-width: 1.6rem; text-align: center;
+            padding: 0.1rem 0.45rem; margin-right: 0.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.72rem; font-weight: 700; color: var(--dxf-ui-text-334155, #334155);
+            background: var(--dxf-ui-bg-fff, #fff); border: 1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); border-bottom-width: 2px;
+            border-radius: 0.375rem; white-space: nowrap;
+        }
+        .sc-row { display: flex; align-items: baseline; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid var(--dxf-ui-border-f1f5f9, #f1f5f9); }
+        .sc-row:last-child { border-bottom: none; }
+        .sc-row .sc-keys { flex: 0 0 40%; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; overflow-wrap: anywhere; }
+        .sc-row .sc-label { min-width: 0; overflow-wrap: anywhere; }
+        .sc-context { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: var(--dxf-ui-text-64748b, #64748b); }
+        @media (max-width: 600px) { .sc-row { flex-direction: column; gap: 4px; } .sc-row .sc-keys { flex-basis: auto; } }
+        .sc-row .sc-label { font-size: 0.8rem; color: var(--dxf-ui-text-475569, #475569); }
+        .sc-card { background: var(--dxf-ui-bg-fff, #fff); border: 1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius: 0.75rem; padding: 1rem 1.25rem; }
+        .sc-card h3 { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dxf-ui-text-94a3b8, #94a3b8); margin-bottom: 0.5rem; }
+        /* Hatch pattern picker */
+        .hp-btn { display:flex; align-items:center; gap:8px; flex:1; min-width:0; border:1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); border-radius:6px; background:var(--dxf-ui-bg-fff, #fff); padding:3px 6px; font-size:12px; color:var(--dxf-ui-text-334155, #334155); cursor:pointer; text-align:left; }
+        .hp-btn:hover, .hp-btn:focus { border-color:#60a5fa; outline:none; }
+        .hp-btn .hp-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,monospace; }
+        .hp-sw { width:28px; height:28px; flex:none; border:1px solid #e2e8f0; border-radius:4px; background:#fff; overflow:hidden; display:flex; }
+        .hp-sw svg { width:100%; height:100%; }
+        .hp-pop { position:fixed; z-index:10000; width:340px; max-height:440px; display:flex; flex-direction:column; background:var(--dxf-ui-bg-fff, #fff); border:1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); border-radius:10px; box-shadow:0 12px 32px rgba(15,23,42,.18); font-size:12px; color:var(--dxf-ui-text-334155, #334155); }
+        .hp-pop.hidden { display:none; }
+        .viewer-btn.hidden { display: none !important; }
+        .hp-head { padding:8px; border-bottom:1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); display:flex; flex-direction:column; gap:6px; }
+        .hp-search { width:100%; border:1px solid var(--dxf-ui-border-cbd5e1, #cbd5e1); border-radius:6px; padding:4px 8px; font-size:12px; outline:none; }
+        .hp-search:focus { border-color:#60a5fa; }
+        .hp-tabs { display:flex; flex-wrap:wrap; gap:4px; }
+        .hp-tab { border:1px solid var(--dxf-ui-border-e2e8f0, #e2e8f0); border-radius:999px; padding:1px 8px; font-size:11px; background:var(--dxf-ui-bg-f8fafc, #f8fafc); color:var(--dxf-ui-text-475569, #475569); cursor:pointer; }
+        .hp-tab.on { background:#2563eb; border-color:var(--dxf-ui-border-2563eb, #2563eb); color:#fff; }
+        .hp-grid { padding:8px; overflow-y:auto; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+        .hp-tile { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px; border:1px solid transparent; border-radius:6px; cursor:pointer; background:none; min-width:0; }
+        .hp-tile:hover { background:var(--dxf-ui-bg-f1f5f9, #f1f5f9); }
+        .hp-tile.on { border-color:#3b82f6; background:var(--dxf-ui-bg-eff6ff, #eff6ff); }
+        .hp-tile .hp-sw { width:52px; height:52px; }
+        .hp-tile span { font-size:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,monospace; color:var(--dxf-ui-text-475569, #475569); }
+        .hp-empty { grid-column:1/-1; color:var(--dxf-ui-text-94a3b8, #94a3b8); text-align:center; padding:16px 0; }
+        .hp-warn { font-size:11px; color:var(--dxf-ui-text-b45309, #b45309); }
+        .hp-warn.err { color:var(--dxf-ui-text-dc2626, #dc2626); }
+        .hp-color { width:28px; height:22px; padding:0 2px; border:1px solid #cbd5e1; border-radius:4px; background:#fff; cursor:pointer; }
+        #layer-states-details > summary { display:flex; align-items:center; gap:6px; list-style:none; }
+        #layer-states-details > summary::-webkit-details-marker { display:none; }
+        #layer-states-details .layer-states-chevron { display:inline-block; width:10px; font:700 15px/1 ui-monospace,monospace; transition:transform .15s ease; }
+        #layer-states-details[open] .layer-states-chevron { transform:rotate(90deg); }
+    
+/* Snap option symbols mirror the drawing gizmos and inherit the label theme color. */
+.dxf-snap-option-icon { display: inline-block; width: 16px; height: 16px; flex: 0 0 16px; background-color: currentColor; -webkit-mask: var(--dxf-snap-icon) center / contain no-repeat; mask: var(--dxf-snap-icon) center / contain no-repeat; }
+
+/* Static dialog spacing; visibility and field contents remain app-owned. */
+.settings-content.editor-dialog-content { padding: 14px 16px 16px; overflow-y: auto; }
+.settings-content.editor-dialog-content-even { padding: 14px 16px; }
+.settings-content.editor-dialog-content-compact { padding: 12px 14px 14px; }
+#qselect-fields { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; }

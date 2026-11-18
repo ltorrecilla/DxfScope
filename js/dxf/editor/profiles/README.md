@@ -39,7 +39,7 @@ Validation errors include a code, profile ID, command ID, alias, normalized toke
 ## Validate from the repository root
 
 ```sh
-node --test tests/dxf-editor-command-language.test.cjs tests/dxf-editor-command-profiles.test.cjs
+node --test tests/cadscope-command-language.test.cjs tests/cadscope-command-profiles.test.cjs
 node --test --test-reporter=dot tests/dxf-*.test.cjs
 ```
 
@@ -47,7 +47,7 @@ The profile test automatically reads every manifest entry, checks its schema and
 
 ## Maintain the English base
 
-The built-in command registry in `../dxf-editor-commands.js` is authoritative and remains the recovery path if profile loading fails. `en.json` must match every canonical command and alias, including alias order. When adding a real command, update the registry and English JSON together; the parity test catches drift. Do not add contributor-only aliases to English to avoid a conflict.
+The built-in command registry in `../cadscope-commands.js` is authoritative and remains the recovery path if profile loading fails. `en.json` must match every canonical command and alias, including alias order. When adding a real command, update the registry and English JSON together; the parity test catches drift. Do not add contributor-only aliases to English to avoid a conflict.
 
 Runtime fallback, atomic activation and preference behavior are specified in [the architecture design](../../../../md/dxf-architecture.md#l1-command-language-profile-design-2026-11-02). Track implementation in [the roadmap](../../../../md/roadmap-dxf.md#phase-8-command-language-profiles).
 

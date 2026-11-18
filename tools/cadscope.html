@@ -9,15 +9,15 @@
     <!-- Primary Meta Tags -->
     <meta name="description" content="Free client-side 2D DXF and DWG viewer and editor. Visualize and edit plans like AutoCAD, all in your browser. No uploads, private, fast, built for AEC teams.">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://liteaeco.com/tools/dxf-editor.html">
+    <link rel="canonical" href="https://liteaeco.com/tools/cadscope.html">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://liteaeco.com/tools/dxf-editor.html">
+    <meta property="og:url" content="https://liteaeco.com/tools/cadscope.html">
     <meta property="og:site_name" content="liteAECO">
     <meta property="og:title" content="CADScope - 2D DXF & DWG Viewer and Editor | liteAECO">
     <meta property="og:description" content="Free client-side 2D DXF and DWG viewer and editor. Visualize and edit plans like AutoCAD, all in your browser. No uploads, private, fast, built for AEC teams.">
-    <meta property="og:image" content="https://liteaeco.com/img/og-dxf-editor.png">
+    <meta property="og:image" content="https://liteaeco.com/img/og-cadscope.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="liteAECO CADScope tool interface">
@@ -25,10 +25,10 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://liteaeco.com/tools/dxf-editor.html">
+    <meta name="twitter:url" content="https://liteaeco.com/tools/cadscope.html">
     <meta name="twitter:title" content="CADScope - 2D DXF & DWG Viewer and Editor | liteAECO">
     <meta name="twitter:description" content="Free client-side 2D DXF and DWG viewer and editor. Visualize and edit plans like AutoCAD, all in your browser. No uploads, private, fast, built for AEC teams.">
-    <meta name="twitter:image" content="https://liteaeco.com/img/og-dxf-editor.png">
+    <meta name="twitter:image" content="https://liteaeco.com/img/og-cadscope.png">
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="../img/favicon.ico">
@@ -42,12 +42,12 @@
     <!-- Theme and icon dependencies -->
     <script src="../js/theme.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../js/vendor/lucide-1.45.0.min.js"></script>
+    <script src="../js/vendor/lucide-1.70.0.min.js"></script>
 
     <!-- Site services and DXF helpers (classic scripts; preserve load order) -->
-    <script>window.SITE_ROOT = '../'; window.PAGE_I18N_VERSION = 'settings-panel-20261101';</script>
+    <script>window.SITE_ROOT = '../'; window.PAGE_I18N_VERSION = '2026-11-18-cadscope-ui';</script>
     <script src="../lang/en/global.js"></script>
-    <script src="../lang/en/dxf-editor.js?v=settings-panel-20261101"></script>
+    <script src="../lang/en/cadscope.js?v=2026-11-18-cadscope-ui"></script>
     <script src="../js/common.js?v=recent-ui-20261029"></script>
     <script src="../js/dxf/dxf-parser.js"></script>
     <script src="../js/dxf/dxf-color.js?v=20261102"></script>
@@ -76,7 +76,7 @@
     <script src="../js/dxf/dxf-hatch.js?v=20261031b"></script>
     <script src="../js/dxf/dxf-region.js"></script>
     <script src="../js/dxf/dxf-assoc.js"></script>
-    <script src="../js/dxf/dxf-autosave.js"></script>
+    <script src="../js/dxf/dxf-autosave.js?v=workspace-activity-1"></script>
     <script src="../js/dxf/dxf-plotstyle.js?v=color-20261102"></script>
     <script src="../js/dxf/dxf-plotstyle-names.js"></script>
     <script src="../js/dxf/dxf-pagesetup.js"></script>
@@ -107,11 +107,14 @@
     <!-- Styles: site, shared DXF theme, then app-specific rules -->
     <link rel="stylesheet" type="text/css" href="../css/global.css">
     <link rel="stylesheet" href="../css/theme.css">
-    <link rel="stylesheet" href="../css/dxf-theme.css">
-    <link rel="stylesheet" href="../css/dxf-editor.css?v=cleanup-20261105">
+    <link rel="stylesheet" href="../css/dxf-theme.css?v=sidebar-clip-1">
+    <link rel="stylesheet" href="../css/cadscope.css?v=cleanup-20261105">
 </head>
 
 <body class="dxf-ui theme-report-print bg-white text-slate-900 h-screen flex flex-col overflow-hidden pt-12">
+    <div class="dxf-mode-notice" hidden><p id="workspace-status" role="status" aria-live="polite"></p><button id="workspace-retry" hidden data-i18n="uiRetry">Retry</button></div>
+    <div id="workspace-stage" aria-busy="true" data-mode="editor">
+    <div data-dxf-mode="editor" class="dxf-mode-root">
 
     <!-- Top navigation and upload footer are injected by the bootstrap -->
 
@@ -164,7 +167,7 @@
 
             <!-- View: Upload  -->
             <div id="view-upload" class="view-panel absolute inset-0 flex flex-col bg-white overflow-y-auto z-10 transition-opacity">
-                <div class="md:px-14 pt-12 flex flex-col w-full max-w-7xl mx-auto pb-8">
+                <div class="dxf-setup-content flex flex-col">
                     
                     <div class="shrink-0">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
@@ -181,24 +184,25 @@
                         <details class="text-sm text-slate-600 leading-relaxed group border-b border-slate-300 pb-4">
                             <summary class="cursor-pointer list-none flex items-center gap-2 font-semibold text-slate-900 select-none">
                                 <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500 transition-transform group-open:rotate-90"></i>
-                                <span id="ui-rule-title">What this tool does</span>
+                                <span id="ui-rule-title" data-i18n="ruleTitle">What this tool does</span>
                             </summary>
 
                             <div class="mt-3 space-y-3">
                                 <p>
-                                    <span id="ui-rule-desc-1">View, edit and create 2D DXF CAD drawings. Draw and modify geometry, manage layers and blocks, take dimensions, and copy objects between drawings across browser tabs.</span>
+                                    <span id="ui-rule-desc-1" data-i18n="ruleDesc1">View, edit and create 2D DXF CAD drawings. Draw and modify geometry, manage layers and blocks, take dimensions, and copy objects between drawings across browser tabs.</span>
                                 </p>
                              </div>
                         </details>
                     </div>
 
-                    <div class="pt-6 md:pt-8 flex flex-col shrink-0">
+                    <div class="dxf-setup-step flex flex-col shrink-0">
+                        <div data-dxf-tool-selector></div>
                         <h2 class="hidden text-base font-bold text-slate-800 flex items-center mb-4">
                             <span class="bg-slate-100 text-slate-700 w-6 h-6 rounded-md inline-flex items-center justify-center text-xs mr-2 font-bold"><i data-lucide="file-code-2" class="w-3.5 h-3.5"></i></span>
                             <span data-i18n="stepLoadDrawing">Load Drawing</span>
                         </h2>
 
-                        <div class="bg-white p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="dxf-upload-grid dxf-upload-grid-editor">
                             <div class="flex flex-col h-full">
                                 <div id="drop-zone" class="relative flex-grow drop-zone flex flex-col items-center justify-center w-full h-full min-h-[140px] px-4 py-4 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-500 hover:bg-blue-50/30 bg-slate-50/50 cursor-pointer transition-all">
                                     <div class="flex flex-col items-center justify-center space-y-2 text-center pointer-events-none">
@@ -262,7 +266,7 @@
                     </div>
                     <input id="shortcuts-search" type="search" aria-label="Search shortcuts, commands and workflows" spellcheck="false" autocomplete="off"
                            class="w-full md:w-80 mb-5 px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-blue-500"
-                           placeholder="Filter shortcuts..." data-i18n-placeholder="scSearchPlaceholder" />
+                           placeholder="Filter shortcuts..." data-i18n-placeholder="scSearchPlaceholder" data-i18n-aria-label="uiSearchShortcutsCommandsAndWorkflows" />
                     <div id="shortcuts-sections" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     <p id="shortcuts-no-results" class="hidden text-sm text-slate-400 mt-4" data-i18n="scNoResults">No shortcuts match your filter.</p>
                 </div>
@@ -278,7 +282,7 @@
                 <div class="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
                     <div class="flex min-h-[280px] min-w-0 flex-1 flex-col border-b border-slate-200 md:min-h-0 md:border-b-0 md:border-r">
                         <div class="flex gap-2 border-b border-slate-100 p-4 sm:px-6">
-                            <input id="block-library-search" type="search" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Search blocks by name" data-i18n-placeholder="blockLibrarySearch" aria-label="Search blocks by name" data-i18n-aria="blockLibrarySearch" />
+                            <input id="block-library-search" type="search" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Search blocks by name" data-i18n-placeholder="blockLibrarySearch" aria-label="Search blocks by name" data-i18n-aria="blockLibrarySearch" data-i18n-aria-label="blockLibrarySearch" />
                             <button id="block-library-search-clear" type="button" class="rounded-lg border border-slate-300 px-3 text-sm text-slate-600 hover:bg-slate-50" data-i18n="blockLibraryClear">Clear</button>
                         </div>
                         <div id="block-library-list" class="relative flex-1 overflow-y-auto p-4 sm:p-6"></div>
@@ -353,7 +357,7 @@
 
                     <!-- Drawing canvas, overlays and editing panels -->
                     <div id="three-container" class="w-full h-full bg-[#f3f4f6] relative overflow-hidden">
-                        <div id="dynamic-input"><span id="dynamic-input-meta"></span><input id="dynamic-input-field" type="text" spellcheck="false" autocomplete="off" aria-label="Dynamic CAD input" data-i18n-aria="pointerInputFieldAria" placeholder="x,y · @dx,dy" style="display:none"><span id="dynamic-input-measure" title="Distance · Angle" data-i18n-title="pointerInputMeasureTitle"></span></div>
+                        <div id="dynamic-input"><span id="dynamic-input-meta"></span><input id="dynamic-input-field" type="text" spellcheck="false" autocomplete="off" aria-label="Dynamic CAD input" data-i18n-aria="pointerInputFieldAria" placeholder="x,y · @dx,dy" style="display:none" data-i18n-placeholder="uiXYDxDy" data-i18n-aria-label="pointerInputFieldAria"><span id="dynamic-input-measure" title="Distance · Angle" data-i18n-title="pointerInputMeasureTitle"></span></div>
                         
                         <!-- Area Selection Overlay -->
                         <div id="selection-box-overlay">
@@ -363,15 +367,15 @@
 
                         <!-- Inline Text Editor (shown on double-click of a text entity) -->
                         <textarea id="text-edit-input" spellcheck="false" wrap="off"></textarea>
-                        <div id="text-edit-format-toolbar" role="toolbar" aria-label="MTEXT formatting" data-i18n-aria="mtextFormatToolbar">
+                        <div id="text-edit-format-toolbar" role="toolbar" aria-label="MTEXT formatting" data-i18n-aria="mtextFormatToolbar" data-i18n-aria-label="mtextFormatToolbar">
                             <button type="button" class="mtext-format-button font-bold" data-mtext-format="bold" title="Bold selected text" data-i18n-title="mtextBoldTitle">B</button>
                             <button type="button" class="mtext-format-button italic" data-mtext-format="italic" title="Italic selected text" data-i18n-title="mtextItalicTitle">I</button>
                         </div>
 
                         <!-- Settings and editing dialogs -->
-                        <div id="settings-popup" class="settings-popup closed" role="complementary" aria-label="Settings" data-i18n-aria="settingsTitle">
+                        <div id="settings-popup" class="settings-popup closed" role="complementary" aria-label="Settings" data-i18n-aria="settingsTitle" data-i18n-aria-label="settingsTitle">
                             <div class="settings-panel-header">
-                                <div class="settings-tabs" role="tablist" aria-label="Settings" data-i18n-aria="settingsTitle">
+                                <div class="settings-tabs" role="tablist" aria-label="Settings" data-i18n-aria="settingsTitle" data-i18n-aria-label="settingsTitle">
                                     <button type="button" class="settings-tab active" data-tab="settings" role="tab" aria-selected="true" aria-controls="settings-popup-content" data-i18n="settingsTabViewerDrawing">Viewer &amp; Drawing</button>
                                     <button type="button" class="settings-tab" data-tab="help" role="tab" aria-selected="false" aria-controls="settings-popup-content" data-i18n="settingsTabHelp">Help</button>
                                 </div>
@@ -398,7 +402,7 @@
                         <div id="qselect-popup" class="settings-popup dim-style-popup closed" role="dialog" aria-labelledby="qselect-title">
                             <div class="properties-popup-header">
                                 <span id="qselect-title" class="text-sm font-semibold" data-i18n="qselectTitle">Selection filters</span>
-                                <button id="qselect-close" class="prop-popup-close" type="button" title="Close" data-i18n-title="closeBtn" aria-label="Close" data-i18n-aria="closeBtn"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                <button id="qselect-close" class="prop-popup-close" type="button" title="Close" data-i18n-title="closeBtn" aria-label="Close" data-i18n-aria="closeBtn" data-i18n-aria-label="closeBtn"><i data-lucide="x" class="w-4 h-4"></i></button>
                             </div>
                             <form id="qselect-form" class="settings-content editor-dialog-content editor-dialog-content-even flex-1 bg-white">
                                 <p class="text-xs text-slate-500 mb-3" data-i18n="qselectHint">All filters apply together in the active drawing space. Hidden and locked objects are excluded. Colors and line styles match assigned values.</p>
@@ -514,7 +518,7 @@
                                     <label class="flex items-center gap-1"><span class="text-slate-500" data-i18n="insertRotLabel">Rotation</span>
                                         <input id="insert-rotation" type="number" step="any" value="0" class="w-16 font-mono border border-slate-300 rounded px-1.5 py-1 outline-none focus:border-blue-400" /><span class="text-slate-400">°</span></label>
                                 </div>
-                                <input id="blocks-popup-search" type="search" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-400" placeholder="Search blocks by name" data-i18n-placeholder="blockLibrarySearch" aria-label="Search blocks by name" data-i18n-aria="blockLibrarySearch" />
+                                <input id="blocks-popup-search" type="search" class="mb-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-400" placeholder="Search blocks by name" data-i18n-placeholder="blockLibrarySearch" aria-label="Search blocks by name" data-i18n-aria="blockLibrarySearch" data-i18n-aria-label="blockLibrarySearch" />
                                 <p id="blocks-popup-count" class="mb-2 text-[10px] text-slate-500"></p>
                                 <div id="blocks-list" class="flex flex-col gap-1 max-h-72 overflow-y-auto scroller"></div>
                                 <p id="blocks-empty" class="text-slate-400 italic text-center py-6 text-xs hidden" data-i18n="blocksEmpty">No blocks in this drawing yet. Select objects and use “Create block”.</p>
@@ -656,8 +660,8 @@
                                     </label>
                                     <div id="hatch-origin-row" class="flex items-center gap-1">
                                         <span class="text-slate-500 w-14 shrink-0" data-i18n="hatchOriginLabel">Origin</span>
-                                        <input id="hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" />
-                                        <input id="hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" />
+                                        <input id="hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" data-i18n-title="uiOriginX" />
+                                        <input id="hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" data-i18n-title="uiOriginY" />
                                         <button type="button" id="hatch-origin-pick" class="viewer-btn" title="Pick the origin point" data-i18n-title="hatchOriginPickTitle"><i data-lucide="crosshair" class="w-3.5 h-3.5"></i></button>
                                         <button type="button" id="hatch-origin-bl" class="viewer-btn" title="Bottom-left corner of the boundary" data-i18n-title="hatchOriginBlTitle"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i></button>
                                         <button type="button" id="hatch-origin-c" class="viewer-btn" title="Centre of the boundary" data-i18n-title="hatchOriginCTitle"><i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i></button>
@@ -696,7 +700,7 @@
                                 <div class="dim-style-workspace">
                                     <div>
                                         <label for="dim-style-list" class="block text-[11px] font-bold text-slate-500 mb-1" data-i18n="dimStyleStylesLabel">Styles</label>
-                                        <select id="dim-style-list" class="dim-style-list" size="6" aria-label="Dimension styles" data-i18n-aria="dimStyleModalTitle"></select>
+                                        <select id="dim-style-list" class="dim-style-list" size="6" aria-label="Dimension styles" data-i18n-aria="dimStyleModalTitle" data-i18n-aria-label="purgeKindDimstyles"></select>
                                         <div class="dim-style-name-row">
                                             <label><span data-i18n="dimStyleNameLabel">Style name</span><input id="dim-style-name" type="text"></label>
                                             <div class="dim-style-actions">
@@ -726,7 +730,7 @@
                                     <div class="dim-style-preview-pane">
                                         <div class="flex items-center justify-between gap-2 mb-1">
                                             <label for="dim-preview-type" class="text-[11px] font-bold text-slate-500" data-i18n="dimPreviewTitle">Drawing preview</label>
-                                            <select id="dim-preview-type" class="text-[11px] border border-slate-300 rounded px-2 py-1 bg-white text-slate-700" aria-label="Dimension preview type" data-i18n-aria="dimPreviewTypeAria">
+                                            <select id="dim-preview-type" class="text-[11px] border border-slate-300 rounded px-2 py-1 bg-white text-slate-700" aria-label="Dimension preview type" data-i18n-aria="dimPreviewTypeAria" data-i18n-aria-label="dimPreviewTypeAria">
                                                 <option value="linear" data-i18n="dimPreviewLinear">Linear</option>
                                                 <option value="aligned" data-i18n="dimPreviewAligned">Aligned</option>
                                                 <option value="angular" data-i18n="dimPreviewAngular">Angular</option>
@@ -736,7 +740,7 @@
                                                 <option value="overview" data-i18n="dimPreviewOverview" selected>Overview</option>
                                             </select>
                                         </div>
-                                        <svg id="dim-style-preview" class="dim-style-preview" viewBox="0 0 620 480" role="img" aria-label="Dimensioned drawing preview" data-i18n-aria="dimPreviewDrawingAria"></svg>
+                                        <svg id="dim-style-preview" class="dim-style-preview" viewBox="0 0 620 480" role="img" aria-label="Dimensioned drawing preview" data-i18n-aria="dimPreviewDrawingAria" data-i18n-aria-label="dimPreviewDrawingAria"></svg>
                                         <p class="text-[10px] text-slate-400 mt-1" data-i18n="dimPreviewHint">Based on dimension-preview.dxf · selected type uses the current style</p>
                                     </div>
                                 </div>
@@ -751,7 +755,7 @@
                             </div>
                             <div class="settings-content editor-dialog-content flex-1 bg-white">
                                 <label for="text-style-list" class="block text-[11px] font-bold text-slate-500 mb-1" data-i18n="textStyleListLabel">Styles</label>
-                                <select id="text-style-list" class="dim-style-list" size="6" aria-label="Text styles" data-i18n-aria="textStylesTitle"></select>
+                                <select id="text-style-list" class="dim-style-list" size="6" aria-label="Text styles" data-i18n-aria="textStylesTitle" data-i18n-aria-label="purgeKindStyles"></select>
                                 <div class="dim-style-name-row">
                                     <label><span data-i18n="textStyleNameLabel">Style name</span><input id="text-style-name" type="text"></label>
                                     <div class="dim-style-actions">
@@ -764,19 +768,19 @@
                                 <div class="dim-style-fields mt-3">
                                     <label><span data-i18n="textStyleFontPreset">Font</span>
                                         <select id="text-style-font-preset">
-                                            <option value="txt.shx">AutoCAD SHX (txt.shx)</option>
-                                            <option value="arial.ttf">Arial</option>
-                                            <option value="times.ttf">Times New Roman</option>
-                                            <option value="cour.ttf">Courier New</option>
-                                            <option value="georgia.ttf">Georgia</option>
-                                            <option value="consola.ttf">Consolas</option>
+                                            <option value="txt.shx" data-i18n="uiAutoCADSHXTxtShx">AutoCAD SHX (txt.shx)</option>
+                                            <option value="arial.ttf" data-i18n="uiArial">Arial</option>
+                                            <option value="times.ttf" data-i18n="uiTimesNewRoman">Times New Roman</option>
+                                            <option value="cour.ttf" data-i18n="uiCourierNew">Courier New</option>
+                                            <option value="georgia.ttf" data-i18n="uiGeorgia">Georgia</option>
+                                            <option value="consola.ttf" data-i18n="uiConsolas">Consolas</option>
                                             <option value="__custom__" hidden></option>
                                         </select>
                                     </label>
                                     <label><span data-i18n="textStyleFixedHeight">Fixed height</span><input id="text-style-height" type="number" min="0" step="any"></label>
                                     <label><span data-i18n="textStyleWidthFactor">Width factor</span><input id="text-style-width" type="number" min="0.001" step="any"></label>
                                 </div>
-                                <div id="text-style-preview" class="mt-4 rounded border border-slate-200 bg-white px-4 py-5 text-slate-900 text-2xl overflow-hidden" aria-label="Text style preview" data-i18n-aria="textStylePreviewAria">Sample text 123</div>
+                                <div id="text-style-preview" class="mt-4 rounded border border-slate-200 bg-white px-4 py-5 text-slate-900 text-2xl overflow-hidden" aria-label="Text style preview" data-i18n-aria="textStylePreviewAria" data-i18n-aria-label="textStylePreviewAria">Sample text 123</div>
                                 <p class="text-[10px] text-slate-500 mt-2" data-i18n="textStyleFontHint">Choose a font. Imported fonts are retained when you update a style. This browser uses an available substitute when the specified font is not installed.</p>
                             </div>
                         </div>
@@ -804,13 +808,13 @@
                             <button class="viewer-btn" id="btn-select-previous" title="Reselect the previous selection" data-i18n-title="selectPreviousTitle" disabled>
                                 <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn" id="btn-select-similar" title="Select similar objects" data-i18n-title="selectSimilarTitle" aria-label="Select similar objects" data-i18n-aria="cmd_select-similar">
+                            <button class="viewer-btn" id="btn-select-similar" title="Select similar objects" data-i18n-title="selectSimilarTitle" aria-label="Select similar objects" data-i18n-aria="cmd_select-similar" data-i18n-aria-label="uiSelectSimilarObjects">
                                 <i data-lucide="wand" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn" id="btn-qselect" title="Selection filters (QSELECT)" data-i18n-title="qselectToolbarTitle" aria-label="Selection filters" data-i18n-aria="qselectTitle" aria-haspopup="dialog" aria-controls="qselect-popup">
+                            <button class="viewer-btn" id="btn-qselect" title="Selection filters (QSELECT)" data-i18n-title="qselectToolbarTitle" aria-label="Selection filters" data-i18n-aria="qselectTitle" aria-haspopup="dialog" aria-controls="qselect-popup" data-i18n-aria-label="cmd_qselect">
                                 <i data-lucide="filter" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn" id="btn-matchprop" title="Match properties: choose a source, then click the objects to change" data-i18n-title="matchPropTitle" aria-label="Match properties" data-i18n-aria="cmd_matchprop">
+                            <button class="viewer-btn" id="btn-matchprop" title="Match properties: choose a source, then click the objects to change" data-i18n-title="matchPropTitle" aria-label="Match properties" data-i18n-aria="cmd_matchprop" data-i18n-aria-label="opMatchProp">
                                 <i data-lucide="pipette" class="w-3.5 h-3.5"></i>
                             </button>
                             <span class="viewer-toolbar-sep"></span>
@@ -852,16 +856,16 @@
                             <button class="viewer-btn draw-tool-btn" data-draw-tool="dim-diameter" title="Diameter dimension: click a circle or arc, then place" data-i18n-title="drawDimDiameterTitle">
                                 <i data-lucide="diameter" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn" id="btn-dim-angular" title="Angular dimension: select two lines or an arc, then place the dimension" data-i18n-title="drawDimAngularTitle" aria-label="Angular dimension" data-i18n-aria="cmd_dim-angular">
+                            <button class="viewer-btn" id="btn-dim-angular" title="Angular dimension: select two lines or an arc, then place the dimension" data-i18n-title="drawDimAngularTitle" aria-label="Angular dimension" data-i18n-aria="cmd_dim-angular" data-i18n-aria-label="cmd_dim-angular">
                                 <span aria-hidden="true" style="font-size:17px;line-height:1;">∠</span>
                             </button>
                             <button class="viewer-btn draw-tool-btn" data-draw-tool="dim-ordinate" title="Ordinate dimension: click the feature point, then the leader end (vertical = X datum, horizontal = Y datum)" data-i18n-title="drawDimOrdinateTitle">
                                 <i data-lucide="corner-right-up" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn" id="btn-dim-baseline" title="Baseline dimension: continue from a common origin" data-i18n-title="drawDimBaselineTitle" aria-label="Baseline dimension" data-i18n-aria="cmd_dim-baseline">
+                            <button class="viewer-btn" id="btn-dim-baseline" title="Baseline dimension: continue from a common origin" data-i18n-title="drawDimBaselineTitle" aria-label="Baseline dimension" data-i18n-aria="cmd_dim-baseline" data-i18n-aria-label="cmd_dim-baseline">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M12 19v-8m10 3H11m11 5v-8m-11 4 2-2m8 2 2-2M2 4v7m20-4H2m20-3v7M1 8l2-2m18 2 2-2"/></svg>
                             </button>
-                            <button class="viewer-btn" id="btn-dim-continue" title="Continue dimension: add measurements end to end" data-i18n-title="drawDimContinueTitle" aria-label="Continue dimension" data-i18n-aria="cmd_dim-continue">
+                            <button class="viewer-btn" id="btn-dim-continue" title="Continue dimension: add measurements end to end" data-i18n-title="drawDimContinueTitle" aria-label="Continue dimension" data-i18n-aria="cmd_dim-continue" data-i18n-aria-label="cmd_dim-continue">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M2 16V8m20 3H2m10 5V8m10 8V8M1 12l2-2m8 2 2-2m8 2 2-2"/></svg>
                             </button>
                             <select id="dim-style-select" class="draw-layer-select" title="Dimension style (text size for different scales)" data-i18n-title="dimStyleSelectTitle" style="max-width:86px;"></select>
@@ -876,7 +880,7 @@
                             <button class="viewer-btn" id="btn-paper-size" title="Paper setup" data-i18n-title="paperSetupButtonTitle">
                                 <i data-lucide="file-cog" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button class="viewer-btn hidden" id="btn-show-plotstyles" title="Show plot styles" data-i18n-title="showPlotStylesTitle" aria-label="Show plot styles" data-i18n-aria="showPlotStylesTitle" aria-pressed="false">
+                            <button class="viewer-btn hidden" id="btn-show-plotstyles" title="Show plot styles" data-i18n-title="showPlotStylesTitle" aria-label="Show plot styles" data-i18n-aria="showPlotStylesTitle" aria-pressed="false" data-i18n-aria-label="uiShowPlotStyles">
                                 <i data-lucide="palette" class="w-3.5 h-3.5"></i>
                             </button>
                             <button class="viewer-btn" id="btn-export-pdf" title="Plot / print (Ctrl+P)" data-i18n-title="plotButtonTitle" disabled>
@@ -1020,7 +1024,7 @@
                             </div>
 
                             <div id="panel-content-props" class="flex-1 overflow-y-auto scroller p-5 flex flex-col">
-                                <section id="block-attributes-panel" class="hidden flex-col gap-3 mb-6 shrink-0" aria-label="Block attributes"></section>
+                                <section id="block-attributes-panel" class="hidden flex-col gap-3 mb-6 shrink-0" aria-label="Block attributes" data-i18n-aria-label="uiBlockAttributes"></section>
                                 <div id="prop-empty" class="flex flex-col h-full text-slate-400">
                                     <div class="flex flex-col items-center justify-center flex-1">
                                         <i data-lucide="mouse-pointer-2" class="w-8 h-8 mb-3 opacity-50"></i>
@@ -1067,8 +1071,8 @@
                                         </div>
                                         <textarea id="prop-text-input" rows="3" spellcheck="false"
                                             class="w-full text-sm font-mono border border-slate-300 rounded p-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-y bg-white text-slate-900"
-                                            placeholder="Edit text…"></textarea>
-                                        <div id="prop-mtext-format-toolbar" class="hidden flex items-center gap-1 text-xs" role="toolbar" aria-label="MTEXT formatting" data-i18n-aria="mtextFormatToolbar">
+                                            placeholder="Edit text…" data-i18n-placeholder="uiEditText"></textarea>
+                                        <div id="prop-mtext-format-toolbar" class="hidden flex items-center gap-1 text-xs" role="toolbar" aria-label="MTEXT formatting" data-i18n-aria="mtextFormatToolbar" data-i18n-aria-label="mtextFormatToolbar">
                                             <button type="button" class="mtext-format-button border border-slate-300 font-bold" data-mtext-format="bold" title="Bold selected text" data-i18n-title="mtextBoldTitle">B</button>
                                             <button type="button" class="mtext-format-button border border-slate-300 italic" data-mtext-format="italic" title="Italic selected text" data-i18n-title="mtextItalicTitle">I</button>
                                             <span class="text-slate-500 ml-1" data-i18n="mtextFormatHint">Select text, then choose Bold or Italic.</span>
@@ -1100,13 +1104,13 @@
                                         <div id="prop-insert-info" class="text-xs text-slate-600"></div>
                                         <div id="prop-insert-attribute-note" class="text-[11px] text-slate-500 dark:text-slate-400 hidden"></div>
                                         <button id="btn-edit-insert-attributes" type="button" aria-expanded="false" aria-controls="prop-insert-attributes-editor" class="w-full flex items-center gap-2 text-left text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1 hover:text-blue-600 transition-colors hidden">
-                                            <svg data-attribute-chevron class="w-3 h-3 shrink-0 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg><span>Attributes</span>
+                                            <svg data-attribute-chevron class="w-3 h-3 shrink-0 transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg><span data-i18n="uiAttributes">Attributes</span>
                                         </button>
                                         <div id="prop-insert-attributes-editor" class="hidden flex-col gap-2 border border-slate-200 dark:border-slate-600 rounded-lg p-2 bg-slate-50 dark:bg-slate-800">
                                             <div id="prop-insert-attributes-rows" class="flex flex-col gap-2 max-h-56 overflow-y-auto"></div>
                                             <div class="flex gap-2">
-                                                <button id="btn-apply-insert-attributes" type="button" class="flex-1 py-1.5 px-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Apply values</button>
-                                                <button id="btn-cancel-insert-attributes" type="button" class="py-1.5 px-2 text-xs font-semibold text-slate-600 border border-slate-300 hover:border-slate-400 rounded-lg transition-colors">Cancel</button>
+                                                <button id="btn-apply-insert-attributes" type="button" class="flex-1 py-1.5 px-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors" data-i18n="uiApplyValues">Apply values</button>
+                                                <button id="btn-cancel-insert-attributes" type="button" class="py-1.5 px-2 text-xs font-semibold text-slate-600 border border-slate-300 hover:border-slate-400 rounded-lg transition-colors" data-i18n="ctbCancel">Cancel</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1169,8 +1173,8 @@
                                         </label>
                                         <div id="prop-hatch-origin-row" class="flex items-center gap-1">
                                             <span class="text-slate-500 w-12 shrink-0" data-i18n="hatchOriginLabel">Origin</span>
-                                            <input id="prop-hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" />
-                                            <input id="prop-hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" />
+                                            <input id="prop-hatch-ox" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin X" data-i18n-title="uiOriginX" />
+                                            <input id="prop-hatch-oy" type="number" step="any" value="0" class="border border-slate-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-blue-400 w-16 min-w-0" title="Origin Y" data-i18n-title="uiOriginY" />
                                             <button type="button" id="prop-hatch-origin-pick" class="viewer-btn" title="Pick the origin point" data-i18n-title="hatchOriginPickTitle"><i data-lucide="crosshair" class="w-3.5 h-3.5"></i></button>
                                             <button type="button" id="prop-hatch-origin-bl" class="viewer-btn" title="Bottom-left corner of the boundary" data-i18n-title="hatchOriginBlTitle"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i></button>
                                             <button type="button" id="prop-hatch-origin-c" class="viewer-btn" title="Centre of the boundary" data-i18n-title="hatchOriginCTitle"><i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i></button>
@@ -1206,17 +1210,17 @@
                                     <div id="prop-dim-section" class="flex flex-col gap-2 hidden">
                                         <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-1" data-i18n="dimensionSection">Dimension</h3>
                                         <div id="prop-dim-assoc-status" class="text-[11px] text-slate-500 hidden"></div>
-                                        <button id="prop-dim-reassociate" type="button" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors hidden">Reassociate endpoints</button>
+                                        <button id="prop-dim-reassociate" type="button" class="text-xs font-semibold px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors hidden" data-i18n="uiReassociateEndpoints">Reassociate endpoints</button>
                                         <div class="flex items-center gap-2 text-xs">
                                             <span class="text-slate-500" data-i18n="dimStyleLabel">Style</span>
                                             <select id="prop-dim-style" class="text-xs border border-slate-300 rounded px-2 py-1 flex-1 min-w-0 bg-white text-slate-700 outline-none focus:border-blue-400"></select>
                                         </div>
                                         <div id="prop-dim-overrides" class="grid grid-cols-2 gap-2 text-xs">
-                                            <label class="text-slate-500">End marker
-                                                <select id="prop-dim-marker" class="w-full border border-slate-300 rounded px-2 py-1 bg-white text-slate-700"><option value="">Use style</option><option value="tick">Tick</option><option value="arrow">Arrow</option></select>
+                                            <label class="text-slate-500"><span data-i18n="dimStyleEndMarker">End marker</span>
+                                                <select id="prop-dim-marker" class="w-full border border-slate-300 rounded px-2 py-1 bg-white text-slate-700"><option value="" data-i18n="uiUseStyle">Use style</option><option value="tick" data-i18n="dimStyleTickCol">Tick</option><option value="arrow" data-i18n="dimStyleArrowCol">Arrow</option></select>
                                             </label>
-                                            <label class="text-slate-500">Text position
-                                                <select id="prop-dim-position" class="w-full border border-slate-300 rounded px-2 py-1 bg-white text-slate-700"><option value="">Use style</option><option value="above">Above</option><option value="center">Center</option><option value="below">Below</option></select>
+                                            <label class="text-slate-500"><span data-i18n="dimStyleTextPosition">Text position</span>
+                                                <select id="prop-dim-position" class="w-full border border-slate-300 rounded px-2 py-1 bg-white text-slate-700"><option value="" data-i18n="uiUseStyle">Use style</option><option value="above" data-i18n="uiAbove">Above</option><option value="center" data-i18n="uiCenter">Center</option><option value="below" data-i18n="uiBelow">Below</option></select>
                                             </label>
                                         </div>
                                         <div class="flex gap-2">
@@ -1284,7 +1288,7 @@
                                 <details id="layer-states-details" class="border-b border-slate-200 pb-3 mb-3 text-xs">
                                     <summary class="cursor-pointer font-semibold text-slate-600 select-none"><span class="layer-states-chevron" aria-hidden="true">&gt;</span><span data-i18n="layerStatesTitle">Visibility states</span></summary>
                                     <div class="space-y-2 pt-2">
-                                        <select id="layer-state-select" class="w-full border border-slate-300 bg-white px-2 py-1 text-slate-700" aria-label="Named layer visibility state" data-i18n-aria="layerStateSelectAria"></select>
+                                        <select id="layer-state-select" class="w-full border border-slate-300 bg-white px-2 py-1 text-slate-700" aria-label="Named layer visibility state" data-i18n-aria="layerStateSelectAria" data-i18n-aria-label="layerStateSelectAria"></select>
                                         <div id="layer-state-status" class="text-[11px] text-slate-500"></div>
                                         <div class="flex flex-wrap gap-1">
                                             <button id="layer-state-save" type="button" class="border border-slate-300 px-2 py-1" data-i18n="layerStateSave">Save as</button>
@@ -1295,20 +1299,20 @@
                                         <p class="text-[10px] text-slate-500" data-i18n="layerStatePropertiesHint">Select a state to restore visibility, color, lineweight, and linetype. New layers keep their current settings. States are saved in the DXF for LiteAECO.</p>
                                     </div>
                                 </details>
-                                <input id="layer-filter" type="search" placeholder="Filter layers…" aria-label="Filter layers" data-i18n-placeholder="layerFilterPh" class="w-full mb-2 text-[11px] px-2 py-1 border border-slate-200 rounded-md">
+                                <input id="layer-filter" type="search" placeholder="Filter layers…" aria-label="Filter layers" data-i18n-placeholder="layerFilterPh" class="w-full mb-2 text-[11px] px-2 py-1 border border-slate-200 rounded-md" data-i18n-aria-label="uiFilterLayers">
                                 <div id="layer-list" class="flex flex-col gap-1">
                                     </div>
                             </div>
 
                             <!-- Layer context menu (rename / delete) -->
-                            <div id="layer-ctx-menu" role="menu" aria-label="Layer actions" class="rounded fixed hidden z-[110] min-w-[205px] border border-slate-300 bg-white py-1 text-xs text-slate-800 shadow-xl">
+                            <div id="layer-ctx-menu" role="menu" aria-label="Layer actions" class="rounded fixed hidden z-[110] min-w-[205px] border border-slate-300 bg-white py-1 text-xs text-slate-800 shadow-xl" data-i18n-aria-label="uiLayerActions">
                                 <button type="button" role="menuitem" id="ctx-rename-layer" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" data-i18n="renameLayerBtn">Rename layer</button>
                                 <button type="button" role="menuitem" id="ctx-delete-layer" class="block w-full px-3 py-1.5 text-left text-red-700 hover:bg-red-50 disabled:opacity-40" data-i18n="deleteLayerBtn">Delete layer</button>
                             </div>
 
-                            <div id="object-ctx-menu" role="menu" aria-label="Object actions" data-i18n-aria="objectActionsAria" class="rounded fixed hidden z-[110] min-w-[205px] border border-slate-300 bg-white py-1 text-xs text-slate-800 shadow-xl">
+                            <div id="object-ctx-menu" role="menu" aria-label="Object actions" data-i18n-aria="objectActionsAria" class="rounded fixed hidden z-[110] min-w-[205px] border border-slate-300 bg-white py-1 text-xs text-slate-800 shadow-xl" data-i18n-aria-label="objectActionsAria">
                                 <button type="button" role="menuitem" data-object-action="properties" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" data-i18n="objectActionProperties">Properties</button>
-                                <button type="button" role="menuitem" data-object-action="edit-attributes" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" style="display:none">Edit attributes</button>
+                                <button type="button" role="menuitem" data-object-action="edit-attributes" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" style="display:none" data-i18n="uiEditAttributes">Edit attributes</button>
                                 <button type="button" role="menuitem" data-object-action="similar" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" data-i18n="objectActionSimilar">Select similar</button>
                                 <button type="button" role="menuitem" data-object-action="group" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" data-i18n="objectActionGroup">Group</button>
                                 <button type="button" role="menuitem" data-object-action="ungroup" class="block w-full px-3 py-1.5 text-left hover:bg-slate-100 disabled:opacity-40" data-i18n="objectActionUngroup">Ungroup</button>
@@ -1426,23 +1430,32 @@
         </section>
     </main>
 
+    </div>
+    </div>
     <!-- Site shell and translation bridge; keep before application scripts -->
     <script src="../js/dxf/dxf-page-bootstrap.js?v=cleanup-20261105" data-dxf-refresh="refreshDxfTranslations"></script>
 
     <!-- Command modules and Editor entry point -->
-    <script src="../js/dxf/editor/dxf-editor-command-language.js?v=l1e-20261102"></script>
-    <script src="../js/dxf/editor/dxf-editor-command-profiles.js?v=cleanup-phase5-20261106"></script>
-    <script src="../js/dxf/editor/dxf-editor-commands.js?v=l1e-20261102"></script>
-    <script src="../js/dxf/editor/dxf-editor-shortcuts.js?v=l1e-20261102"></script>
-    <script src="../js/dxf/editor/dxf-editor-settings-view.js?v=selection-color-20261106"></script>
-    <script src="../js/dxf/editor/dxf-editor-dialogs.js?v=cleanup-phase4-dialogs-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-translations.js?v=cleanup-phase4-dialogs-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-inspector.js?v=cleanup-phase4-panels-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-layer-selection.js?v=cleanup-phase4-panels-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-import.js?v=cleanup-phase4-files-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-persistence.js?v=cleanup-phase4-files-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-snap.js?v=cleanup-phase4-final-20261105"></script>
-    <script src="../js/dxf/editor/dxf-editor-plot-writers.js?v=cleanup-phase4-final-20261105"></script>
-    <script type="module" src="../js/dxf/editor/dxf-editor-app.js?v=grip-hover-20261106"></script>
+    <script src="../js/dxf/dxf-sidebar.js?v=shared-sidebar-1"></script>
+    <script src="../js/dxf/dxf-workspace-activity.js?v=native-modes-1"></script>
+    <script src="../js/dxf/dxf-workspace.js?v=workspace-snapshot-1"></script>
+    <script src="../js/dxf/editor/cadscope-command-language.js?v=l1e-20261102"></script>
+    <script src="../js/dxf/editor/cadscope-command-profiles.js?v=cleanup-phase5-20261106"></script>
+    <script src="../js/dxf/editor/cadscope-commands.js?v=l1e-20261102"></script>
+    <script src="../js/dxf/editor/cadscope-shortcuts.js?v=l1e-20261102"></script>
+    <script src="../js/dxf/editor/cadscope-settings-view.js?v=selection-color-20261106"></script>
+    <script src="../js/dxf/editor/cadscope-dialogs.js?v=cleanup-phase4-dialogs-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-translations.js?v=cleanup-phase4-dialogs-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-inspector.js?v=cleanup-phase4-panels-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-layer-selection.js?v=cleanup-phase4-panels-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-import.js?v=cleanup-phase4-files-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-persistence.js?v=cleanup-phase4-files-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-snap.js?v=cleanup-phase4-final-20261105"></script>
+    <script src="../js/dxf/editor/cadscope-plot-writers.js?v=cleanup-phase4-final-20261105"></script>
+    <link rel="stylesheet" href="../css/dxf-workspace-controls.css?v=setup-parity-1">
+    <script src="../js/dxf/dxf-workspace-controls.js?v=setup-parity-1"></script>
+    <link rel="stylesheet" href="../css/dxf-app.css?v=1">
+    <script src="../js/dxf/dxf-mode-dom.js?v=shared-sidebar-1"></script>
+    <script defer src="../js/dxf/dxf-app.js?v=shared-sidebar-1" data-editor-module="../js/dxf/editor/cadscope-app.js?v=shared-sidebar-1" data-compare-module="../js/dxf/compare/dxf-compare-app.js?v=align-feedback-1"></script>
 </body>
 </html>
